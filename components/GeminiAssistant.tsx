@@ -58,7 +58,7 @@ const GeminiAssistant: React.FC = () => {
         : `Você é o suporte automático da Top Sorte. Rápido e objetivo. Informações: PIX 27992429263, Valor R$ 13,00.`;
 
       const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         systemInstruction
       });
 
