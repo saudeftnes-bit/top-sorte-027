@@ -5,6 +5,7 @@ import RaffleSelection from './components/RaffleSelection';
 import CheckoutModal from './components/CheckoutModal';
 import GeminiAssistant from './components/GeminiAssistant';
 import AdminPanel from './components/admin/AdminPanel';
+import InstagramVideos from './components/InstagramVideos';
 import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations } from './lib/supabase-admin';
 import { getOrCreateSessionId, cleanupSessionSelections } from './lib/selection-manager';
 import type { Raffle, Reservation } from './types/database';
@@ -12,7 +13,7 @@ import type { Raffle, Reservation } from './types/database';
 export type NumberStatus = 'available' | 'pending' | 'paid';
 export type ReservationMap = Record<string, { name: string; status: NumberStatus }>;
 
-export type RaffleState = 'home' | 'selecting' | 'admin';
+export type RaffleState = 'home' | 'selecting' | 'admin' | 'videos';
 
 const App: React.FC = () => {
   const [view, setView] = useState<RaffleState>('home');
@@ -286,6 +287,20 @@ const App: React.FC = () => {
             <span className="hidden sm:inline">Atendimento</span>
           </a>
 
+          {/* Botão Vídeos */}
+          {view !== 'videos' && view !== 'admin' && (
+            <button
+              onClick={() => setView('videos')}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md hover:scale-105 transition-all"
+              title="Ver Vídeos"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              <span className="hidden sm:inline">Vídeos</span>
+            </button>
+          )}
+
           {/* Admin Button - Só aparece com o código secreto (5 cliques no logo) */}
           {showAdminButton && view !== 'admin' && (
             <button
@@ -316,6 +331,8 @@ const App: React.FC = () => {
           <AdminPanel />
         ) : view === 'home' ? (
           <Home onStart={handleParticipate} />
+        ) : view === 'videos' ? (
+          <InstagramVideos onBack={() => setView('home')} />
         ) : (
           <RaffleSelection
             selectedNumbers={selectedNumbers}
