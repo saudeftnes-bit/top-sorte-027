@@ -157,7 +157,7 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
         <div className="flex items-center justify-between mb-4 px-2">
           <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
             <span className="text-2xl">🎥</span>
-            Vídeos do Sorteio
+            VÍDEOS TOPSORTE
           </h3>
         </div>
 

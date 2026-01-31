@@ -48,7 +48,7 @@ const InstagramVideos: React.FC<InstagramVideosProps> = ({ onBack }) => {
                     </button>
                     <h1 className="text-3xl font-black text-slate-900 flex items-center gap-2">
                         <span className="text-3xl">📹</span>
-                        Vídeos do Sorteio
+                        VÍDEOS TOPSORTE
                     </h1>
                     <p className="text-slate-600 mt-2">Confira nossos vídeos e sorteios anteriores!</p>
                 </div>
