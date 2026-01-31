@@ -6,6 +6,7 @@ export interface Raffle {
     description: string;
     price_per_number: number;
     main_image_url: string;
+    instagram_url?: string;
     status: 'active' | 'finished' | 'scheduled';
     draw_date?: string;
     created_at: string;

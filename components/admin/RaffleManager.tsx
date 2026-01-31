@@ -28,6 +28,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     const [description, setDescription] = useState('');
     const [pricePerNumber, setPricePerNumber] = useState('');
     const [mainImageUrl, setMainImageUrl] = useState('');
+    const [instagramUrl, setInstagramUrl] = useState('');
     const [status, setStatus] = useState<'active' | 'finished' | 'scheduled'>('active');
 
     // Winner photo form
@@ -49,6 +50,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             setDescription(raffleData.description);
             setPricePerNumber(raffleData.price_per_number.toString());
             setMainImageUrl(raffleData.main_image_url);
+            setInstagramUrl(raffleData.instagram_url || '');
             setStatus(raffleData.status);
         }
 
@@ -66,6 +68,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             description,
             price_per_number: parseFloat(pricePerNumber),
             main_image_url: mainImageUrl,
+            instagram_url: instagramUrl,
             status,
         });
 
@@ -224,6 +227,18 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                             <img src={mainImageUrl} alt="Preview" className="w-full h-48 object-cover" />
                         </div>
                     )}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">URL do Instagram</label>
+                    <input
+                        type="url"
+                        value={instagramUrl}
+                        onChange={(e) => setInstagramUrl(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                        placeholder="https://www.instagram.com/topsorte_027"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Cole a URL completa do perfil do Instagram</p>
                 </div>
 
                 <button
