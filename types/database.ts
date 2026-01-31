@@ -7,6 +7,8 @@ export interface Raffle {
     price_per_number: number;
     main_image_url: string;
     instagram_url?: string;
+    total_numbers?: number;
+    selection_mode?: 'loteria' | 'jogo_bicho';
     status: 'active' | 'finished' | 'scheduled';
     draw_date?: string;
     created_at: string;
@@ -33,6 +35,8 @@ export interface WinnerPhoto {
     name: string;
     prize: string;
     photo_url: string;
+    media_type?: 'photo' | 'youtube' | 'instagram';
+    video_url?: string;
     display_order: number;
     created_at: string;
 }

@@ -110,8 +110,8 @@ const App: React.FC = () => {
     });
 
     // Check subscription status
-    subscription.on('system', (message) => {
-      console.log('🔔 [Real-time] System message:', message);
+    subscription.subscribe((status) => {
+      console.log('🔔 [Real-time] Subscription status:', status);
     });
 
     return () => {
@@ -324,6 +324,8 @@ const App: React.FC = () => {
             selectedNumbers={selectedNumbers}
             onToggleNumber={toggleNumber}
             reservations={reservations}
+            totalNumbers={activeRaffle?.total_numbers}
+            selectionMode={activeRaffle?.selection_mode}
           />
         )}
       </main>

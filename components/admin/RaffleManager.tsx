@@ -28,13 +28,15 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     const [description, setDescription] = useState('');
     const [pricePerNumber, setPricePerNumber] = useState('');
     const [mainImageUrl, setMainImageUrl] = useState('');
-    const [instagramUrl, setInstagramUrl] = useState('');
+    const [totalNumbers, setTotalNumbers] = useState('10000');
+    const [selectionMode, setSelectionMode] = useState<'loteria' | 'jogo_bicho'>('loteria');
     const [status, setStatus] = useState<'active' | 'finished' | 'scheduled'>('active');
 
     // Winner photo form
     const [newWinnerName, setNewWinnerName] = useState('');
     const [newWinnerPrize, setNewWinnerPrize] = useState('');
     const [newWinnerPhotoUrl, setNewWinnerPhotoUrl] = useState('');
+    const [newWinnerMediaType, setNewWinnerMediaType] = useState<'photo' | 'youtube' | 'instagram'>('photo');
 
     useEffect(() => {
         loadData();
@@ -50,7 +52,8 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             setDescription(raffleData.description);
             setPricePerNumber(raffleData.price_per_number.toString());
             setMainImageUrl(raffleData.main_image_url);
-            setInstagramUrl(raffleData.instagram_url || '');
+            setTotalNumbers((raffleData.total_numbers || 10000).toString());
+            setSelectionMode(raffleData.selection_mode || 'loteria');
             setStatus(raffleData.status);
         }
 
@@ -68,7 +71,8 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             description,
             price_per_number: parseFloat(pricePerNumber),
             main_image_url: mainImageUrl,
-            instagram_url: instagramUrl,
+            total_numbers: parseInt(totalNumbers),
+            selection_mode: selectionMode,
             status,
         });
 
@@ -95,7 +99,9 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         const newPhoto = await addWinnerPhoto({
             name: newWinnerName,
             prize: newWinnerPrize,
-            photo_url: newWinnerPhotoUrl,
+            photo_url: newWinnerMediaType === 'photo' ? newWinnerPhotoUrl : '',
+            media_type: newWinnerMediaType,
+            video_url: newWinnerMediaType !== 'photo' ? newWinnerPhotoUrl : undefined,
             display_order: winnerPhotos.length,
         });
 
@@ -103,12 +109,13 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             setNewWinnerName('');
             setNewWinnerPrize('');
             setNewWinnerPhotoUrl('');
+            setNewWinnerMediaType('photo');
             await loadData();
-            setSuccessMessage('Foto de ganhador adicionada! ✅');
+            setSuccessMessage('Ganhador adicionado com sucesso! ✅');
             setShowSuccessModal(true);
             onDataChanged?.();
         } else {
-            setErrorMessage('Erro ao adicionar foto. Tente novamente.');
+            setErrorMessage('Erro ao adicionar ganhador. Tente novamente.');
             setShowErrorModal(true);
         }
     };
@@ -229,16 +236,31 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                     )}
                 </div>
 
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">URL do Instagram</label>
-                    <input
-                        type="url"
-                        value={instagramUrl}
-                        onChange={(e) => setInstagramUrl(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
-                        placeholder="https://www.instagram.com/topsorte_027"
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Cole a URL completa do perfil do Instagram</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">🔢 Quantidade Total de Números</label>
+                        <input
+                            type="number"
+                            value={totalNumbers}
+                            onChange={(e) => setTotalNumbers(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            placeholder="10000"
+                            min="1"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">Ex: 100, 1000, 10000</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">🎰 Modo de Jogo</label>
+                        <select
+                            value={selectionMode}
+                            onChange={(e) => setSelectionMode(e.target.value as any)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                        >
+                            <option value="loteria">🎲 Loteria (Números)</option>
+                            <option value="jogo_bicho">🐓 Jogo do Bicho (Animais)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <button
@@ -257,6 +279,44 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                 {/* Add Winner Form */}
                 <div className="bg-purple-50 rounded-xl p-4 space-y-3">
                     <p className="text-sm font-bold text-purple-900">Adicionar Novo Ganhador</p>
+
+                    {/* Seletor de Tipo de Mídia */}
+                    <div className="flex gap-4 p-3 bg-white rounded-lg border-2 border-purple-200">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="mediaType"
+                                value="photo"
+                                checked={newWinnerMediaType === 'photo'}
+                                onChange={(e) => setNewWinnerMediaType(e.target.value as any)}
+                                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-sm font-medium">📷 Foto</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="mediaType"
+                                value="youtube"
+                                checked={newWinnerMediaType === 'youtube'}
+                                onChange={(e) => setNewWinnerMediaType(e.target.value as any)}
+                                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-sm font-medium">🎬 YouTube</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="mediaType"
+                                value="instagram"
+                                checked={newWinnerMediaType === 'instagram'}
+                                onChange={(e) => setNewWinnerMediaType(e.target.value as any)}
+                                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-sm font-medium">📹 Instagram</span>
+                        </label>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <input
                             type="text"
@@ -277,7 +337,11 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                             value={newWinnerPhotoUrl}
                             onChange={(e) => setNewWinnerPhotoUrl(e.target.value)}
                             className="px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
-                            placeholder="URL da foto"
+                            placeholder={
+                                newWinnerMediaType === 'photo' ? 'URL da foto' :
+                                    newWinnerMediaType === 'youtube' ? 'URL do YouTube' :
+                                        'URL do Instagram (reel)'
+                            }
                         />
                     </div>
                     <button
@@ -295,7 +359,15 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                     ) : (
                         winnerPhotos.map((photo) => (
                             <div key={photo.id} className="border-2 border-slate-200 rounded-xl overflow-hidden group hover:border-purple-300 transition-all">
-                                <img src={photo.photo_url} alt={photo.name} className="w-full h-48 object-cover" />
+                                {(!photo.media_type || photo.media_type === 'photo') ? (
+                                    <img src={photo.photo_url} alt={photo.name} className="w-full h-48 object-cover" />
+                                ) : (
+                                    <div className="w-full h-48 bg-slate-900 flex flex-col items-center justify-center text-white gap-2">
+                                        <span className="text-3xl">{photo.media_type === 'youtube' ? '🎬' : '📹'}</span>
+                                        <span className="text-xs font-bold uppercase tracking-widest">{photo.media_type}</span>
+                                        <p className="text-[10px] text-slate-400 px-4 text-center truncate w-full">{photo.video_url}</p>
+                                    </div>
+                                )}
                                 <div className="p-4">
                                     <p className="font-black text-slate-900">{photo.name}</p>
                                     <p className="text-sm text-green-600 font-bold">{photo.prize}</p>

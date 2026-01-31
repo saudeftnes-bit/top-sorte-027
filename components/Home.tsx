@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WhatsAppIcon } from '../App';
 import { getActiveRaffle, getWinnerPhotos } from '../lib/supabase-admin';
+import { getYouTubeEmbedUrl } from '../lib/video-utils';
 import type { Raffle, WinnerPhoto } from '../types/database';
 
 interface HomeProps {
@@ -35,6 +36,13 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
       }
     };
   }, []);
+
+  // Processar embeds do Instagram quando os dados mudarem ou o slide mudar
+  useEffect(() => {
+    if (window.instgrm) {
+      window.instgrm.Embeds.process();
+    }
+  }, [winnersPhotos, currentSlide]);
 
   // Fallback static data (usado se Supabase falhar)
   const fallbackWinnersPhotos = [
@@ -194,13 +202,59 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
                 className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'
                   }`}
               >
-                <img
-                  src={photo.photo_url}
-                  alt={photo.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-                <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                {/* Renderização condicional: Foto, YouTube ou Instagram */}
+                {(!photo.media_type || photo.media_type === 'photo') && (
+                  <>
+                    <img
+                      src={photo.photo_url}
+                      alt={photo.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                  </>
+                )}
+
+                {photo.media_type === 'youtube' && photo.video_url && (
+                  <>
+                    <iframe
+                      src={getYouTubeEmbedUrl(photo.video_url)}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none"></div>
+                  </>
+                )}
+
+                {photo.media_type === 'instagram' && photo.video_url && (
+                  <>
+                    <div className="w-full h-full flex items-center justify-center bg-slate-900">
+                      <blockquote
+                        className="instagram-media"
+                        data-instgrm-permalink={photo.video_url}
+                        data-instgrm-version="14"
+                        style={{
+                          background: '#FFF',
+                          border: 0,
+                          borderRadius: '3px',
+                          boxShadow: '0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15)',
+                          margin: '1px',
+                          maxWidth: '540px',
+                          minWidth: '326px',
+                          padding: 0,
+                          width: 'calc(100% - 2px)'
+                        }}
+                      >
+                        <a href={photo.video_url} target="_blank" rel="noopener noreferrer">
+                          Ver no Instagram
+                        </a>
+                      </blockquote>
+                    </div>
+                  </>
+                )}
+
+                {/* Info do ganhador (sempre visível) */}
+                <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-10">
                   <p className="text-4xl md:text-5xl font-black mb-2 drop-shadow-lg">🏆 {photo.name}</p>
                   <p className="text-lg md:text-xl font-bold text-green-400 drop-shadow-lg">{photo.prize}</p>
                 </div>
