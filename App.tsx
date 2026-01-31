@@ -261,7 +261,7 @@ const App: React.FC = () => {
         <div className="flex items-center gap-3">
           {/* Instagram */}
           <a
-            href="https://instagram.com/topsorte_27"
+            href="https://www.instagram.com/topsorte_027?igsh=MW4wZGN0enFobHJldw=="
             target="_blank"
             rel="noopener noreferrer"
             className="w-9 h-9 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
