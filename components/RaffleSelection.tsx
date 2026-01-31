@@ -44,7 +44,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({ selectedNumbers, onTo
           {numbers.map((num) => {
             const isUserSelected = selectedNumbers.includes(num);
             const reservation = reservations[num];
-            
+
             // Lógica de cores baseada no status
             let buttonClasses = "transition-all transform active:scale-95";
             let spanClasses = "text-lg font-black";
@@ -77,7 +77,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({ selectedNumbers, onTo
                 <span className={`${spanClasses} ${reservation ? 'mb-1.5' : ''}`}>
                   {num}
                 </span>
-                
+
                 {reservation && (
                   <div className={`absolute inset-x-0 bottom-0 py-1 px-1 flex items-center justify-center ${reservation.status === 'paid' ? 'bg-purple-900/60' : 'bg-yellow-600/30'}`}>
                     <p className={`text-[9px] font-bold truncate uppercase leading-none text-center ${reservation.status === 'paid' ? 'text-purple-50' : 'text-yellow-900'}`}>
@@ -85,7 +85,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({ selectedNumbers, onTo
                     </p>
                   </div>
                 )}
-                
+
                 {isUserSelected && (
                   <div className="absolute top-1 right-1 bg-purple-600 rounded-full p-0.5 shadow-sm">
                     <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -107,7 +107,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({ selectedNumbers, onTo
           <p className="text-sm font-black text-[#003B73] uppercase tracking-widest">Segurança & Transparência</p>
         </div>
         <p className="text-xs text-slate-500 font-medium leading-relaxed">
-          Nomes reais de participantes ativos são exibidos publicamente. O status <span className="text-yellow-600 font-bold">Amarelo</span> indica reservas em andamento via WhatsApp.
+          Nomes reais de participantes são exibidos publicamente. O status <span className="text-yellow-600 font-bold">Amarelo</span> indica que o número está <span className="text-yellow-600 font-bold">Em Reserva</span> (aguardando confirmação de pagamento).
         </p>
       </div>
     </div>

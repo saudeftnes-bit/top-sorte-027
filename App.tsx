@@ -1,49 +1,219 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Home from './components/Home';
 import RaffleSelection from './components/RaffleSelection';
 import CheckoutModal from './components/CheckoutModal';
 import GeminiAssistant from './components/GeminiAssistant';
+import AdminPanel from './components/admin/AdminPanel';
+import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations } from './lib/supabase-admin';
+import { getOrCreateSessionId, cleanupSessionSelections } from './lib/selection-manager';
+import type { Raffle, Reservation } from './types/database';
 
 export type NumberStatus = 'available' | 'pending' | 'paid';
 export type ReservationMap = Record<string, { name: string; status: NumberStatus }>;
 
-export type RaffleState = 'home' | 'selecting';
+export type RaffleState = 'home' | 'selecting' | 'admin';
 
 const App: React.FC = () => {
   const [view, setView] = useState<RaffleState>('home');
   const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-  // Estado centralizado com os novos status: Verde (livre), Roxo (pago), Amarelo (pendente)
-  const [reservations, setReservations] = useState<ReservationMap>({
-    '03': { name: 'Marcos A.', status: 'paid' },
-    '07': { name: 'Sandra L.', status: 'paid' },
-    '15': { name: 'Ana Paula', status: 'paid' },
-    '22': { name: 'Ricardo', status: 'pending' }, // Amarelo: Alguém está pagando
-    '31': { name: 'Beatriz', status: 'paid' },
-    '42': { name: 'Juninho', status: 'pending' }, // Amarelo: Alguém está pagando
-    '55': { name: 'Claudio', status: 'paid' },
-    '67': { name: 'Maria S.', status: 'paid' },
-    '78': { name: 'Felipe', status: 'paid' },
-    '89': { name: 'Carla', status: 'paid' },
-    '99': { name: 'Gustavo', status: 'paid' }
+  // Supabase state
+  const [activeRaffle, setActiveRaffle] = useState<Raffle | null>(null);
+  const [dbReservations, setDbReservations] = useState<Reservation[]>([]);
+
+  // Estado centralizado com status reais: Verde (livre), Roxo (pago), Amarelo (em reserva)
+  const [reservations, setReservations] = useState<ReservationMap>({});
+
+  // Session ID para identificar este usuário
+  const sessionId = useRef<string>(getOrCreateSessionId());
+
+  // Secret admin mode toggle (5 clicks on logo)
+  const [clickCount, setClickCount] = useState(0);
+  const [showAdminButton, setShowAdminButton] = useState(() => {
+    return localStorage.getItem('adminMode') === 'true';
   });
+  const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
 
-  const PRICE_PER_NUMBER = 13.00;
+  const PRICE_PER_NUMBER = activeRaffle?.price_per_number || 13.00;
 
-  const toggleNumber = (num: string) => {
+  // Check for admin route
+  useEffect(() => {
+    if (window.location.pathname === '/admin') {
+      setView('admin');
+    }
+  }, []);
+
+  // Load active raffle and reservations from Supabase
+  useEffect(() => {
+    loadRaffleData();
+
+    // Add visibility change listener to reload data when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Tab became visible, reloading data...');
+        loadRaffleData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Listen for custom admin update events (for multi-tab sync)
+    const handleAdminUpdate = () => {
+      console.log('Admin update detected, reloading data...');
+      loadRaffleData();
+    };
+
+    window.addEventListener('adminDataUpdated', handleAdminUpdate);
+
+    // Listen for localStorage changes from admin in other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'lastAdminUpdate' && e.newValue) {
+        console.log('Admin update from another tab detected, reloading data...');
+        loadRaffleData();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('adminDataUpdated', handleAdminUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+
+      // Limpar seleções temporárias ao sair da página
+      if (activeRaffle) {
+        cleanupSessionSelections(activeRaffle.id, sessionId.current);
+      }
+    };
+  }, []);
+
+  // Separate effect for real-time subscription to prevent multiple subscriptions
+  useEffect(() => {
+    if (!activeRaffle) return;
+
+    console.log('🔔 [Real-time] Setting up subscription for raffle:', activeRaffle.id);
+
+    const subscription = subscribeToReservations(activeRaffle.id, (payload) => {
+      console.log('🔔 [Real-time] Update received!', {
+        eventType: payload.eventType,
+        table: payload.table,
+        new: payload.new,
+        old: payload.old
+      });
+
+      // Reload data when real-time update is received
+      console.log('🔔 [Real-time] Reloading raffle data...');
+      loadRaffleData();
+    });
+
+    // Check subscription status
+    subscription.on('system', (message) => {
+      console.log('🔔 [Real-time] System message:', message);
+    });
+
+    return () => {
+      console.log('🔔 [Real-time] Cleaning up subscription');
+      subscription.unsubscribe();
+    };
+  }, [activeRaffle?.id]);
+
+  const loadRaffleData = async () => {
+    try {
+      console.log('📊 [Data] Loading raffle data...');
+      const raffle = await getActiveRaffle();
+      if (raffle) {
+        setActiveRaffle(raffle);
+
+        // Load reservations
+        const reservationsData = await getReservationsByRaffle(raffle.id);
+        console.log('📊 [Data] Loaded', reservationsData.length, 'reservations');
+        setDbReservations(reservationsData);
+
+        // Convert to legacy format for compatibility
+        const reservationsMap: ReservationMap = {};
+        reservationsData.forEach((res) => {
+          if (res.status !== 'cancelled') {
+            reservationsMap[res.number] = {
+              name: res.buyer_name,
+              status: res.status as NumberStatus,
+            };
+          }
+        });
+        setReservations(reservationsMap);
+        console.log('📊 [Data] Updated UI with', Object.keys(reservationsMap).length, 'active reservations');
+      }
+    } catch (error) {
+      console.error('❌ [Data] Error loading raffle data:', error);
+    }
+  };
+
+  const toggleNumber = async (num: string) => {
     // Não permite selecionar se já estiver reservado ou pendente por outro
     if (reservations[num]) return;
+    if (!activeRaffle) return;
 
-    setSelectedNumbers(prev =>
-      prev.includes(num) ? prev.filter(n => n !== num) : [...prev, num]
-    );
+    const isSelected = selectedNumbers.includes(num);
+
+    if (isSelected) {
+      // Desselecionar: remover seleção temporária do Supabase
+      setSelectedNumbers(prev => prev.filter(n => n !== num));
+
+      // Importar função dinamicamente para evitar problemas de build
+      const { removeTemporarySelection } = await import('./lib/selection-manager');
+      await removeTemporarySelection(activeRaffle.id, num, sessionId.current);
+    } else {
+      // Selecionar: criar seleção temporária no Supabase
+      setSelectedNumbers(prev => [...prev, num]);
+
+      // Importar função dinamicamente para evitar problemas de build
+      const { createTemporarySelection } = await import('./lib/selection-manager');
+      await createTemporarySelection(activeRaffle.id, num, sessionId.current);
+    }
   };
 
   const handleParticipate = () => {
     setView('selecting');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Secret admin mode toggle (5 clicks on logo)
+  const handleLogoClick = () => {
+    if (view !== 'home') {
+      setView('home');
+      return;
+    }
+
+    // Count clicks
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+
+    // Clear previous timer
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+    }
+
+    // Reset counter after 2 seconds
+    const timer = setTimeout(() => {
+      setClickCount(0);
+    }, 2000);
+    setClickTimer(timer);
+
+    // Toggle admin mode on 5 clicks
+    if (newCount === 5) {
+      const newAdminMode = !showAdminButton;
+      setShowAdminButton(newAdminMode);
+      localStorage.setItem('adminMode', newAdminMode.toString());
+      setClickCount(0);
+
+      // Visual feedback
+      if (newAdminMode) {
+        console.log('✅ Admin mode activated');
+      } else {
+        console.log('❌ Admin mode deactivated');
+      }
+    }
   };
 
   // Quando o usuário entra no checkout, marcamos como "Pendente" (Amarelo)
@@ -62,9 +232,12 @@ const App: React.FC = () => {
       newReservations[num] = { name, status: 'paid' };
     });
     setReservations(newReservations);
-    setSelectedNumbers([]);
-    setIsCheckoutOpen(false);
-    setView('selecting');
+
+    // NÃO fechar o modal ainda - usuário precisa ver a tela de pagamento
+    // O modal será fechado quando o usuário clicar no X ou completar o pagamento
+    // setSelectedNumbers([]);
+    // setIsCheckoutOpen(false);
+    // setView('selecting');
   };
 
   return (
@@ -72,7 +245,7 @@ const App: React.FC = () => {
       <header className="sticky top-0 z-40 bg-white shadow-sm px-4 h-16 flex items-center justify-between border-b border-slate-100">
         <div
           className="flex items-center gap-2 cursor-pointer"
-          onClick={() => setView('home')}
+          onClick={handleLogoClick}
         >
           <img
             src="/logo.png"
@@ -113,6 +286,20 @@ const App: React.FC = () => {
             <span className="hidden sm:inline">Atendimento</span>
           </a>
 
+          {/* Admin Button - Só aparece com o código secreto (5 cliques no logo) */}
+          {showAdminButton && view !== 'admin' && (
+            <button
+              onClick={() => setView('admin')}
+              className="w-9 h-9 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-transform group"
+              title="Painel Admin"
+            >
+              <svg className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          )}
+
           {view === 'selecting' && (
             <button
               onClick={() => setView('home')}
@@ -125,7 +312,9 @@ const App: React.FC = () => {
       </header>
 
       <main>
-        {view === 'home' ? (
+        {view === 'admin' ? (
+          <AdminPanel />
+        ) : view === 'home' ? (
           <Home onStart={handleParticipate} />
         ) : (
           <RaffleSelection
@@ -159,7 +348,12 @@ const App: React.FC = () => {
         <CheckoutModal
           selectedNumbers={selectedNumbers}
           totalPrice={selectedNumbers.length * PRICE_PER_NUMBER}
-          onClose={() => setIsCheckoutOpen(false)}
+          raffleId={activeRaffle?.id}
+          onClose={() => {
+            setIsCheckoutOpen(false);
+            setSelectedNumbers([]);
+            setView('selecting');
+          }}
           onConfirmPurchase={confirmPurchase}
           onSetPending={setPending}
         />
