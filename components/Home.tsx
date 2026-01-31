@@ -16,6 +16,26 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
   const [winnersPhotos, setWinnersPhotos] = useState<WinnerPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Carregar script do Instagram
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://www.instagram.com/embed.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (window.instgrm) {
+        window.instgrm.Embeds.process();
+      }
+    };
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
   // Fallback static data (usado se Supabase falhar)
   const fallbackWinnersPhotos = [
     {
@@ -121,6 +141,39 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           >
             🎯 ESCOLHER MEUS NÚMEROS
           </button>
+        </div>
+      </section>
+
+      {/* Seção de Vídeos */}
+      <section className="mt-6">
+        <div className="flex items-center justify-between mb-4 px-2">
+          <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+            <span className="text-2xl">🎥</span>
+            Vídeos do Sorteio
+          </h3>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-slate-100">
+          <blockquote
+            className="instagram-media"
+            data-instgrm-permalink="https://www.instagram.com/reel/DS8GnYPDsPw/"
+            data-instgrm-version="14"
+            style={{
+              background: '#FFF',
+              border: 0,
+              borderRadius: '3px',
+              boxShadow: '0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15)',
+              margin: '1px',
+              maxWidth: '540px',
+              minWidth: '326px',
+              padding: 0,
+              width: 'calc(100% - 2px)'
+            }}
+          >
+            <a href="https://www.instagram.com/reel/DS8GnYPDsPw/" target="_blank" rel="noopener noreferrer">
+              Ver no Instagram
+            </a>
+          </blockquote>
         </div>
       </section>
 
@@ -248,3 +301,14 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
 };
 
 export default Home;
+
+// Declaração global para o TypeScript
+declare global {
+  interface Window {
+    instgrm?: {
+      Embeds: {
+        process: () => void;
+      };
+    };
+  }
+}

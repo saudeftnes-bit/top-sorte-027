@@ -287,20 +287,6 @@ const App: React.FC = () => {
             <span className="hidden sm:inline">Atendimento</span>
           </a>
 
-          {/* Botão Vídeos */}
-          {view !== 'videos' && view !== 'admin' && (
-            <button
-              onClick={() => setView('videos')}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md hover:scale-105 transition-all"
-              title="Ver Vídeos"
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              <span className="hidden sm:inline">Vídeos</span>
-            </button>
-          )}
-
           {/* Admin Button - Só aparece com o código secreto (5 cliques no logo) */}
           {showAdminButton && view !== 'admin' && (
             <button
