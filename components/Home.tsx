@@ -145,7 +145,7 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
 
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % winnersPhotos.length);
-    }, 3500);
+    }, 5000);
     return () => clearInterval(interval);
   }, [winnersPhotos.length]);
 
@@ -296,7 +296,7 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           </div>
 
           {/* Indicadores */}
-          <div className="absolute bottom-6 right-6 flex gap-2">
+          <div className="absolute bottom-6 right-6 flex gap-2 z-30">
             {winnersPhotos.map((_, index) => (
               <button
                 key={index}
@@ -311,7 +311,7 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           </div>
 
           {/* Badge de Ganhador */}
-          <div className="absolute top-4 left-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-black shadow-xl flex items-center gap-2">
+          <div className="absolute top-4 left-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-black shadow-xl flex items-center gap-2 z-30">
             <span className="text-xl">✨</span>
             GANHADORES
           </div>
@@ -319,7 +319,7 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           {/* Setas de Navegação */}
           <button
             onClick={() => setCurrentSlide((prev) => (prev - 1 + winnersPhotos.length) % winnersPhotos.length)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all hover:scale-110"
+            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all hover:scale-110 z-30"
             aria-label="Anterior"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -328,7 +328,7 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           </button>
           <button
             onClick={() => setCurrentSlide((prev) => (prev + 1) % winnersPhotos.length)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all hover:scale-110"
+            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all hover:scale-110 z-30"
             aria-label="Próximo"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
