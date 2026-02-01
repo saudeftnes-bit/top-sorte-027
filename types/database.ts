@@ -36,7 +36,7 @@ export interface WinnerPhoto {
     id: string;
     name: string;
     prize: string;
-    photo_url: string;
+    photo_url?: string;
     media_type?: 'photo' | 'youtube' | 'instagram';
     video_url?: string;
     display_order: number;

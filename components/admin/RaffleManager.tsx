@@ -115,7 +115,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         const newPhoto = await addWinnerPhoto({
             name: newWinnerName,
             prize: newWinnerPrize,
-            photo_url: mediaType === 'photo' ? newWinnerPhotoUrl : '',
+            photo_url: mediaType === 'photo' ? newWinnerPhotoUrl : undefined,
             media_type: mediaType,
             video_url: mediaType !== 'photo' ? newWinnerPhotoUrl : undefined,
             display_order: winnerPhotos.length,
