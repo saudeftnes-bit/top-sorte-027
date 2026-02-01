@@ -17,31 +17,57 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
   const [winnersPhotos, setWinnersPhotos] = useState<WinnerPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar script do Instagram
+  // Carregar script do Instagram (apenas uma vez)
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://www.instagram.com/embed.js';
-    script.async = true;
-    document.body.appendChild(script);
+    if (!document.getElementById('instagram-embed-script')) {
+      const script = document.createElement('script');
+      script.id = 'instagram-embed-script';
+      script.src = 'https://www.instagram.com/embed.js';
+      script.async = true;
+      document.body.appendChild(script);
 
-    script.onload = () => {
+      script.onload = () => {
+        if (window.instgrm) {
+          window.instgrm.Embeds.process();
+        }
+      };
+    } else {
+      // Se já existir, processar
+      if (window.instgrm) {
+        window.instgrm.Embeds.process();
+      }
+    }
+  }, []);
+
+  // Re-processar embeds quando os dados mudarem ou o slide mudar
+  useEffect(() => {
+    const handleProcess = () => {
       if (window.instgrm) {
         window.instgrm.Embeds.process();
       }
     };
 
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
-  }, []);
+    // Processar imediatamente e também após um delay (para garantir que o React terminou de pintar)
+    handleProcess();
+    const timer = setTimeout(handleProcess, 500);
 
-  // Processar embeds do Instagram quando os dados mudarem ou o slide mudar
-  useEffect(() => {
-    if (window.instgrm) {
-      window.instgrm.Embeds.process();
-    }
+    // Intervalo de segurança para casos onde o script demora a carregar
+    const interval = setInterval(() => {
+      if (window.instgrm) {
+        const unprocessed = document.querySelectorAll('blockquote.instagram-media:not([data-instgrm-processed])');
+        if (unprocessed.length > 0) {
+          window.instgrm.Embeds.process();
+        } else {
+          // Se tudo processado, podemos parar o intervalo de segurança (opcional)
+          // Mas manteremos para o caso de novos itens dinâmicos
+        }
+      }
+    }, 2000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [winnersPhotos, currentSlide]);
 
   // Fallback static data (usado se Supabase falhar)
@@ -169,18 +195,19 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
             style={{
               background: '#FFF',
               border: 0,
-              borderRadius: '3px',
-              boxShadow: '0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15)',
+              borderRadius: '12px',
               margin: '1px',
               maxWidth: '540px',
               minWidth: '326px',
               padding: 0,
-              width: 'calc(100% - 2px)'
+              width: '100%'
             }}
           >
-            <a href="https://www.instagram.com/reel/DS8GnYPDsPw/" target="_blank" rel="noopener noreferrer">
-              Ver no Instagram
-            </a>
+            <div className="p-4 flex flex-col items-center">
+              <a href="https://www.instagram.com/reel/DS8GnYPDsPw/" target="_blank" rel="noopener noreferrer" className="text-purple-600 font-bold">
+                Carregando vídeo do Instagram...
+              </a>
+            </div>
           </blockquote>
         </div>
       </section>
@@ -192,74 +219,80 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           <span className="text-purple-600 font-bold text-xs">Prova Real ✓</span>
         </div>
 
-        {/* Slideshow de Fotos dos Ganhadores - Tela Cheia */}
-        <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-slate-900 aspect-video">
+        {/* Slideshow de Fotos dos Ganhadores - Altura flexível para suportar Reels/Instagram */}
+        <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-slate-900 min-h-[300px] sm:min-h-[400px]">
           {/* Images */}
           <div className="relative w-full h-full">
-            {winnersPhotos.map((photo, index) => (
-              <div
-                key={photo.id || index}
-                className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'
-                  }`}
-              >
-                {/* Renderização condicional: Foto, YouTube ou Instagram */}
-                {(!photo.media_type || photo.media_type === 'photo') && (
-                  <>
-                    <img
-                      src={photo.photo_url}
-                      alt={photo.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-                  </>
-                )}
+            {winnersPhotos.map((photo, index) => {
+              const url = photo.video_url || photo.photo_url;
+              const isInstagram = url?.includes('instagram.com');
+              const isYouTube = url?.includes('youtube.com') || url?.includes('youtu.be');
+              const mediaType = photo.media_type || (isInstagram ? 'instagram' : isYouTube ? 'youtube' : 'photo');
 
-                {photo.media_type === 'youtube' && photo.video_url && (
-                  <>
-                    <iframe
-                      src={getYouTubeEmbedUrl(photo.video_url)}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none"></div>
-                  </>
-                )}
+              return (
+                <div
+                  key={photo.id || index}
+                  className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                    }`}
+                >
+                  {/* Renderização condicional: Foto, YouTube ou Instagram */}
+                  {(mediaType === 'photo' || !photo.media_type) && (
+                    <>
+                      <img
+                        src={photo.photo_url}
+                        alt={photo.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                    </>
+                  )}
 
-                {photo.media_type === 'instagram' && photo.video_url && (
-                  <>
-                    <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                      <blockquote
-                        className="instagram-media"
-                        data-instgrm-permalink={photo.video_url}
-                        data-instgrm-version="14"
-                        style={{
-                          background: '#FFF',
-                          border: 0,
-                          borderRadius: '3px',
-                          boxShadow: '0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15)',
-                          margin: '1px',
-                          maxWidth: '540px',
-                          minWidth: '326px',
-                          padding: 0,
-                          width: 'calc(100% - 2px)'
-                        }}
-                      >
-                        <a href={photo.video_url} target="_blank" rel="noopener noreferrer">
-                          Ver no Instagram
-                        </a>
-                      </blockquote>
+                  {(mediaType === 'youtube' || (photo.media_type === 'youtube' && photo.video_url)) && (
+                    <>
+                      <iframe
+                        src={getYouTubeEmbedUrl(photo.video_url || photo.photo_url)}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none"></div>
+                    </>
+                  )}
+
+                  {(mediaType === 'instagram' || (photo.media_type === 'instagram' && photo.video_url)) && (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 py-4 overflow-y-auto">
+                      <div className="instagram-container w-full max-w-[350px] mx-auto">
+                        <blockquote
+                          className="instagram-media"
+                          data-instgrm-permalink={photo.video_url || photo.photo_url}
+                          data-instgrm-version="14"
+                          style={{
+                            background: '#FFF',
+                            border: 0,
+                            borderRadius: '12px',
+                            margin: '0 auto',
+                            minWidth: '326px',
+                            width: '100%'
+                          }}
+                        >
+                          <div className="p-4 flex flex-col items-center">
+                            <a href={photo.video_url || photo.photo_url} target="_blank" rel="noopener noreferrer" className="text-purple-400 font-bold">
+                              Carregando conteúdo do Instagram...
+                            </a>
+                          </div>
+                        </blockquote>
+                      </div>
                     </div>
-                  </>
-                )}
+                  )}
 
-                {/* Info do ganhador (sempre visível) */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-10">
-                  <p className="text-4xl md:text-5xl font-black mb-2 drop-shadow-lg">🏆 {photo.name}</p>
-                  <p className="text-lg md:text-xl font-bold text-green-400 drop-shadow-lg">{photo.prize}</p>
+                  {/* Info do ganhador (sempre visível) */}
+                  <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-20 pointer-events-none">
+                    <p className="text-4xl md:text-5xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">🏆 {photo.name}</p>
+                    <p className="text-lg md:text-xl font-bold text-green-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">{photo.prize}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Indicadores */}

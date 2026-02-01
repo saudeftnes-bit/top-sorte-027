@@ -96,12 +96,22 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             return;
         }
 
+        // Auto-detect media type if the user left it as 'photo' but pasted a video URL
+        let mediaType = newWinnerMediaType;
+        if (mediaType === 'photo') {
+            if (newWinnerPhotoUrl.includes('instagram.com')) {
+                mediaType = 'instagram';
+            } else if (newWinnerPhotoUrl.includes('youtube.com') || newWinnerPhotoUrl.includes('youtu.be')) {
+                mediaType = 'youtube';
+            }
+        }
+
         const newPhoto = await addWinnerPhoto({
             name: newWinnerName,
             prize: newWinnerPrize,
-            photo_url: newWinnerMediaType === 'photo' ? newWinnerPhotoUrl : '',
-            media_type: newWinnerMediaType,
-            video_url: newWinnerMediaType !== 'photo' ? newWinnerPhotoUrl : undefined,
+            photo_url: mediaType === 'photo' ? newWinnerPhotoUrl : '',
+            media_type: mediaType,
+            video_url: mediaType !== 'photo' ? newWinnerPhotoUrl : undefined,
             display_order: winnerPhotos.length,
         });
 

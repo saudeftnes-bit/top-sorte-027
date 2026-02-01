@@ -14,22 +14,26 @@ const InstagramVideos: React.FC<InstagramVideosProps> = ({ onBack }) => {
     ];
 
     useEffect(() => {
-        // Carregar o script do Instagram embed
-        const script = document.createElement('script');
-        script.src = 'https://www.instagram.com/embed.js';
-        script.async = true;
-        document.body.appendChild(script);
-
-        // Processar embeds quando o script carregar
-        script.onload = () => {
+        const handleProcess = () => {
             if (window.instgrm) {
                 window.instgrm.Embeds.process();
             }
         };
 
-        return () => {
-            document.body.removeChild(script);
-        };
+        if (!document.getElementById('instagram-embed-script')) {
+            const script = document.createElement('script');
+            script.id = 'instagram-embed-script';
+            script.src = 'https://www.instagram.com/embed.js';
+            script.async = true;
+            document.body.appendChild(script);
+            script.onload = handleProcess;
+        } else {
+            setTimeout(handleProcess, 100);
+        }
+
+        // Intervalo de segurança
+        const interval = setInterval(handleProcess, 3000);
+        return () => clearInterval(interval);
     }, []);
 
     return (
