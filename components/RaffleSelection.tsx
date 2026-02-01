@@ -8,6 +8,7 @@ interface RaffleSelectionProps {
   reservations: ReservationMap;
   totalNumbers?: number;
   selectionMode?: 'loteria' | 'jogo_bicho';
+  sessionId?: string;
 }
 
 const RaffleSelection: React.FC<RaffleSelectionProps> = ({
@@ -15,7 +16,8 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
   onToggleNumber,
   reservations,
   totalNumbers = 100,
-  selectionMode = 'loteria'
+  selectionMode = 'loteria',
+  sessionId
 }) => {
   // Gerar números baseado na quantidade total
   const numbers = Array.from({ length: totalNumbers }, (_, i) => {
@@ -27,8 +29,8 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
 
   // Função auxiliar para renderizar o botão de número
   const renderNumberButton = (num: string, size: 'normal' | 'small' = 'normal') => {
-    const isUserSelected = selectedNumbers.includes(num);
     const reservation = reservations[num];
+    const isUserSelected = selectedNumbers.includes(num) || (reservation?.status === 'pending' && reservation.name === sessionId);
 
     let buttonClasses = "transition-all transform active:scale-95 rounded-xl border-2 flex flex-col items-center justify-center ";
     let spanClasses = "font-black ";

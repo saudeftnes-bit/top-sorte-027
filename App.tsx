@@ -331,6 +331,7 @@ const App: React.FC = () => {
             reservations={reservations}
             totalNumbers={activeRaffle?.total_numbers}
             selectionMode={activeRaffle?.selection_mode}
+            sessionId={sessionId.current}
           />
         )}
       </main>
