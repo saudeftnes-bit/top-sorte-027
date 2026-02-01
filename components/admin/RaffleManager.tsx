@@ -31,6 +31,8 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     const [totalNumbers, setTotalNumbers] = useState('10000');
     const [selectionMode, setSelectionMode] = useState<'loteria' | 'jogo_bicho'>('loteria');
     const [status, setStatus] = useState<'active' | 'finished' | 'scheduled'>('active');
+    const [selectionTimeout, setSelectionTimeout] = useState('5');
+    const [paymentTimeout, setPaymentTimeout] = useState('15');
 
     // Winner photo form
     const [newWinnerName, setNewWinnerName] = useState('');
@@ -55,6 +57,8 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             setTotalNumbers((raffleData.total_numbers || 10000).toString());
             setSelectionMode(raffleData.selection_mode || 'loteria');
             setStatus(raffleData.status);
+            setSelectionTimeout((raffleData.selection_timeout || 5).toString());
+            setPaymentTimeout((raffleData.payment_timeout || 15).toString());
         }
 
         setWinnerPhotos(photosData);
@@ -73,6 +77,8 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             main_image_url: mainImageUrl,
             total_numbers: parseInt(totalNumbers),
             selection_mode: selectionMode,
+            selection_timeout: parseInt(selectionTimeout),
+            payment_timeout: parseInt(paymentTimeout),
             status,
         });
 
@@ -227,6 +233,32 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                             <option value="scheduled">🟡 Agendado</option>
                             <option value="finished">🔴 Finalizado</option>
                         </select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">⏱️ Tempo de Escolha (minutos)</label>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Tempo que o número fica AMARELO</p>
+                        <input
+                            type="number"
+                            value={selectionTimeout}
+                            onChange={(e) => setSelectionTimeout(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            placeholder="5"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">⌛ Tempo de Pagamento (minutos)</label>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Tempo total para concluir o PIX</p>
+                        <input
+                            type="number"
+                            value={paymentTimeout}
+                            onChange={(e) => setPaymentTimeout(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            placeholder="15"
+                        />
                     </div>
                 </div>
 

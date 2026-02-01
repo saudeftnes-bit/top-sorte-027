@@ -151,11 +151,16 @@ const App: React.FC = () => {
   };
 
   const toggleNumber = async (num: string) => {
-    // Não permite selecionar se já estiver reservado ou pendente por outro
-    if (reservations[num]) return;
     if (!activeRaffle) return;
 
+    const reservation = reservations[num];
     const isSelected = selectedNumbers.includes(num);
+
+    // Se o número já estiver reservado/pago por alguém, não permite mexer
+    if (reservation?.status === 'paid') return;
+
+    // Se o número estiver pendente por OUTRO usuário, não permite mexer
+    if (reservation?.status === 'pending' && reservation.name !== sessionId.current) return;
 
     if (isSelected) {
       // Desselecionar: remover seleção temporária do Supabase
@@ -354,6 +359,7 @@ const App: React.FC = () => {
           selectedNumbers={selectedNumbers}
           totalPrice={selectedNumbers.length * PRICE_PER_NUMBER}
           raffleId={activeRaffle?.id}
+          raffle={activeRaffle || undefined}
           onClose={() => {
             setIsCheckoutOpen(false);
             setSelectedNumbers([]);

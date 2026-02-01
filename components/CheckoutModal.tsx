@@ -7,16 +7,19 @@ import ImageUpload from './ImageUpload';
 import { supabase } from '../lib/supabase';
 import { getOrCreateSessionId, confirmSelections, cleanupSessionSelections } from '../lib/selection-manager';
 
+import { Raffle } from '../types/database';
+
 interface CheckoutModalProps {
   selectedNumbers: string[];
   totalPrice: number;
   raffleId?: string;
+  raffle?: Raffle;
   onClose: () => void;
   onConfirmPurchase: (name: string, numbers: string[]) => void;
   onSetPending: (name: string, numbers: string[]) => void;
 }
 
-const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPrice, raffleId, onClose, onConfirmPurchase, onSetPending }) => {
+const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPrice, raffleId, raffle, onClose, onConfirmPurchase, onSetPending }) => {
   const [step, setStep] = useState<'info' | 'payment'>('info');
   const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
   const [copied, setCopied] = useState(false);
@@ -124,9 +127,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
           setReservationIds(resData.map(r => r.id));
         }
 
-        // Definir expiração para 1 minuto a partir de agora
+        // Definir expiração para 1 minuto (ou valor do admin) a partir de agora
+        const timeoutMinutes = raffle?.payment_timeout || 1;
         const oneMinuteFromNow = new Date();
-        oneMinuteFromNow.setSeconds(oneMinuteFromNow.getSeconds() + 60);
+        oneMinuteFromNow.setSeconds(oneMinuteFromNow.getSeconds() + (timeoutMinutes * 60));
         setExpiresAt(oneMinuteFromNow.toISOString());
 
         // Update local state as PENDING (AMARELO PULSANTE)

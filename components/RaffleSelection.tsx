@@ -63,6 +63,11 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
         title={reservation ? `Reservado para ${reservation.name}` : `Número ${num}`}
       >
         <span className={spanClasses}>{num}</span>
+        {reservation?.status === 'pending' && (
+          <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-tighter text-white mt-1 animate-pulse leading-none">
+            RESERVANDO
+          </span>
+        )}
       </button>
     );
   };

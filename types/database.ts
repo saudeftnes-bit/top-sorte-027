@@ -9,6 +9,8 @@ export interface Raffle {
     instagram_url?: string;
     total_numbers?: number;
     selection_mode?: 'loteria' | 'jogo_bicho';
+    selection_timeout?: number;
+    payment_timeout?: number;
     status: 'active' | 'finished' | 'scheduled';
     draw_date?: string;
     created_at: string;
