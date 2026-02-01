@@ -50,10 +50,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   // Handle expiration
   useEffect(() => {
     if (timer.isExpired && step === 'payment') {
-      alert('⏰ Tempo expirado! Seus números foram liberados. Por favor, reserve novamente.');
-      onClose();
+      const handleExpiration = async () => {
+        if (raffleId) {
+          await cleanupSessionSelections(raffleId, sessionId.current);
+        }
+        alert('⏰ Tempo expirado! Seus números foram liberados. Por favor, reserve novamente.');
+        onClose();
+      };
+      handleExpiration();
     }
-  }, [timer.isExpired, step, onClose]);
+  }, [timer.isExpired, step, onClose, raffleId]);
 
   const handleCopyKey = () => {
     navigator.clipboard.writeText(PIX_KEY);
@@ -106,8 +112,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
       if (success) {
         console.log('✅ [Checkout] Confirmação bem-sucedida, indo para pagamento');
 
-        // Update local state as PAID (ROXO)
-        onConfirmPurchase(formData.name, selectedNumbers);
+        // Buscar IDs das reservas para vinculação de comprovante posterior
+        const { data: resData } = await supabase
+          .from('reservations')
+          .select('id')
+          .eq('raffle_id', raffleId)
+          .eq('buyer_name', formData.name)
+          .eq('status', 'pending');
+
+        if (resData) {
+          setReservationIds(resData.map(r => r.id));
+        }
+
+        // Definir expiração para 1 minuto a partir de agora
+        const oneMinuteFromNow = new Date();
+        oneMinuteFromNow.setSeconds(oneMinuteFromNow.getSeconds() + 60);
+        setExpiresAt(oneMinuteFromNow.toISOString());
+
+        // Update local state as PENDING (AMARELO PULSANTE)
+        onSetPending(formData.name, selectedNumbers);
         setStep('payment');
 
         // Rolar modal para o topo
@@ -125,7 +148,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   };
 
   const handleFinish = () => {
-    // Apenas abre WhatsApp - números já estão confirmados como ROXOS
+    // Cancelar o timer de expiração
+    setExpiresAt(null);
+
+    // Opcional: Aqui poderíamos mudar para 'paid' para garantir que não seja limpo
+    // Mas vamos apenas abrir o WhatsApp conforme o fluxo atual
     const text = encodeURIComponent(`Olá! Acabei de realizar o PIX para os números ${selectedNumbers.join(', ')}. Meu nome é ${formData.name}. Segue o comprovante em anexo.`);
     window.open(`https://wa.me/55${PIX_KEY}?text=${text}`, '_blank');
 
@@ -248,6 +275,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                     }
                     setProofUploaded(true);
                     setUploadError('');
+                    // Cancelar timer pois o usuário agiu
+                    setExpiresAt(null);
                   }}
                   onUploadError={(error) => {
                     setUploadError(error);

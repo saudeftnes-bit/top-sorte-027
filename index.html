@@ -84,6 +84,28 @@
         .animate-button-pulse {
             animation: pulse-purple 2s infinite;
         }
+
+        @keyframes pulse-yellow {
+            0% {
+                transform: scale(1);
+                background-color: #facc15;
+            }
+
+            50% {
+                transform: scale(1.05);
+                background-color: #eab308;
+                box-shadow: 0 0 20px rgba(234, 179, 8, 0.5);
+            }
+
+            100% {
+                transform: scale(1);
+                background-color: #facc15;
+            }
+        }
+
+        .animate-pulse-yellow {
+            animation: pulse-yellow 1.5s infinite ease-in-out;
+        }
     </style>
     <script type="importmap">
 {

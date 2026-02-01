@@ -130,7 +130,7 @@ export async function confirmSelections(
                 buyer_name: buyerName,
                 buyer_email: buyerEmail,
                 buyer_phone: buyerPhone,
-                status: 'paid',
+                status: 'pending',
                 updated_at: new Date().toISOString()
             })
             .eq('raffle_id', raffleId)
