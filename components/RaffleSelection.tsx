@@ -30,7 +30,9 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
   // Função auxiliar para renderizar o botão de número
   const renderNumberButton = (num: string, size: 'normal' | 'small' = 'normal') => {
     const reservation = reservations[num];
-    const isUserSelected = selectedNumbers.includes(num) || (reservation?.status === 'pending' && reservation.name === sessionId);
+    const isUserSelected = selectedNumbers.includes(num);
+    const isOtherPending = reservation?.status === 'pending' && reservation.name !== sessionId;
+    const isPaid = reservation?.status === 'paid';
 
     let buttonClasses = "transition-all transform active:scale-95 rounded-xl border-2 flex flex-col items-center justify-center ";
     let spanClasses = "font-black ";
@@ -38,10 +40,10 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
     if (isUserSelected) {
       buttonClasses += "bg-white border-purple-600 shadow-lg z-10 animate-pop animate-selection ";
       spanClasses += "text-purple-600 ";
-    } else if (reservation?.status === 'pending') {
+    } else if (isOtherPending) {
       buttonClasses += "bg-yellow-400 border-yellow-400 shadow-md cursor-not-allowed animate-pulse-yellow z-10 ";
       spanClasses += "text-white ";
-    } else if (reservation?.status === 'paid') {
+    } else if (isPaid) {
       buttonClasses += "bg-purple-600 border-purple-600 shadow-md opacity-90 cursor-not-allowed ";
       spanClasses += "text-white ";
     } else {

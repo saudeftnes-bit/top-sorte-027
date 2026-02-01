@@ -219,14 +219,14 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           <span className="text-purple-600 font-bold text-xs">Prova Real ✓</span>
         </div>
 
-        {/* Slideshow de Fotos dos Ganhadores - Altura flexível para suportar Reels/Instagram */}
-        <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-slate-900 min-h-[300px] sm:min-h-[400px]">
+        {/* Slideshow de Fotos dos Ganhadores - Altura fixa para evitar tela preta */}
+        <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-slate-900 h-[350px] sm:h-[450px] md:h-[550px]">
           {/* Images */}
           <div className="relative w-full h-full">
             {winnersPhotos.map((photo, index) => {
-              const url = photo.video_url || photo.photo_url;
-              const isInstagram = url?.includes('instagram.com');
-              const isYouTube = url?.includes('youtube.com') || url?.includes('youtu.be');
+              const url = photo.video_url || photo.photo_url || '';
+              const isInstagram = url.includes('instagram.com/p/') || url.includes('instagram.com/reel/') || url.includes('instagram.com/tv/');
+              const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
               const mediaType = photo.media_type || (isInstagram ? 'instagram' : isYouTube ? 'youtube' : 'photo');
 
               return (
