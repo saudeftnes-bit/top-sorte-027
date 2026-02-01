@@ -34,7 +34,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
     let spanClasses = "font-black ";
 
     if (isUserSelected) {
-      buttonClasses += "bg-white border-purple-600 shadow-lg scale-105 z-10 ";
+      buttonClasses += "bg-white border-purple-600 shadow-lg z-10 animate-pop animate-selection ";
       spanClasses += "text-purple-600 ";
     } else if (reservation?.status === 'paid') {
       buttonClasses += "bg-purple-600 border-purple-600 shadow-md opacity-90 cursor-not-allowed ";
@@ -43,7 +43,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
       buttonClasses += "bg-yellow-400 border-yellow-400 shadow-md cursor-not-allowed ";
       spanClasses += "text-white ";
     } else {
-      buttonClasses += "bg-green-500 border-green-500 shadow-md hover:bg-green-600 hover:border-green-600 ";
+      buttonClasses += "bg-green-500 border-green-500 shadow-md hover:bg-green-600 hover:border-green-600 hover:scale-110 hover:shadow-xl hover:z-20 ";
       spanClasses += "text-white ";
     }
 
@@ -92,7 +92,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reservado</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-purple-600 bg-white rounded-lg shadow-sm"></div>
+            <div className="w-4 h-4 border-2 border-purple-600 bg-white rounded-lg shadow-sm animate-selection"></div>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Selecionado</span>
           </div>
         </div>

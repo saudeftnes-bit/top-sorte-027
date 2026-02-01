@@ -341,7 +341,7 @@ const App: React.FC = () => {
             </div>
             <button
               onClick={() => setIsCheckoutOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-transform active:scale-95"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-transform active:scale-95 animate-button-pulse"
             >
               RESERVAR AGORA
             </button>
