@@ -344,12 +344,26 @@ const App: React.FC = () => {
                 Total: R$ {(selectedNumbers.length * PRICE_PER_NUMBER).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </div>
-            <button
-              onClick={() => setIsCheckoutOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-transform active:scale-95 animate-button-pulse"
-            >
-              RESERVAR AGORA
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (activeRaffle) {
+                    const { cleanupSessionSelections } = await import('./lib/selection-manager');
+                    await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+                  }
+                  setSelectedNumbers([]);
+                }}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-4 py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase"
+              >
+                Limpar
+              </button>
+              <button
+                onClick={() => setIsCheckoutOpen(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-transform active:scale-95 animate-button-pulse"
+              >
+                RESERVAR AGORA
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -360,7 +374,11 @@ const App: React.FC = () => {
           totalPrice={selectedNumbers.length * PRICE_PER_NUMBER}
           raffleId={activeRaffle?.id}
           raffle={activeRaffle || undefined}
-          onClose={() => {
+          onClose={async () => {
+            if (selectedNumbers.length > 0 && activeRaffle) {
+              const { cleanupSessionSelections } = await import('./lib/selection-manager');
+              await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+            }
             setIsCheckoutOpen(false);
             setSelectedNumbers([]);
             setView('selecting');

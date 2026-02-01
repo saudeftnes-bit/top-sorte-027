@@ -242,6 +242,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               >
                 PROSSEGUIR PARA PAGAMENTO
               </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (raffleId) {
+                    await cleanupSessionSelections(raffleId, sessionId.current);
+                  }
+                  onClose();
+                }}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase text-center"
+              >
+                Desistir e liberar números
+              </button>
             </form>
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-10 duration-500">
