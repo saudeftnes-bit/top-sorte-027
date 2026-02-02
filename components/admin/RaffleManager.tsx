@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import { getActiveRaffle, updateRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto } from '../../lib/supabase-admin';
-import type { Raffle, WinnerPhoto } from '../../types/database';
+import { Raffle, WinnerPhoto } from '../../types/database';
+import { uploadImage, validateImageFile } from '../../lib/storage-helper';
 
 interface RaffleManagerProps {
     raffleId: string;
@@ -33,6 +34,10 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     const [status, setStatus] = useState<'active' | 'finished' | 'scheduled'>('active');
     const [selectionTimeout, setSelectionTimeout] = useState('5');
     const [paymentTimeout, setPaymentTimeout] = useState('15');
+
+    // Upload states
+    const [isUploadingMainImage, setIsUploadingMainImage] = useState(false);
+    const [isUploadingWinnerPhoto, setIsUploadingWinnerPhoto] = useState(false);
 
     // Winner photo form
     const [newWinnerName, setNewWinnerName] = useState('');
@@ -93,6 +98,63 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             setErrorMessage('Erro ao atualizar sorteio. Tente novamente.');
             setShowErrorModal(true);
         }
+    };
+
+    const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const validation = validateImageFile(file);
+        if (!validation.valid) {
+            setErrorMessage(validation.error || 'Arquivo inválido');
+            setShowErrorModal(true);
+            return;
+        }
+
+        setIsUploadingMainImage(true);
+        const uploadedUrl = await uploadImage(file, 'raffle-images', 'raffles');
+        setIsUploadingMainImage(false);
+
+        if (uploadedUrl) {
+            setMainImageUrl(uploadedUrl);
+            setSuccessMessage('Imagem carregada com sucesso! 🎉');
+            setShowSuccessModal(true);
+        } else {
+            setErrorMessage('Erro ao fazer upload. Tente novamente.');
+            setShowErrorModal(true);
+        }
+
+        // Reset input
+        e.target.value = '';
+    };
+
+    const handleWinnerPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const validation = validateImageFile(file);
+        if (!validation.valid) {
+            setErrorMessage(validation.error || 'Arquivo inválido');
+            setShowErrorModal(true);
+            return;
+        }
+
+        setIsUploadingWinnerPhoto(true);
+        const uploadedUrl = await uploadImage(file, 'raffle-images', 'winners');
+        setIsUploadingWinnerPhoto(false);
+
+        if (uploadedUrl) {
+            setNewWinnerPhotoUrl(uploadedUrl);
+            setNewWinnerMediaType('photo');
+            setSuccessMessage('Foto carregada com sucesso! 📸');
+            setShowSuccessModal(true);
+        } else {
+            setErrorMessage('Erro ao fazer upload. Tente novamente.');
+            setShowErrorModal(true);
+        }
+
+        // Reset input
+        e.target.value = '';
     };
 
     const handleAddWinner = async () => {
@@ -263,14 +325,40 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">URL da Imagem Principal</label>
-                    <input
-                        type="url"
-                        value={mainImageUrl}
-                        onChange={(e) => setMainImageUrl(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
-                        placeholder="https://images.unsplash.com/..."
-                    />
+                    <label className="block text-sm font-bold text-slate-700 mb-2">📸 Imagem Principal do Sorteio</label>
+
+                    {/* Upload Button */}
+                    <div className="flex gap-2 mb-2">
+                        <label className="flex-1 cursor-pointer">
+                            <div className={`px-4 py-3 rounded-xl border-2 border-dashed text-center font-bold transition-all ${isUploadingMainImage
+                                ? 'bg-purple-50 border-purple-300 text-purple-600'
+                                : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-600'
+                                }`}>
+                                {isUploadingMainImage ? '⏳ Fazendo Upload...' : '📤 Fazer Upload de Imagem'}
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleMainImageUpload}
+                                className="hidden"
+                                disabled={isUploadingMainImage}
+                            />
+                        </label>
+                    </div>
+
+                    {/* Manual URL Input */}
+                    <div className="relative">
+                        <p className="text-xs text-slate-500 mb-2 text-center">ou cole a URL manualmente:</p>
+                        <input
+                            type="url"
+                            value={mainImageUrl}
+                            onChange={(e) => setMainImageUrl(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            placeholder="https://images.unsplash.com/..."
+                        />
+                    </div>
+
+                    {/* Preview */}
                     {mainImageUrl && (
                         <div className="mt-3 rounded-xl overflow-hidden border-2 border-slate-200">
                             <img src={mainImageUrl} alt="Preview" className="w-full h-48 object-cover" />
@@ -374,18 +462,58 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                             className="px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
                             placeholder="Prêmio"
                         />
+                    </div>
+
+                    {/* Upload ou URL dependendo do tipo de mídia */}
+                    {newWinnerMediaType === 'photo' ? (
+                        <div className="space-y-2">
+                            {/* Upload Button for Photo */}
+                            <label className="block cursor-pointer">
+                                <div className={`px-4 py-3 rounded-lg border-2 border-dashed text-center font-bold transition-all ${isUploadingWinnerPhoto
+                                        ? 'bg-purple-50 border-purple-300 text-purple-600'
+                                        : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-600'
+                                    }`}>
+                                    {isUploadingWinnerPhoto ? '⏳ Fazendo Upload...' : '📤 Fazer Upload da Foto'}
+                                </div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleWinnerPhotoUpload}
+                                    className="hidden"
+                                    disabled={isUploadingWinnerPhoto}
+                                />
+                            </label>
+
+                            {/* URL Manual Option */}
+                            <div>
+                                <p className="text-xs text-slate-500 mb-1 text-center">ou cole a URL:</p>
+                                <input
+                                    type="url"
+                                    value={newWinnerPhotoUrl}
+                                    onChange={(e) => setNewWinnerPhotoUrl(e.target.value)}
+                                    className="w-full px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
+                                    placeholder="URL da foto"
+                                />
+                            </div>
+
+                            {/* Preview */}
+                            {newWinnerPhotoUrl && (
+                                <div className="rounded-lg overflow-hidden border-2 border-purple-200">
+                                    <img src={newWinnerPhotoUrl} alt="Preview" className="w-full h-32 object-cover" />
+                                </div>
+                            )}
+                        </div>
+                    ) : (
                         <input
                             type="url"
                             value={newWinnerPhotoUrl}
                             onChange={(e) => setNewWinnerPhotoUrl(e.target.value)}
                             className="px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
                             placeholder={
-                                newWinnerMediaType === 'photo' ? 'URL da foto' :
-                                    newWinnerMediaType === 'youtube' ? 'URL do YouTube' :
-                                        'URL do Instagram (reel)'
+                                newWinnerMediaType === 'youtube' ? 'URL do YouTube' : 'URL do Instagram (reel)'
                             }
                         />
-                    </div>
+                    )}
                     <button
                         onClick={handleAddWinner}
                         className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-all active:scale-95"

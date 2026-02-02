@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+import { supabase as supabaseClient } from './supabase';
+export const supabase = supabaseClient;
 import type { Raffle, Reservation, WinnerPhoto, RaffleAnalytics } from '../types/database';
 
 // ==================== RAFFLE OPERATIONS ====================
