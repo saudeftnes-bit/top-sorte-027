@@ -109,6 +109,7 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle, reservations = {} }) =>
 
         // 8. Números disponíveis
         if (msg.includes('disponí') || msg.includes('livre') || msg.includes('restam') || msg.includes('sobraram') ||
+            (msg.match(/\b(tem|têm|ainda|ha|há)\b/i) && msg.match(/\b(número|numero)\b/i)) ||
             (msg.includes('quantos') && msg.includes('número'))) {
             const totalNumbers = raffle?.total_numbers || 100;
             const reservedCount = Object.keys(reservations).length;
