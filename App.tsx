@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Home from './components/Home';
 import RaffleSelection from './components/RaffleSelection';
 import CheckoutModal from './components/CheckoutModal';
-import GeminiAssistant from './components/GeminiAssistant';
+import FAQChatbot from './components/FAQChatbot';
 import AdminPanel from './components/admin/AdminPanel';
 import InstagramVideos from './components/InstagramVideos';
 import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations } from './lib/supabase-admin';
@@ -454,7 +454,7 @@ const App: React.FC = () => {
       )}
 
 
-      <GeminiAssistant />
+      <FAQChatbot raffle={activeRaffle || undefined} />
     </div>
   );
 };
