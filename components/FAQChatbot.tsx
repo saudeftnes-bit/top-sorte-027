@@ -262,7 +262,7 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle }) => {
                                 return (
                                     <div key={idx} className="flex justify-center my-3">
                                         <a
-                                            href="https://wa.me/5527999752623?text=Olá!%20Preciso%20de%20ajuda%20com%20o%20sorteio"
+                                            href="https://wa.me/5527999762623?text=Olá!%20Preciso%20de%20ajuda%20com%20o%20sorteio"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="bg-green-500 hover:bg-green-600 text-white font-black px-6 py-3 rounded-full flex items-center gap-2 shadow-lg transition-all active:scale-95"
