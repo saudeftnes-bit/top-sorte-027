@@ -1,18 +1,9 @@
 -- ==================== CONFIGURAÇÃO DE STORAGE PARA UPLOAD DE IMAGENS ====================
 
--- 1. Garantir que o bucket existe
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-    'raffle-images',
-    'raffle-images',
-    true,
-    5242880, -- 5MB em bytes
-    ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']::text[]
-)
-ON CONFLICT (id) DO UPDATE
-SET 
-    file_size_limit = 5242880,
-    allowed_mime_types = ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']::text[];
+-- 1. Garantir que o bucket existe (versão simplificada)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('raffle-images', 'raffle-images', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- 2. Atualizar/Criar políticas de upload
 DROP POLICY IF EXISTS "Anyone can upload raffle images" ON storage.objects;

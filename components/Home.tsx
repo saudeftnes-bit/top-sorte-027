@@ -171,44 +171,80 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           </div>
           <button
             onClick={onStart}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-transform active:scale-95 text-lg"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg animate-pulse hover:animate-none"
+            style={{
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }}
           >
             🎯 ESCOLHER MEUS NÚMEROS
           </button>
         </div>
       </section>
 
-      {/* Seção de Vídeos */}
+
+      {/* Seção Como Funciona */}
       <section className="mt-6">
         <div className="flex items-center justify-between mb-4 px-2">
           <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-            <span className="text-2xl">🎥</span>
-            VÍDEOS TOPSORTE
+            <span className="text-2xl">📋</span>
+            COMO FUNCIONA
           </h3>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-slate-100">
-          <blockquote
-            className="instagram-media"
-            data-instgrm-permalink="https://www.instagram.com/reel/DS8GnYPDsPw/"
-            data-instgrm-version="14"
-            style={{
-              background: '#FFF',
-              border: 0,
-              borderRadius: '12px',
-              margin: '1px',
-              maxWidth: '540px',
-              minWidth: '326px',
-              padding: 0,
-              width: '100%'
-            }}
-          >
-            <div className="p-4 flex flex-col items-center">
-              <a href="https://www.instagram.com/reel/DS8GnYPDsPw/" target="_blank" rel="noopener noreferrer" className="text-purple-600 font-bold">
-                Carregando vídeo do Instagram...
-              </a>
+        <div className="bg-gradient-to-br from-purple-50 to-white rounded-3xl shadow-xl p-6 border-2 border-purple-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Passo 1 */}
+            <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-purple-200">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-xl">
+                  1
+                </div>
+                <div>
+                  <h4 className="font-black text-purple-900 mb-1">📱 Escolha Seus Números</h4>
+                  <p className="text-sm text-slate-600">Selecione os números da sorte e reserve-os por alguns minutos</p>
+                </div>
+              </div>
             </div>
-          </blockquote>
+
+            {/* Passo 2 */}
+            <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-purple-200">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-xl">
+                  2
+                </div>
+                <div>
+                  <h4 className="font-black text-purple-900 mb-1">💳 Faça o PIX</h4>
+                  <p className="text-sm text-slate-600">Pagamento rápido, fácil e seguro via PIX</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Passo 3 */}
+            <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-purple-200">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-xl">
+                  3
+                </div>
+                <div>
+                  <h4 className="font-black text-purple-900 mb-1">✅ Confirmação</h4>
+                  <p className="text-sm text-slate-600">Envie o comprovante e aguarde a confirmação</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Passo 4 */}
+            <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-purple-200">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-xl">
+                  4
+                </div>
+                <div>
+                  <h4 className="font-black text-purple-900 mb-1">🎯 Participe do Sorteio</h4>
+                  <p className="text-sm text-slate-600">Seus números já estão concorrendo ao prêmio!</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -223,77 +259,29 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
         <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-slate-900 h-[350px] sm:h-[450px] md:h-[550px]">
           {/* Images */}
           <div className="relative w-full h-full">
-            {winnersPhotos.map((photo, index) => {
-              const url = photo.video_url || photo.photo_url || '';
-              const isInstagram = url.includes('instagram.com/p/') || url.includes('instagram.com/reel/') || url.includes('instagram.com/tv/');
-              const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
-              const mediaType = photo.media_type || (isInstagram ? 'instagram' : isYouTube ? 'youtube' : 'photo');
+            {winnersPhotos.map((photo, index) => (
+              <div
+                key={photo.id || index}
+                className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                  }`}
+              >
+                {/* Foto do Ganhador */}
+                <img
+                  src={photo.photo_url}
+                  alt={photo.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
 
-              return (
-                <div
-                  key={photo.id || index}
-                  className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                    }`}
-                >
-                  {/* Renderização condicional: Foto, YouTube ou Instagram */}
-                  {(mediaType === 'photo' || !photo.media_type) && (
-                    <>
-                      <img
-                        src={photo.photo_url}
-                        alt={photo.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-                    </>
-                  )}
-
-                  {(mediaType === 'youtube' || (photo.media_type === 'youtube' && photo.video_url)) && (
-                    <>
-                      <iframe
-                        src={getYouTubeEmbedUrl(photo.video_url || photo.photo_url)}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none"></div>
-                    </>
-                  )}
-
-                  {(mediaType === 'instagram' || (photo.media_type === 'instagram' && photo.video_url)) && (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 py-4 overflow-y-auto">
-                      <div className="instagram-container w-full max-w-[350px] mx-auto">
-                        <blockquote
-                          className="instagram-media"
-                          data-instgrm-permalink={photo.video_url || photo.photo_url}
-                          data-instgrm-version="14"
-                          style={{
-                            background: '#FFF',
-                            border: 0,
-                            borderRadius: '12px',
-                            margin: '0 auto',
-                            minWidth: '326px',
-                            width: '100%'
-                          }}
-                        >
-                          <div className="p-4 flex flex-col items-center">
-                            <a href={photo.video_url || photo.photo_url} target="_blank" rel="noopener noreferrer" className="text-purple-400 font-bold">
-                              Carregando conteúdo do Instagram...
-                            </a>
-                          </div>
-                        </blockquote>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Info do ganhador (sempre visível) */}
-                  <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-20 pointer-events-none">
-                    <p className="text-4xl md:text-5xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">🏆 {photo.name}</p>
-                    <p className="text-lg md:text-xl font-bold text-green-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">{photo.prize}</p>
-                  </div>
+                {/* Info do ganhador */}
+                <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-20 pointer-events-none">
+                  <p className="text-4xl md:text-5xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">🏆 {photo.name}</p>
+                  <p className="text-lg md:text-xl font-bold text-green-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">{photo.prize}</p>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
+
 
           {/* Indicadores */}
           <div className="absolute bottom-6 right-6 flex gap-2 z-30">

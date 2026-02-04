@@ -411,43 +411,9 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                     <p className="text-sm font-bold text-purple-900">Adicionar Novo Ganhador</p>
 
                     {/* Seletor de Tipo de Mídia */}
-                    <div className="flex gap-4 p-3 bg-white rounded-lg border-2 border-purple-200">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="mediaType"
-                                value="photo"
-                                checked={newWinnerMediaType === 'photo'}
-                                onChange={(e) => setNewWinnerMediaType(e.target.value as any)}
-                                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
-                            />
-                            <span className="text-sm font-medium">📷 Foto</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="mediaType"
-                                value="youtube"
-                                checked={newWinnerMediaType === 'youtube'}
-                                onChange={(e) => setNewWinnerMediaType(e.target.value as any)}
-                                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
-                            />
-                            <span className="text-sm font-medium">🎬 YouTube</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="mediaType"
-                                value="instagram"
-                                checked={newWinnerMediaType === 'instagram'}
-                                onChange={(e) => setNewWinnerMediaType(e.target.value as any)}
-                                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
-                            />
-                            <span className="text-sm font-medium">📹 Instagram</span>
-                        </label>
-                    </div>
+                    <label className="text-sm font-bold text-purple-900 uppercase tracking-wider">Adicionar Foto de Ganhador</label>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <input
                             type="text"
                             value={newWinnerName}
@@ -464,56 +430,44 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                         />
                     </div>
 
-                    {/* Upload ou URL dependendo do tipo de mídia */}
-                    {newWinnerMediaType === 'photo' ? (
-                        <div className="space-y-2">
-                            {/* Upload Button for Photo */}
-                            <label className="block cursor-pointer">
-                                <div className={`px-4 py-3 rounded-lg border-2 border-dashed text-center font-bold transition-all ${isUploadingWinnerPhoto
-                                        ? 'bg-purple-50 border-purple-300 text-purple-600'
-                                        : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-600'
-                                    }`}>
-                                    {isUploadingWinnerPhoto ? '⏳ Fazendo Upload...' : '📤 Fazer Upload da Foto'}
-                                </div>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleWinnerPhotoUpload}
-                                    className="hidden"
-                                    disabled={isUploadingWinnerPhoto}
-                                />
-                            </label>
-
-                            {/* URL Manual Option */}
-                            <div>
-                                <p className="text-xs text-slate-500 mb-1 text-center">ou cole a URL:</p>
-                                <input
-                                    type="url"
-                                    value={newWinnerPhotoUrl}
-                                    onChange={(e) => setNewWinnerPhotoUrl(e.target.value)}
-                                    className="w-full px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
-                                    placeholder="URL da foto"
-                                />
+                    {/* Upload de Foto */}
+                    <div className="space-y-2">
+                        {/* Upload Button for Photo */}
+                        <label className="block cursor-pointer">
+                            <div className={`px-4 py-3 rounded-lg border-2 border-dashed text-center font-bold transition-all ${isUploadingWinnerPhoto
+                                    ? 'bg-purple-50 border-purple-300 text-purple-600'
+                                    : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-600'
+                                }`}>
+                                {isUploadingWinnerPhoto ? '⏳ Fazendo Upload...' : '📤 Fazer Upload da Foto'}
                             </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleWinnerPhotoUpload}
+                                className="hidden"
+                                disabled={isUploadingWinnerPhoto}
+                            />
+                        </label>
 
-                            {/* Preview */}
-                            {newWinnerPhotoUrl && (
-                                <div className="rounded-lg overflow-hidden border-2 border-purple-200">
-                                    <img src={newWinnerPhotoUrl} alt="Preview" className="w-full h-32 object-cover" />
-                                </div>
-                            )}
+                        {/* URL Manual Option */}
+                        <div>
+                            <p className="text-xs text-slate-500 mb-1 text-center">ou cole a URL:</p>
+                            <input
+                                type="url"
+                                value={newWinnerPhotoUrl}
+                                onChange={(e) => setNewWinnerPhotoUrl(e.target.value)}
+                                className="w-full px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
+                                placeholder="URL da foto"
+                            />
                         </div>
-                    ) : (
-                        <input
-                            type="url"
-                            value={newWinnerPhotoUrl}
-                            onChange={(e) => setNewWinnerPhotoUrl(e.target.value)}
-                            className="px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
-                            placeholder={
-                                newWinnerMediaType === 'youtube' ? 'URL do YouTube' : 'URL do Instagram (reel)'
-                            }
-                        />
-                    )}
+
+                        {/* Preview */}
+                        {newWinnerPhotoUrl && (
+                            <div className="rounded-lg overflow-hidden border-2 border-purple-200">
+                                <img src={newWinnerPhotoUrl} alt="Preview" className="w-full h-32 object-cover" />
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={handleAddWinner}
                         className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-all active:scale-95"
