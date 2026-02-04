@@ -120,6 +120,23 @@ const App: React.FC = () => {
     };
   }, [activeRaffle?.id]);
 
+  // FALLBACK: Polling para garantir sincronização se realtime DELETE falhar
+  useEffect(() => {
+    if (!activeRaffle || view !== 'selecting') return;
+
+    console.log('🔄 [Polling] Iniciando polling de sincronização a cada 2s');
+
+    const pollingInterval = setInterval(() => {
+      console.log('🔄 [Polling] Recarregando dados...');
+      loadRaffleData();
+    }, 2000); // Recarrega a cada 2 segundos
+
+    return () => {
+      console.log('🔄 [Polling] Parando polling');
+      clearInterval(pollingInterval);
+    };
+  }, [activeRaffle?.id, view]);
+
   const loadRaffleData = async () => {
     try {
       console.log('📊 [Data] Loading raffle data...');
