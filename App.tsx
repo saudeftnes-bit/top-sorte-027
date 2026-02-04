@@ -363,10 +363,28 @@ const App: React.FC = () => {
               <button
                 onClick={async () => {
                   if (activeRaffle) {
+                    // 1. Limpar do banco primeiro
                     const { cleanupSessionSelections } = await import('./lib/selection-manager');
                     await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+
+                    // 2. Aguardar processamento do realtime
+                    await new Promise(resolve => setTimeout(resolve, 150));
+
+                    // 3. Limpar estados locais
+                    setSelectedNumbers([]);
+                    setReservations(prev => {
+                      const updated = { ...prev };
+                      // Remover todas as reservations desta sessão
+                      Object.keys(updated).forEach(num => {
+                        if (updated[num]?.name === sessionId.current) {
+                          delete updated[num];
+                        }
+                      });
+                      return updated;
+                    });
+
+                    console.log('✅ Todas as seleções limpas');
                   }
-                  setSelectedNumbers([]);
                 }}
                 className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-4 py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase"
               >
@@ -391,11 +409,26 @@ const App: React.FC = () => {
           raffle={activeRaffle || undefined}
           onClose={async () => {
             if (selectedNumbers.length > 0 && activeRaffle) {
+              // 1. Limpar do banco
               const { cleanupSessionSelections } = await import('./lib/selection-manager');
               await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+
+              // 2. Aguardar processamento
+              await new Promise(resolve => setTimeout(resolve, 150));
+
+              // 3. Limpar estados locais
+              setSelectedNumbers([]);
+              setReservations(prev => {
+                const updated = { ...prev };
+                Object.keys(updated).forEach(num => {
+                  if (updated[num]?.name === sessionId.current) {
+                    delete updated[num];
+                  }
+                });
+                return updated;
+              });
             }
             setIsCheckoutOpen(false);
-            setSelectedNumbers([]);
             setView('selecting');
           }}
           onConfirmPurchase={confirmPurchase}
