@@ -163,19 +163,26 @@ const App: React.FC = () => {
     if (reservation?.status === 'pending' && reservation.name !== sessionId.current) return;
 
     if (isSelected) {
-      // Desselecionar: remover seleção temporária do Supabase
-      setSelectedNumbers(prev => prev.filter(n => n !== num));
+      // Desselecionar: PRIMEIRO remover do banco, DEPOIS limpar estado local
 
-      // Limpar do estado local de reservations também
-      setReservations(prev => {
-        const updated = { ...prev };
-        delete updated[num];
-        return updated;
-      });
-
-      // Importar função dinamicamente para evitar problemas de build
+      // 1. Remover do banco primeiro
       const { removeTemporarySelection } = await import('./lib/selection-manager');
-      await removeTemporarySelection(activeRaffle.id, num, sessionId.current);
+      const removed = await removeTemporarySelection(activeRaffle.id, num, sessionId.current);
+
+      if (removed) {
+        // 2. Aguardar processamento do realtime
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        // 3. Agora sim limpar estado local
+        setSelectedNumbers(prev => prev.filter(n => n !== num));
+        setReservations(prev => {
+          const updated = { ...prev };
+          delete updated[num];
+          return updated;
+        });
+
+        console.log(`✅ Número ${num} desselecionado completamente`);
+      }
     } else {
       // Selecionar: criar seleção temporária no Supabase
       setSelectedNumbers(prev => [...prev, num]);
