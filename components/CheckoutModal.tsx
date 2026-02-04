@@ -6,6 +6,7 @@ import { useReservationTimer } from '../hooks/useReservationTimer';
 import ImageUpload from './ImageUpload';
 import { supabase } from '../lib/supabase';
 import { getOrCreateSessionId, confirmSelections, cleanupSessionSelections } from '../lib/selection-manager';
+import ConfirmModal from './ConfirmModal';
 
 import { Raffle } from '../types/database';
 
@@ -23,11 +24,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const [step, setStep] = useState<'info' | 'payment'>('info');
   const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
   const [copied, setCopied] = useState(false);
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  // Inicializar timer com 30 minutos a partir de agora
+  const [expiresAt, setExpiresAt] = useState<string | null>(() => {
+    const now = new Date();
+    const expires = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutos
+    return expires.toISOString();
+  });
   const [reservationIds, setReservationIds] = useState<string[]>([]);
   const [proofUploaded, setProofUploaded] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [codeCopied, setCodeCopied] = useState(false);
+
+  // States para modal personalizado
+  const [showModal, setShowModal] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info' as 'info' | 'warning' | 'error' | 'success',
+    onConfirm: () => { }
+  });
 
   // Session ID para identificar este usuário
   const sessionId = useRef<string>(getOrCreateSessionId());
@@ -57,8 +72,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
         if (raffleId) {
           await cleanupSessionSelections(raffleId, sessionId.current);
         }
-        alert('⏰ Tempo expirado! Seus números foram liberados. Por favor, reserve novamente.');
-        onClose();
+        setModalConfig({
+          title: 'Tempo Expirado',
+          message: '⏰ Tempo expirado! Seus números foram liberados. Por favor, reserve novamente.',
+          type: 'warning',
+          onConfirm: () => {
+            setShowModal(false);
+            onClose();
+          }
+        });
+        setShowModal(true);
       };
       handleExpiration();
     }
@@ -146,7 +169,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
         }, 100);
       } else {
         console.error('❌ [Checkout] Erro ao confirmar reservas');
-        alert('Erro ao confirmar reservas. Tente novamente.');
+        setModalConfig({
+          title: 'Erro',
+          message: 'Erro ao confirmar reservas. Tente novamente.',
+          type: 'error',
+          onConfirm: () => setShowModal(false)
+        });
+        setShowModal(true);
       }
     }
   };
@@ -360,6 +389,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
           )}
         </div>
       </div>
+
+      {/* Modal personalizado */}
+      <ConfirmModal
+        isOpen={showModal}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        confirmText="OK"
+        cancelText="Fechar"
+        onConfirm={modalConfig.onConfirm}
+        onCancel={() => setShowModal(false)}
+      />
     </div>
   );
 };
