@@ -62,23 +62,27 @@ export async function removeTemporarySelection(
     sessionId: string
 ): Promise<boolean> {
     try {
-        const { error } = await supabase
+        console.log(`🗑️ [Delete] Tentando remover número ${number} para sessão ${sessionId}`);
+
+        const { data, error } = await supabase
             .from('reservations')
             .delete()
             .eq('raffle_id', raffleId)
             .eq('number', number)
             .eq('buyer_name', sessionId)
-            .eq('status', 'pending');
+            .eq('status', 'pending')
+            .select(); // Adicionar select para ver o que foi deletado
 
         if (error) {
-            console.error('Error removing temporary selection:', error);
+            console.error('❌ [Delete] Erro ao remover:', error);
             return false;
         }
 
-        console.log(`✅ [Selection] Número ${number} desbloqueado`);
+        console.log(`✅ [Delete] Removido com sucesso:`, data);
+        console.log(`✅ [Delete] Quantidade de linhas deletadas: ${data?.length || 0}`);
         return true;
     } catch (error) {
-        console.error('Error in removeTemporarySelection:', error);
+        console.error('❌ [Delete] Exceção ao remover:', error);
         return false;
     }
 }
