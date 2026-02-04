@@ -110,8 +110,43 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle }) => {
             return `Claro! Nosso David está à disposição! 😊\n\nClique no botão abaixo para falar diretamente com ele pelo WhatsApp:`;
         }
 
-        // Fallback - não entendeu
-        return `Hmm, não entendi muito bem sua dúvida... 🤔\n\nMas não se preocupe! O David pode te ajudar com qualquer coisa. Clique no botão abaixo para falar com ele:`;
+        // Agradecimentos
+        if (msg.match(/\b(obrigad[oa]|valeu|vlw|brigad[oa]|thanks)\b/i)) {
+            return `Por nada! 😊 Fico feliz em ajudar!\n\nSe tiver mais alguma dúvida, é só perguntar! Estou aqui! 🎯`;
+        }
+
+        // Despedidas
+        if (msg.match(/\b(tchau|até logo|até mais|adeus|flw|falou|bye)\b/i)) {
+            return `Até logo! 👋 Foi um prazer te atender!\n\nBoa sorte no sorteio! 🍀✨`;
+        }
+
+        // Confirmações positivas
+        if (msg.match(/^(sim|yes|ok|certo|entendi|beleza|blz|show)$/i)) {
+            return `Ótimo! 👍\n\nAlguma outra dúvida que posso esclarecer?`;
+        }
+
+        // Negações
+        if (msg.match(/^(não|nao|no)$/i)) {
+            return `Tudo bem! 😊\n\nEstou aqui se precisar de ajuda!`;
+        }
+
+        // Perguntas sobre sorteio/resultado
+        if (msg.includes('quando') && (msg.includes('sorteio') || msg.includes('resultado'))) {
+            return `O sorteio segue o calendário da Loteria Federal! 🎲\n\nA data exata é informada pelo David no WhatsApp quando você reserva seus números. Quer falar com ele?`;
+        }
+
+        // Perguntas sobre segurança/confiança
+        if (msg.includes('confiável') || msg.includes('seguro') || msg.includes('fraude') || msg.includes('golpe')) {
+            return `Somos 100% transparentes! 😊\n\n✅ Sorteio pela Loteria Federal\n✅ Pagamento via PIX\n✅ Comprovante enviado\n✅ Ganhadores divulgados\n\nTodos os participantes podem acompanhar! Alguma dúvida específica?`;
+        }
+
+        // Fallback - não entendeu mas oferece ajuda contextual
+        const fallbacks = [
+            `Hmm, não entendi muito bem... 🤔\n\nMas talvez eu possa te ajudar com:\n• Como funciona o sorteio\n• Valor dos números\n• Forma de pagamento\n• Qual o prêmio\n\nOu clique abaixo para falar com o David!`,
+            `Desculpa, não peguei essa! 😅\n\nQue tal perguntar sobre:\n• Como escolher números\n• Quanto tempo para confirmar\n• Como fazer o PIX\n\nOu converse direto com nosso atendente!`,
+            `Ops, acho que não entendi... 🙈\n\nPosso te explicar:\n• O processo do sorteio\n• Valores e pagamento\n• Prêmio atual\n\nOu você pode falar com o David pelo botão abaixo!`
+        ];
+        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
     };
 
     const handleSuggestionClick = (suggestion: string) => {
@@ -141,11 +176,16 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle }) => {
                     }]);
                 }, 500);
             }
+            // Não mostrar botão para agradecimentos, despedidas e confirmações
+            else if (msg.match(/\b(obrigad[oa]|valeu|vlw|brigad[oa]|thanks|tchau|até logo|até mais|adeus|flw|falou|bye|sim|yes|ok|certo|entendi|beleza|blz|show|não|nao|no)\b/i)) {
+                // Não faz nada - resposta simples sem botão
+            }
             // Adicionar botão WhatsApp se for sobre contato ou não entendeu
             else if (msg.includes('atendente') || msg.includes('ajuda') || msg.includes('falar') ||
+                msg.includes('quando') ||  // Para perguntas de data que sugerem falar com David
                 (!msg.includes('funciona') && !msg.includes('valor') && !msg.includes('pagamento') &&
                     !msg.includes('tempo') && !msg.includes('prêmio') && !msg.includes('escolher') &&
-                    !msg.includes('quantos'))) {
+                    !msg.includes('quantos') && !msg.includes('confiável') && !msg.includes('seguro'))) {
                 setTimeout(() => {
                     setMessages(prev => [...prev, {
                         text: 'WHATSAPP_BUTTON',
@@ -185,7 +225,7 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle }) => {
 
             {/* Chat window */}
             {isOpen && (
-                <div className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-white rounded-3xl shadow-2xl border-2 border-purple-200 flex flex-col overflow-hidden">
+                <div className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] max-h-[calc(100vh-8rem)] bg-white rounded-3xl shadow-2xl border-2 border-purple-200 flex flex-col overflow-hidden">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 flex items-center gap-3">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-2xl">
