@@ -57,6 +57,17 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle }) => {
     const getBotResponse = (userMessage: string): string => {
         const msg = userMessage.toLowerCase();
 
+        // 0. Saudações
+        if (msg.match(/^(oi|olá|ola|hey|opa|bom dia|boa tarde|boa noite|e aí|eai|eae|salve)\b/i)) {
+            const greetings = [
+                `Oi! 👋 Seja muito bem-vindo(a) à Top Sorte! 😊\n\nEstou aqui para te ajudar com qualquer dúvida sobre nossos sorteios. O que você gostaria de saber?`,
+                `Olá! 🎉 Que bom te ver por aqui!\n\nSou o assistente da Top Sorte e estou pronto para te ajudar. Em que posso te auxiliar hoje?`,
+                `E aí! 😄 Tudo bem?\n\nSeja bem-vindo(a)! Estou aqui para esclarecer suas dúvidas sobre o sorteio. Como posso te ajudar?`,
+                `Opa! 🎯 Prazer em te atender!\n\nTenho todas as informações sobre o sorteio aqui. O que você quer saber?`
+            ];
+            return greetings[Math.floor(Math.random() * greetings.length)];
+        }
+
         // 1. Como funciona
         if (msg.includes('funciona') || msg.includes('como') && msg.includes('sorteio')) {
             return `É super simples! 😊\n\n1️⃣ Você escolhe seus números da sorte\n2️⃣ Faz o pagamento via PIX\n3️⃣ Envia o comprovante\n4️⃣ Participa do sorteio!\n\nO resultado é sorteado pela Loteria Federal, totalmente transparente! 🎯`;
@@ -119,9 +130,19 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle }) => {
             const response = getBotResponse(messageText);
             addBotMessage(response);
 
-            // Adicionar botão WhatsApp se for sobre contato ou não entendeu
+            // Adicionar sugestões para saudações
             const msg = messageText.toLowerCase();
-            if (msg.includes('atendente') || msg.includes('ajuda') || msg.includes('falar') ||
+            if (msg.match(/^(oi|olá|ola|hey|opa|bom dia|boa tarde|boa noite|e aí|eai|eae|salve)\b/i)) {
+                setTimeout(() => {
+                    setMessages(prev => [...prev, {
+                        text: 'SUGGESTIONS',
+                        isBot: true,
+                        timestamp: new Date()
+                    }]);
+                }, 500);
+            }
+            // Adicionar botão WhatsApp se for sobre contato ou não entendeu
+            else if (msg.includes('atendente') || msg.includes('ajuda') || msg.includes('falar') ||
                 (!msg.includes('funciona') && !msg.includes('valor') && !msg.includes('pagamento') &&
                     !msg.includes('tempo') && !msg.includes('prêmio') && !msg.includes('escolher') &&
                     !msg.includes('quantos'))) {
@@ -221,8 +242,8 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle }) => {
                                 >
                                     <div
                                         className={`max-w-[80%] p-3 rounded-2xl ${msg.isBot
-                                                ? 'bg-white border-2 border-purple-200 text-slate-800'
-                                                : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                                            ? 'bg-white border-2 border-purple-200 text-slate-800'
+                                            : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
                                             }`}
                                     >
                                         <p className="text-sm whitespace-pre-line leading-relaxed">
