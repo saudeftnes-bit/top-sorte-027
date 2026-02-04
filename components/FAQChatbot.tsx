@@ -57,7 +57,15 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle, reservations = {} }) =>
     };
 
     const getBotResponse = (userMessage: string): string => {
-        const msg = userMessage.toLowerCase();
+        // Normalizar texto removendo acentos
+        const normalizeText = (text: string) => {
+            return text
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, ''); // Remove acentos
+        };
+
+        const msg = normalizeText(userMessage);
 
         // 0. Saudações
         if (msg.match(/^(oi|olá|ola|hey|opa|bom dia|boa tarde|boa noite|e aí|eai|eae|salve)\b/i)) {
