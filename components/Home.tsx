@@ -344,33 +344,6 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
         </div>
       </section>
 
-      {/* How it works simple */}
-      <section className="bg-slate-900 text-white p-8 rounded-[2.5rem] mb-4">
-        <h3 className="font-black mb-6 text-xl">Como funciona?</h3>
-        <div className="space-y-6">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black flex-shrink-0">1</div>
-            <div>
-              <p className="font-bold">Escolha seus números</p>
-              <p className="text-xs text-slate-400">Selecione na grade (Verde) e veja quem já está participando (Roxo).</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black flex-shrink-0">2</div>
-            <div>
-              <p className="font-bold">Confirmação Automática</p>
-              <p className="text-xs text-slate-400">Ao preencher seus dados, o número fica Roxo (confirmado) automaticamente.</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black flex-shrink-0">3</div>
-            <div>
-              <p className="font-bold">Acompanhe o Sorteio</p>
-              <p className="text-xs text-slate-400">Resultado transparente pela Loteria Federal. Transparência acima de tudo.</p>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

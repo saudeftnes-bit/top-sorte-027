@@ -166,6 +166,13 @@ const App: React.FC = () => {
       // Desselecionar: remover seleção temporária do Supabase
       setSelectedNumbers(prev => prev.filter(n => n !== num));
 
+      // Limpar do estado local de reservations também
+      setReservations(prev => {
+        const updated = { ...prev };
+        delete updated[num];
+        return updated;
+      });
+
       // Importar função dinamicamente para evitar problemas de build
       const { removeTemporarySelection } = await import('./lib/selection-manager');
       await removeTemporarySelection(activeRaffle.id, num, sessionId.current);
