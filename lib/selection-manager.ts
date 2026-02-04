@@ -28,27 +28,33 @@ export async function createTemporarySelection(
     sessionId: string
 ): Promise<boolean> {
     try {
-        const { error } = await supabase
+        const insertData = {
+            raffle_id: raffleId,
+            number: number,
+            buyer_name: sessionId,
+            buyer_email: `temp_${sessionId}@selecting.local`,
+            buyer_phone: '',
+            status: 'pending' as const,
+            created_at: new Date().toISOString()
+        };
+
+        console.log(`➕ [Insert] Criando reserva:`, insertData);
+
+        const { data, error } = await supabase
             .from('reservations')
-            .insert({
-                raffle_id: raffleId,
-                number: number,
-                buyer_name: sessionId, // Temporariamente usa sessionId como nome
-                buyer_email: `temp_${sessionId}@selecting.local`,
-                buyer_phone: '',
-                status: 'pending',
-                created_at: new Date().toISOString()
-            });
+            .insert(insertData)
+            .select(); // Ver o que foi inserido
 
         if (error) {
-            console.error('Error creating temporary selection:', error);
+            console.error('❌ [Insert] Erro ao criar:', error);
             return false;
         }
 
+        console.log(`✅ [Insert] Criado com sucesso:`, data);
         console.log(`✅ [Selection] Número ${number} bloqueado temporariamente`);
         return true;
     } catch (error) {
-        console.error('Error in createTemporarySelection:', error);
+        console.error('❌ [Insert] Exceção:', error);
         return false;
     }
 }
