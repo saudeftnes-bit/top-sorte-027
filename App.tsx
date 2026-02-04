@@ -454,7 +454,7 @@ const App: React.FC = () => {
       )}
 
 
-      <FAQChatbot raffle={activeRaffle || undefined} />
+      <FAQChatbot raffle={activeRaffle || undefined} reservations={reservations} />
     </div>
   );
 };

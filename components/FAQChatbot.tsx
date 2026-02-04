@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { Raffle } from '../types/database';
+import type { ReservationMap } from '../App';
 
 interface Message {
     text: string;
@@ -9,9 +10,10 @@ interface Message {
 
 interface FAQChatbotProps {
     raffle?: Raffle;
+    reservations?: ReservationMap;
 }
 
-const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle }) => {
+const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle, reservations = {} }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
@@ -105,7 +107,26 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle }) => {
             return `Pode escolher quantos números quiser! 🎰\n\nNão tem limite! Quanto mais números você tiver, maiores suas chances de ganhar. Muita gente escolhe vários de uma vez! 🍀`;
         }
 
-        // 8. Atendimento/Ajuda
+        // 8. Números disponíveis
+        if (msg.includes('disponí') || msg.includes('livre') || msg.includes('restam') || msg.includes('sobraram') ||
+            (msg.includes('quantos') && msg.includes('número'))) {
+            const totalNumbers = raffle?.total_numbers || 100;
+            const reservedCount = Object.keys(reservations).length;
+            const availableCount = totalNumbers - reservedCount;
+            const percentage = ((availableCount / totalNumbers) * 100).toFixed(0);
+
+            if (availableCount > 50) {
+                return `Temos ${availableCount} números disponíveis de ${totalNumbers}! 🎯\n\nIsso é ${percentage}% ainda livre! Muitas opções para você escolher! 😊\n\nCorra e garanta seus números da sorte! 🍀`;
+            } else if (availableCount > 20) {
+                return `Restam ${availableCount} números disponíveis de ${totalNumbers}! ⚡\n\nEstá vendendo rápido! Apenas ${percentage}% ainda disponível.\n\nGaranta os seus antes que acabem! 🏃‍♂️`;
+            } else if (availableCount > 0) {
+                return `🔥 Últimas chances! Apenas ${availableCount} números restantes de ${totalNumbers}!\n\nO sorteio está quase completo (só ${percentage}% disponível).\n\nCorra! Não perca essa oportunidade! ⏰`;
+            } else {
+                return `Ops! Todos os números já foram vendidos! 😮\n\nMas fique de olho que em breve teremos um novo sorteio incrível!\n\nQuer falar com o David para saber quando sai o próximo?`;
+            }
+        }
+
+        // 9. Atendimento/Ajuda
         if (msg.includes('atendente') || msg.includes('ajuda') || msg.includes('falar') || msg.includes('contato')) {
             return `Claro! Nosso David está à disposição! 😊\n\nClique no botão abaixo para falar diretamente com ele pelo WhatsApp:`;
         }
