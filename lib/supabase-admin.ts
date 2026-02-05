@@ -22,16 +22,25 @@ export async function getActiveRaffle(): Promise<Raffle | null> {
 }
 
 export async function updateRaffle(id: string, updates: Partial<Raffle>): Promise<boolean> {
-    const { error } = await supabase
+    console.log('📝 [Admin] Atualizando sorteio:', id, updates);
+
+    const { data, error } = await supabase
         .from('raffles')
         .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
     if (error) {
-        console.error('Error updating raffle:', error);
+        console.error('❌ [Admin] Erro ao atualizar sorteio:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+        });
         return false;
     }
 
+    console.log('✅ [Admin] Sorteio atualizado com sucesso!', data);
     return true;
 }
 
