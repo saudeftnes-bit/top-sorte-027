@@ -70,12 +70,12 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         setIsLoading(false);
     };
 
-    // Auto-close modal de sucesso após 5 segundos
+    // Auto-close modal de sucesso após 8 segundos
     useEffect(() => {
         if (showSuccessModal) {
             const timer = setTimeout(() => {
                 setShowSuccessModal(false);
-            }, 5000); // 5 segundos
+            }, 8000); // 8 segundos
             return () => clearTimeout(timer);
         }
     }, [showSuccessModal]);
