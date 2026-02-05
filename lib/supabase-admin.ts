@@ -58,10 +58,11 @@ export async function resetRaffleNumbers(raffleId: string): Promise<number> {
             hint: error.hint,
             code: error.code
         });
-        return 0;
+        return -1; // Retorna -1 para indicar erro
     }
 
-    const count = data || 0;
+    // RPC retorna um array com a tabela, pegar o primeiro elemento
+    const count = Array.isArray(data) && data.length > 0 ? data[0] : 0;
     console.log(`✅ [Admin] ${count} número(s) zerado(s) com sucesso!`);
     return count;
 }
