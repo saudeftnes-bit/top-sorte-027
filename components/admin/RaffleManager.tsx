@@ -70,6 +70,16 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         setIsLoading(false);
     };
 
+    // Auto-close modal de sucesso após 5 segundos
+    useEffect(() => {
+        if (showSuccessModal) {
+            const timer = setTimeout(() => {
+                setShowSuccessModal(false);
+            }, 5000); // 5 segundos
+            return () => clearTimeout(timer);
+        }
+    }, [showSuccessModal]);
+
     const handleSaveRaffle = async () => {
         if (!raffle) return;
 
@@ -435,8 +445,8 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                         {/* Upload Button for Photo */}
                         <label className="block cursor-pointer">
                             <div className={`px-4 py-3 rounded-lg border-2 border-dashed text-center font-bold transition-all ${isUploadingWinnerPhoto
-                                    ? 'bg-purple-50 border-purple-300 text-purple-600'
-                                    : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-600'
+                                ? 'bg-purple-50 border-purple-300 text-purple-600'
+                                : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-600'
                                 }`}>
                                 {isUploadingWinnerPhoto ? '⏳ Fazendo Upload...' : '📤 Fazer Upload da Foto'}
                             </div>
