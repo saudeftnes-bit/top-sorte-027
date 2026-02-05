@@ -246,13 +246,14 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             await loadData();
             onDataChanged?.();
         } else if (count === 0) {
-            setSuccessMessage('Nenhum número para zerar (sorteio já está vazio).');
+            setSuccessMessage('Sorteio já está zerado! Nenhum número foi deletado.');
             setShowSuccessModal(true);
         } else {
-            setErrorMessage('Erro ao zerar números. Tente novamente.');
+            setErrorMessage('Erro ao zerar números. Verifique se a função SQL foi executada no Supabase.');
             setShowErrorModal(true);
         }
     };
+
 
 
     if (isLoading) {
