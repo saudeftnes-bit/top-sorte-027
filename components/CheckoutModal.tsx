@@ -158,15 +158,26 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
 
         // Update local state as PENDING (AMARELO PULSANTE)
         onSetPending(formData.name, selectedNumbers);
-        setStep('payment');
 
-        // Rolar modal para o topo
-        setTimeout(() => {
-          const modal = document.querySelector('.checkout-modal');
-          if (modal) {
-            modal.scrollTop = 0;
+        // Mostrar modal de confirmação com os números
+        setModalConfig({
+          title: 'Números Confirmados',
+          message: `Seus números foram reservados com sucesso!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\n⏰ Você tem ${(timeoutMinutes * 60)} segundos para realizar o pagamento.\n\nProssiga para o PIX!`,
+          type: 'success',
+          onConfirm: () => {
+            setShowModal(false);
+            setStep('payment');
+
+            // Rolar modal para o topo
+            setTimeout(() => {
+              const modal = document.querySelector('.checkout-modal');
+              if (modal) {
+                modal.scrollTop = 0;
+              }
+            }, 100);
           }
-        }, 100);
+        });
+        setShowModal(true);
       } else {
         console.error('❌ [Checkout] Erro ao confirmar reservas');
         setModalConfig({
