@@ -61,8 +61,16 @@ export async function resetRaffleNumbers(raffleId: string): Promise<number> {
         return -1; // Retorna -1 para indicar erro
     }
 
-    // RPC retorna um array com a tabela, pegar o primeiro elemento
-    const count = Array.isArray(data) && data.length > 0 ? data[0] : 0;
+    // RPC retorna array de objetos: [{ deleted_count: number }]
+    console.log('📊 [Admin] Data retornada:', data);
+
+    let count = 0;
+    if (Array.isArray(data) && data.length > 0 && data[0]?.deleted_count !== undefined) {
+        count = data[0].deleted_count;
+    } else if (typeof data === 'number') {
+        count = data;
+    }
+
     console.log(`✅ [Admin] ${count} número(s) zerado(s) com sucesso!`);
     return count;
 }
