@@ -140,6 +140,17 @@ const App: React.FC = () => {
   const loadRaffleData = async () => {
     try {
       console.log('📊 [Data] Loading raffle data...');
+
+      // 1. Limpar reservas expiradas ANTES de carregar dados
+      try {
+        const { cleanupExpiredReservations } = await import('./lib/cleanup');
+        await cleanupExpiredReservations();
+      } catch (cleanupError) {
+        console.warn('⚠️ [Data] Erro ao limpar reservas expiradas:', cleanupError);
+        // Continuar mesmo se limpeza falhar
+      }
+
+      // 2. Carregar dados da rifa
       const raffle = await getActiveRaffle();
       if (raffle) {
         setActiveRaffle(raffle);
