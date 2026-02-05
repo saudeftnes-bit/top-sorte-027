@@ -23,6 +23,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     const [successMessage, setSuccessMessage] = useState('');
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [showResetModal, setShowResetModal] = useState(false);
 
     // Form state
     const [title, setTitle] = useState('');
@@ -231,6 +232,29 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         }
     };
 
+    const handleResetNumbers = async () => {
+        if (!raffle) return;
+
+        setShowResetModal(false);
+
+        const { resetRaffleNumbers } = await import('../../lib/supabase-admin');
+        const count = await resetRaffleNumbers(raffle.id);
+
+        if (count > 0) {
+            setSuccessMessage(`${count} número(s) zerado(s) com sucesso! ✅`);
+            setShowSuccessModal(true);
+            await loadData();
+            onDataChanged?.();
+        } else if (count === 0) {
+            setSuccessMessage('Nenhum número para zerar (sorteio já está vazio).');
+            setShowSuccessModal(true);
+        } else {
+            setErrorMessage('Erro ao zerar números. Tente novamente.');
+            setShowErrorModal(true);
+        }
+    };
+
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -247,12 +271,20 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                     <h2 className="text-2xl font-black text-slate-900">🎯 Gerenciar Sorteio</h2>
                     <p className="text-slate-500 font-medium mt-1">Edite textos, imagens e configurações</p>
                 </div>
-                <button
-                    onClick={onBack}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition-colors"
-                >
-                    ← Voltar
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setShowResetModal(true)}
+                        className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-xl font-bold transition-colors"
+                    >
+                        🗑️ Zerar Números
+                    </button>
+                    <button
+                        onClick={onBack}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition-colors"
+                    >
+                        ← Voltar
+                    </button>
+                </div>
             </div>
 
             {/* Raffle Configuration */}
@@ -553,6 +585,17 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                 variant="danger"
                 onConfirm={() => setShowErrorModal(false)}
                 onCancel={() => setShowErrorModal(false)}
+            />
+
+            <ConfirmModal
+                isOpen={showResetModal}
+                title="⚠️ Zerar Todos os Números"
+                message="Tem certeza que deseja ZERAR TODOS OS NÚMEROS deste sorteio? Esta ação NÃO PODE SER DESFEITA e irá deletar todas as reservas!"
+                confirmLabel="Sim, Zerar Tudo"
+                cancelLabel="Cancelar"
+                variant="danger"
+                onConfirm={handleResetNumbers}
+                onCancel={() => setShowResetModal(false)}
             />
         </div>
     );

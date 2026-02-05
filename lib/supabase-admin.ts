@@ -44,6 +44,29 @@ export async function updateRaffle(id: string, updates: Partial<Raffle>): Promis
     return true;
 }
 
+export async function resetRaffleNumbers(raffleId: string): Promise<number> {
+    console.log('🗑️ [Admin] Zerando números do sorteio:', raffleId);
+
+    const { data, error } = await supabase.rpc('reset_raffle_numbers', {
+        raffle_id_param: raffleId
+    });
+
+    if (error) {
+        console.error('❌ [Admin] Erro ao zerar números:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+        });
+        return 0;
+    }
+
+    const count = data || 0;
+    console.log(`✅ [Admin] ${count} número(s) zerado(s) com sucesso!`);
+    return count;
+}
+
+
 export async function createRaffle(raffle: Omit<Raffle, 'id' | 'created_at' | 'updated_at'>): Promise<Raffle | null> {
     const { data, error } = await supabase
         .from('raffles')
