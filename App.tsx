@@ -30,6 +30,10 @@ const App: React.FC = () => {
   // Session ID para identificar este usuário
   const sessionId = useRef<string>(getOrCreateSessionId());
 
+  // Timer de seleção
+  const [selectionStartTime, setSelectionStartTime] = useState<number | null>(null);
+  const [selectionTimeRemaining, setSelectionTimeRemaining] = useState<number | null>(null);
+
   // Secret admin mode toggle (5 clicks on logo)
   const [clickCount, setClickCount] = useState(0);
   const [showAdminButton, setShowAdminButton] = useState(() => {
@@ -137,6 +141,66 @@ const App: React.FC = () => {
     };
   }, [activeRaffle?.id, view]);
 
+  // Timer de seleção: Iniciar quando primeiro número for selecionado
+  useEffect(() => {
+    if (selectedNumbers.length > 0 && !selectionStartTime) {
+      console.log('⏱️ [Timer] Iniciando timer de seleção');
+      setSelectionStartTime(Date.now());
+    } else if (selectedNumbers.length === 0) {
+      console.log('⏱️ [Timer] Resetando timer (sem seleções)');
+      setSelectionStartTime(null);
+      setSelectionTimeRemaining(null);
+    }
+  }, [selectedNumbers.length, selectionStartTime]);
+
+  // Countdown: Atualizar tempo restante a cada segundo
+  useEffect(() => {
+    if (!selectionStartTime || !activeRaffle) return;
+
+    const timeoutMinutes = activeRaffle.selection_timeout || 5;
+    const timeoutMs = timeoutMinutes * 60 * 1000;
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - selectionStartTime;
+      const remaining = timeoutMs - elapsed;
+
+      if (remaining <= 0) {
+        console.log('⏱️ [Timer] Tempo esgotado! Limpando seleções...');
+        // Limpar seleções automaticamente
+        handleClearAll();
+        clearInterval(interval);
+      } else {
+        setSelectionTimeRemaining(Math.ceil(remaining / 1000));
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [selectionStartTime, activeRaffle]);
+
+  // Cleanup ao sair do app (beforeunload)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (activeRaffle && sessionId.current && selectedNumbers.length > 0) {
+        console.log('🧹 [Cleanup] Usuário fechando app...');
+        cleanupSessionSelections(activeRaffle.id, sessionId.current);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [activeRaffle, selectedNumbers.length]);
+
+  // Cleanup ao desmontar componente
+  useEffect(() => {
+    return () => {
+      if (activeRaffle && sessionId.current && selectedNumbers.length > 0) {
+        console.log('🧹 [Cleanup] Componente desmontando...');
+        cleanupSessionSelections(activeRaffle.id, sessionId.current);
+      }
+    };
+  }, [activeRaffle?.id]);
+
+
   const loadRaffleData = async () => {
     try {
       console.log('📊 [Data] Loading raffle data...');
@@ -177,6 +241,39 @@ const App: React.FC = () => {
       console.error('❌ [Data] Error loading raffle data:', error);
     }
   };
+
+  const handleClearAll = async () => {
+    if (!activeRaffle) return;
+
+    console.log('🧹 [Clear] Limpando todas as seleções...');
+
+    // 1. Limpar do banco primeiro
+    const { cleanupSessionSelections } = await import('./lib/selection-manager');
+    await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+
+    // 2. Aguardar processamento do realtime
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 3. Limpar estados locais
+    setSelectedNumbers([]);
+    setReservations(prev => {
+      const updated = { ...prev };
+      // Remover todas as reservations desta sessão
+      Object.keys(updated).forEach(num => {
+        if (updated[num]?.name === sessionId.current) {
+          delete updated[num];
+        }
+      });
+      return updated;
+    });
+
+    // 4. Resetar timer
+    setSelectionStartTime(null);
+    setSelectionTimeRemaining(null);
+
+    console.log('✅ [Clear] Todas as seleções foram limpas');
+  };
+
 
   const toggleNumber = async (num: string) => {
     if (!activeRaffle) return;
@@ -382,38 +479,22 @@ const App: React.FC = () => {
         <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full">
           <div className="max-w-md mx-auto flex items-center justify-between">
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-slate-500 uppercase">{selectedNumbers.length} Números selecionados</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase">{selectedNumbers.length} Números selecionados</span>
+                {selectionTimeRemaining && (
+                  <span className={`text-xs font-bold ${selectionTimeRemaining < 60 ? 'text-red-600 animate-pulse' : 'text-orange-600'
+                    }`}>
+                    ⏱️ {Math.floor(selectionTimeRemaining / 60)}:{String(selectionTimeRemaining % 60).padStart(2, '0')}
+                  </span>
+                )}
+              </div>
               <span className="text-xl font-black text-[#003B73]">
                 Total: R$ {(selectedNumbers.length * PRICE_PER_NUMBER).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex gap-2">
               <button
-                onClick={async () => {
-                  if (activeRaffle) {
-                    // 1. Limpar do banco primeiro
-                    const { cleanupSessionSelections } = await import('./lib/selection-manager');
-                    await cleanupSessionSelections(activeRaffle.id, sessionId.current);
-
-                    // 2. Aguardar processamento do realtime
-                    await new Promise(resolve => setTimeout(resolve, 150));
-
-                    // 3. Limpar estados locais
-                    setSelectedNumbers([]);
-                    setReservations(prev => {
-                      const updated = { ...prev };
-                      // Remover todas as reservations desta sessão
-                      Object.keys(updated).forEach(num => {
-                        if (updated[num]?.name === sessionId.current) {
-                          delete updated[num];
-                        }
-                      });
-                      return updated;
-                    });
-
-                    console.log('✅ Todas as seleções limpas');
-                  }
-                }}
+                onClick={handleClearAll}
                 className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-4 py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase"
               >
                 Limpar
