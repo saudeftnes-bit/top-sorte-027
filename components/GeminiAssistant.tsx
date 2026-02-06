@@ -107,25 +107,26 @@ const GeminiAssistant: React.FC = () => {
 
   return (
     <>
-      {/* Botão Flutuante - No mobile fica no topo direito (abaixo do header), no desktop fica embaixo */}
+      {/* Botão Flutuante - Menor para não cobrir informações */}
       <div className="fixed top-[72px] sm:top-auto sm:bottom-6 right-2 sm:right-6 z-[60]">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`p-2.5 sm:p-3.5 rounded-full shadow-2xl flex items-center justify-center border-2 transition-all active:scale-90 ${isOpen ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#4ADE80]'}`}
+          className={`p-2 sm:p-2.5 rounded-full shadow-2xl flex items-center justify-center border-2 transition-all active:scale-90 ${isOpen ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#4ADE80]'}`}
         >
           {isOpen ? (
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
           ) : (
             <div className="relative">
-              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-[#003B73]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>
-              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 sm:h-3 sm:w-3">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#003B73]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>
+              <span className="absolute -top-1 -right-1 flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green-500"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-green-500"></span>
               </span>
             </div>
           )}
         </button>
       </div>
+
 
       {isOpen && (
         <div className="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-6 z-[70] w-full h-full sm:w-[360px] sm:h-[520px] bg-white sm:rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
