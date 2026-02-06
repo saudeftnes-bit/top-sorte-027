@@ -104,8 +104,9 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         if (success) {
             setSuccessMessage('Sorteio atualizado com sucesso! ✅');
             setShowSuccessModal(true);
-            await loadData();
-            onDataChanged?.();
+            // Removido loadData e onDataChanged para não fechar modal prematuramente
+            // await loadData();
+            // onDataChanged?.();
         } else {
             setErrorMessage('Erro ao atualizar sorteio. Tente novamente.');
             setShowErrorModal(true);
