@@ -7,7 +7,7 @@ export interface BichoAnimal {
 export const BICHO_ANIMALS: BichoAnimal[] = [
     { name: 'Avestruz', numbers: ['01', '02', '03', '04'], emoji: '🦅' },
     { name: 'Águia', numbers: ['05', '06', '07', '08'], emoji: '🦅' },
-    { name: 'Burro', numbers: ['09', '10', '11', '12'], emoji: '🫏' },
+    { name: 'Burro', numbers: ['09', '10', '11', '12'], emoji: '🐴' },
     { name: 'Borboleta', numbers: ['13', '14', '15', '16'], emoji: '🦋' },
     { name: 'Cachorro', numbers: ['17', '18', '19', '20'], emoji: '🐕' },
     { name: 'Cabra', numbers: ['21', '22', '23', '24'], emoji: '🐐' },
