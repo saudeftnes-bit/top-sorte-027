@@ -226,8 +226,8 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
                   3
                 </div>
                 <div>
-                  <h4 className="font-black text-purple-900 mb-1">✅ Confirmação</h4>
-                  <p className="text-sm text-slate-600">Envie o comprovante e aguarde a confirmação</p>
+                  <h4 className="font-black text-purple-900 mb-1">⚡ Aprovação Imediata</h4>
+                  <p className="text-sm text-slate-600">O sistema identifica seu pagamento em segundos e libera seus números</p>
                 </div>
               </div>
             </div>
