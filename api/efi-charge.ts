@@ -78,6 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             efi_status: pixCharge.status,
             efi_pix_copia_cola: pixCharge.pixCopiaCola,
             efi_qr_code_url: pixCharge.qrCodeImage,
+            expires_at: pixCharge.expiresAt,
         }));
 
         const { data: reservations, error: reservationsError } = await supabase

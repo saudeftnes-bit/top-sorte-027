@@ -25,9 +25,12 @@ export function getOrCreateSessionId(): string {
 export async function createTemporarySelection(
     raffleId: string,
     number: string,
-    sessionId: string
+    sessionId: string,
+    timeoutMinutes: number = 5
 ): Promise<boolean> {
     try {
+        const expiresAt = new Date(Date.now() + timeoutMinutes * 60 * 1000).toISOString();
+
         const insertData = {
             raffle_id: raffleId,
             number: number,
@@ -35,6 +38,7 @@ export async function createTemporarySelection(
             buyer_email: `temp_${sessionId}@selecting.local`,
             buyer_phone: '',
             status: 'pending' as const,
+            expires_at: expiresAt,
             created_at: new Date().toISOString()
         };
 

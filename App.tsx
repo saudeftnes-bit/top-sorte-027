@@ -314,7 +314,12 @@ const App: React.FC = () => {
 
       // Importar função dinamicamente para evitar problemas de build
       const { createTemporarySelection } = await import('./lib/selection-manager');
-      await createTemporarySelection(activeRaffle.id, num, sessionId.current);
+      await createTemporarySelection(
+        activeRaffle.id,
+        num,
+        sessionId.current,
+        activeRaffle.selection_timeout || 5
+      );
     }
   };
 
