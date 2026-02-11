@@ -1,8 +1,27 @@
-import { createPixCharge } from '../lib/efi-service';
-import { supabase } from '../lib/supabase';
+import EfiPay from 'sdk-node-apis-efi';
 
 type VercelRequest = any;
 type VercelResponse = any;
+
+// Configuração do cliente Efi
+const getEfiClient = () => {
+    const options = {
+        sandbox: process.env.EFI_SANDBOX === 'true',
+        client_id: process.env.EFI_CLIENT_ID || '',
+        client_secret: process.env.EFI_CLIENT_SECRET || '',
+        certificate: process.env.EFI_CERTIFICATE_BASE64 || '',
+        cert_base64: true,
+        validateMtls: false,
+    };
+    return new EfiPay(options);
+};
+
+// Gera txid único
+function generateTxid(): string {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 15);
+    return `TS${timestamp}${random}`.substring(0, 35).toUpperCase();
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CORS headers
@@ -34,13 +53,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('💳 [API Efi Charge] Criando cobrança PIX:', { raffleId, numbers, totalPrice });
 
         // Criar cobrança PIX na Efi
-        const pixCharge = await createPixCharge({
-            value: totalPrice,
-            customerName: buyer.name,
-            customerEmail: buyer.email,
+        const efipay = getEfiClient();
+        const txid = generateTxid();
+        const expirationSeconds = 1800; // 30 minutos
+
+        const body = {
+            calendario: {
+                expiracao: expirationSeconds,
+            },
+            devedor: {
+                nome: buyer.name,
+            },
+            valor: {
+                original: totalPrice.toFixed(2),
+            },
+            chave: process.env.EFI_PIX_KEY,
+            solicitacaoPagador: 'Pagamento Top Sorte - Rifas',
+            infoAdicionais: [
+                {
+                    nome: 'Cliente',
+                    valor: buyer.name,
+                },
+            ],
+        };
+
+        // Criar cobrança PIX
+        const chargeResponse = await efipay.pixCreateImmediateCharge(txid, body);
+
+        // Gerar QR Code
+        const qrCodeResponse = await efipay.pixGenerateQRCode({
+            id: chargeResponse.loc.id,
         });
 
+        // Calcular data de expiração
+        const expiresAt = new Date();
+        expiresAt.setSeconds(expiresAt.getSeconds() + expirationSeconds);
+
+        const pixCharge = {
+            txid: chargeResponse.txid,
+            status: chargeResponse.status,
+            pixCopiaCola: qrCodeResponse.qrcode,
+            qrCodeImage: qrCodeResponse.imagemQrcode,
+            expiresAt: expiresAt.toISOString(),
+        };
+
         console.log('✅ [API Efi Charge] Cobrança criada:', pixCharge.txid);
+
+        // Importar Supabase - inline para evitar problemas de módulo
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+            process.env.VITE_SUPABASE_URL || '',
+            process.env.VITE_SUPABASE_ANON_KEY || ''
+        );
 
         // Criar registro de transação no Supabase
         const { data: transaction, error: transactionError } = await supabase
