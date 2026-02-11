@@ -11,10 +11,19 @@ interface Message {
 interface FAQChatbotProps {
     raffle?: Raffle;
     reservations?: ReservationMap;
+    isOpen?: boolean;
+    onToggle?: (open: boolean) => void;
 }
 
-const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle, reservations = {} }) => {
-    const [isOpen, setIsOpen] = useState(false);
+const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle, reservations = {}, isOpen: externalIsOpen, onToggle }) => {
+    const [localIsOpen, setLocalIsOpen] = useState(false);
+
+    // Sincronizar ou usar estado local
+    const isOpen = externalIsOpen !== undefined ? externalIsOpen : localIsOpen;
+    const setIsOpen = (val: boolean) => {
+        if (onToggle) onToggle(val);
+        setLocalIsOpen(val);
+    };
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);

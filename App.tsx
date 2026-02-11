@@ -34,6 +34,9 @@ const App: React.FC = () => {
   const [selectionStartTime, setSelectionStartTime] = useState<number | null>(null);
   const [selectionTimeRemaining, setSelectionTimeRemaining] = useState<number | null>(null);
 
+  // FAQ Chatbot state
+  const [isFAQOpen, setIsFAQOpen] = useState(false);
+
   // Secret admin mode toggle (5 clicks on logo)
   const [clickCount, setClickCount] = useState(0);
   const [showAdminButton, setShowAdminButton] = useState(() => {
@@ -422,6 +425,16 @@ const App: React.FC = () => {
             </svg>
           </a>
 
+          {/* Atendente Virtual */}
+          <button
+            onClick={() => setIsFAQOpen(!isFAQOpen)}
+            className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1.5 rounded-full text-[10px] font-black shadow-md hover:scale-105 transition-all uppercase tracking-tight"
+            title="Atendente Virtual"
+          >
+            <span className="text-sm">💬</span>
+            <span className="hidden sm:inline">Atendente Virtual</span>
+          </button>
+
 
           {/* Admin Button - Só aparece com o código secreto (5 cliques no logo) */}
           {showAdminButton && view !== 'admin' && (
@@ -538,7 +551,12 @@ const App: React.FC = () => {
       )}
 
 
-      <FAQChatbot raffle={activeRaffle || undefined} reservations={reservations} />
+      <FAQChatbot
+        raffle={activeRaffle || undefined}
+        reservations={reservations}
+        isOpen={isFAQOpen}
+        onToggle={setIsFAQOpen}
+      />
     </div>
   );
 };
