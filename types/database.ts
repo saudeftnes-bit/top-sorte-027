@@ -27,8 +27,32 @@ export interface Reservation {
     status: 'pending' | 'paid' | 'cancelled';
     payment_amount?: number;
     payment_proof_url?: string;
+    payment_method?: 'manual' | 'efi';
+    efi_txid?: string;
+    efi_status?: string;
+    efi_pix_copia_cola?: string;
+    efi_qr_code_url?: string;
     expires_at?: string; // Timer de expiração (30 minutos)
     created_at: string;
+    updated_at: string;
+}
+
+export interface EfiTransaction {
+    id: string;
+    txid: string;
+    raffle_id: string;
+    reservation_ids: string[];
+    amount: number;
+    status: string;
+    pix_copia_cola?: string;
+    qr_code_url?: string;
+    buyer_name: string;
+    buyer_email?: string;
+    buyer_phone?: string;
+    buyer_cpf?: string;
+    webhook_events?: any[];
+    created_at: string;
+    paid_at?: string;
     updated_at: string;
 }
 

@@ -1,11 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { WhatsAppIcon } from '../App';
-import { createReservation } from '../lib/supabase-admin';
 import { useReservationTimer } from '../hooks/useReservationTimer';
-import ImageUpload from './ImageUpload';
-import { supabase } from '../lib/supabase';
-import { getOrCreateSessionId, confirmSelections, cleanupSessionSelections } from '../lib/selection-manager';
+import { useEfiPayment } from '../hooks/useEfiPayment';
+import { getOrCreateSessionId, cleanupSessionSelections } from '../lib/selection-manager';
 import ConfirmModal from './ConfirmModal';
 
 import { Raffle } from '../types/database';
@@ -24,16 +22,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const [step, setStep] = useState<'info' | 'payment'>('info');
   const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
   const [copied, setCopied] = useState(false);
-  // Inicializar timer com 30 minutos a partir de agora
-  const [expiresAt, setExpiresAt] = useState<string | null>(() => {
-    const now = new Date();
-    const expires = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutos
-    return expires.toISOString();
-  });
-  const [reservationIds, setReservationIds] = useState<string[]>([]);
-  const [proofUploaded, setProofUploaded] = useState(false);
-  const [uploadError, setUploadError] = useState('');
-  const [codeCopied, setCodeCopied] = useState(false);
+
+  // Estados Efi
+  const [efiTxid, setEfiTxid] = useState<string | null>(null);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [pixCopiaCola, setPixCopiaCola] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [isCreatingCharge, setIsCreatingCharge] = useState(false);
+  const [chargeError, setChargeError] = useState<string | null>(null);
+
+  // Polling de status Efi
+  const { status: efiStatus, stopPolling } = useEfiPayment(efiTxid, step === 'payment');
+  const timer = useReservationTimer(expiresAt);
 
   // States para modal personalizado
   const [showModal, setShowModal] = useState(false);
@@ -46,10 +46,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
 
   // Session ID para identificar este usuário
   const sessionId = useRef<string>(getOrCreateSessionId());
-
-  const PIX_KEY = "27992429263";
-  const PIX_CODE = "00020126580014BR.GOV.BCB.PIX01364fa098ae-30c1-4f61-833d-970d0656e7055204000053039865802BR5925DEIVID AUGUSTO BANDEIRA B6005SERRA62120508topsorte63048362";
-  const timer = useReservationTimer(expiresAt);
 
   // Função para formatar telefone: (XX) XXXXX-XXXX
   const formatPhone = (value: string) => {
@@ -64,6 +60,31 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     }
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
   };
+
+  // Handle payment confirmation via Efi
+  useEffect(() => {
+    if (efiStatus?.isPaid) {
+      console.log('✅ [Checkout] Pagamento confirmado via Efi!');
+
+      stopPolling();
+      setExpiresAt(null);
+
+      // Atualizar UI
+      onConfirmPurchase(formData.name, selectedNumbers);
+
+      // Mostrar modal de sucesso
+      setModalConfig({
+        title: 'Pagamento Confirmado! 🎉',
+        message: `✅ Seu pagamento foi confirmado automaticamente!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\nBoa sorte! Você já está concorrendo!`,
+        type: 'success',
+        onConfirm: () => {
+          setShowModal(false);
+          onClose();
+        }
+      });
+      setShowModal(true);
+    }
+  }, [efiStatus?.isPaid]);
 
   // Handle expiration
   useEffect(() => {
@@ -87,127 +108,103 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     }
   }, [timer.isExpired, step, onClose, raffleId]);
 
-  const handleCopyKey = () => {
-    navigator.clipboard.writeText(PIX_KEY);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(PIX_CODE);
-    setCodeCopied(true);
-    setTimeout(() => setCodeCopied(false), 2000);
+  const handleCopy = () => {
+    if (pixCopiaCola) {
+      navigator.clipboard.writeText(pixCopiaCola);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.name && formData.phone && formData.email && raffleId) {
-      console.log('📝 [Checkout] Iniciando confirmação...');
 
-      // Tentar converter seleções temporárias (pending) em reservas confirmadas (paid)
-      let success = await confirmSelections(
-        raffleId,
-        sessionId.current,
-        formData.name,
-        formData.email,
-        formData.phone
-      );
+    if (!formData.name || !formData.phone || !formData.email || !raffleId) {
+      return;
+    }
 
-      // Se não houver seleções pending (realtime não habilitado), criar reservas diretamente
-      if (!success) {
-        console.log('⚠️ [Checkout] Sem seleções pending, criando reservas diretamente...');
+    setIsCreatingCharge(true);
+    setChargeError(null);
 
-        for (const number of selectedNumbers) {
-          const result = await createReservation({
-            raffle_id: raffleId,
-            number: number,
-            buyer_name: formData.name,
-            buyer_phone: formData.phone,
-            buyer_email: formData.email,
-            status: 'paid',
-            payment_amount: totalPrice / selectedNumbers.length,
-          });
+    try {
+      console.log('💳 [Checkout] Criando cobrança PIX Efi...');
 
-          if (result) {
-            console.log(`✅ [Checkout] Reserva criada para número ${number}`);
-            success = true;
-          }
-        }
+      // Chamar API para criar cobrança Efi
+      const response = await fetch('/api/efi-charge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          raffleId,
+          numbers: selectedNumbers,
+          buyer: {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+          },
+          totalPrice,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao criar cobrança');
       }
 
-      if (success) {
-        console.log('✅ [Checkout] Confirmação bem-sucedida, indo para pagamento');
+      const data = await response.json();
 
-        // Buscar IDs das reservas para vinculação de comprovante posterior
-        const { data: resData } = await supabase
-          .from('reservations')
-          .select('id')
-          .eq('raffle_id', raffleId)
-          .eq('buyer_name', formData.name)
-          .eq('status', 'pending');
+      console.log('✅ [Checkout] Cobrança criada:', data.txid);
 
-        if (resData) {
-          setReservationIds(resData.map(r => r.id));
+      // Salvar dados do PIX
+      setEfiTxid(data.txid);
+      setQrCode(data.qrCode);
+      setPixCopiaCola(data.pixCopiaCola);
+      setExpiresAt(data.expiresAt);
+
+      // Atualizar local state como PENDING
+      onSetPending(formData.name, selectedNumbers);
+
+      // Mostrar modal de confirmação
+      setModalConfig({
+        title: 'Números Confirmados',
+        message: `Seus números foram reservados com sucesso!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\n⏰ Complete o pagamento PIX para garantir sua participação!`,
+        type: 'success',
+        onConfirm: () => {
+          setShowModal(false);
+          setStep('payment');
+
+          // Rolar modal para o topo
+          setTimeout(() => {
+            const modal = document.querySelector('.checkout-modal');
+            if (modal) {
+              modal.scrollTop = 0;
+            }
+          }, 100);
         }
+      });
+      setShowModal(true);
 
-        // Definir expiração para 1 minuto (ou valor do admin) a partir de agora
-        const timeoutMinutes = raffle?.payment_timeout || 1;
-        const oneMinuteFromNow = new Date();
-        oneMinuteFromNow.setSeconds(oneMinuteFromNow.getSeconds() + (timeoutMinutes * 60));
-        setExpiresAt(oneMinuteFromNow.toISOString());
-
-        // Update local state as PENDING (AMARELO PULSANTE)
-        onSetPending(formData.name, selectedNumbers);
-
-        // Mostrar modal de confirmação com os números
-        setModalConfig({
-          title: 'Números Confirmados',
-          message: `Seus números foram reservados com sucesso!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\n⏰ Você tem ${(timeoutMinutes * 60)} segundos para realizar o pagamento.\n\nProssiga para o PIX!`,
-          type: 'success',
-          onConfirm: () => {
-            setShowModal(false);
-            setStep('payment');
-
-            // Rolar modal para o topo
-            setTimeout(() => {
-              const modal = document.querySelector('.checkout-modal');
-              if (modal) {
-                modal.scrollTop = 0;
-              }
-            }, 100);
-          }
-        });
-        setShowModal(true);
-      } else {
-        console.error('❌ [Checkout] Erro ao confirmar reservas');
-        setModalConfig({
-          title: 'Erro',
-          message: 'Erro ao confirmar reservas. Tente novamente.',
-          type: 'error',
-          onConfirm: () => setShowModal(false)
-        });
-        setShowModal(true);
-      }
+    } catch (error: any) {
+      console.error('❌ [Checkout] Erro:', error);
+      setChargeError(error.message || 'Erro ao processar pagamento');
+      setModalConfig({
+        title: 'Erro',
+        message: error.message || 'Erro ao processar pagamento. Tente novamente.',
+        type: 'error',
+        onConfirm: () => setShowModal(false)
+      });
+      setShowModal(true);
+    } finally {
+      setIsCreatingCharge(false);
     }
   };
 
-  const handleFinish = () => {
-    // Cancelar o timer de expiração
-    setExpiresAt(null);
-
-    // Opcional: Aqui poderíamos mudar para 'paid' para garantir que não seja limpo
-    // Mas vamos apenas abrir o WhatsApp conforme o fluxo atual
-    const text = encodeURIComponent(`Olá! Acabei de realizar o PIX para os números ${selectedNumbers.join(', ')}. Meu nome é ${formData.name}. Segue o comprovante em anexo.`);
-    window.open(`https://wa.me/55${PIX_KEY}?text=${text}`, '_blank');
-
-    // Fecha o modal e limpa seleções
-    onClose();
+  const handleWhatsApp = () => {
+    const phone = "27992429263"; // Número do admin
+    const text = encodeURIComponent(`Olá! Acabei de realizar o PIX para os números ${selectedNumbers.join(', ')}. Meu nome é ${formData.name}.`);
+    window.open(`https://wa.me/55${phone}?text=${text}`, '_blank');
   };
-
-  // Log quando step mudar
-  useEffect(() => {
-    console.log(`🔄 [Step] Modal step changed to: ${step}`);
-  }, [step]);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
@@ -276,11 +273,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                 </div>
               </div>
 
+              {chargeError && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
+                  <p className="text-red-700 font-bold text-sm text-center">{chargeError}</p>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full bg-purple-600 text-white font-black py-5 rounded-2xl shadow-xl transition-transform active:scale-95 text-lg"
+                disabled={isCreatingCharge}
+                className="w-full bg-purple-600 text-white font-black py-5 rounded-2xl shadow-xl transition-transform active:scale-95 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                PROSSEGUIR PARA PAGAMENTO
+                {isCreatingCharge ? 'PROCESSANDO...' : 'PROSSEGUIR PARA PAGAMENTO'}
               </button>
 
               <button
@@ -313,84 +317,67 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                 </div>
               )}
 
-              <div className="text-center bg-green-50 p-6 rounded-[2rem] border border-green-200">
-                <p className="text-green-800 font-bold mb-1 italic">✅ Números Confirmados!</p>
-                <p className="text-xs text-green-700 font-medium leading-relaxed">Seus números já estão <span className="font-bold">ROXOS</span> (confirmados) na grade. Complete o pagamento PIX abaixo.</p>
-              </div>
+              {/* Status do Pagamento */}
+              {efiStatus && (
+                <div className={`text-center p-6 rounded-[2rem] border-2 ${efiStatus.isPaid ? 'bg-green-50 border-green-300' : 'bg-blue-50 border-blue-300'
+                  }`}>
+                  <p className={`font-black text-lg mb-1 ${efiStatus.isPaid ? 'text-green-700' : 'text-blue-700'
+                    }`}>
+                    {efiStatus.isPaid ? '✅ Pagamento Confirmado!' : '🔄 Aguardando Pagamento...'}
+                  </p>
+                  <p className="text-xs font-medium text-slate-600">
+                    {efiStatus.isPaid ? 'Você já está concorrendo!' : 'Realize o PIX abaixo'}
+                  </p>
+                </div>
+              )}
 
-              {/* Upload de Comprovante */}
-              <div className="space-y-3">
-                <p className="text-center text-sm font-black text-slate-700 uppercase tracking-widest">📤 Enviar Comprovante</p>
-                <ImageUpload
-                  onUploadComplete={async (url) => {
-                    // Atualizar todas as reservas com a URL do comprovante
-                    for (const id of reservationIds) {
-                      await supabase
-                        .from('reservations')
-                        .update({ payment_proof_url: url })
-                        .eq('id', id);
-                    }
-                    setProofUploaded(true);
-                    setUploadError('');
-                    // Cancelar timer pois o usuário agiu
-                    setExpiresAt(null);
-                  }}
-                  onUploadError={(error) => {
-                    setUploadError(error);
-                  }}
-                />
-                {uploadError && (
-                  <p className="text-red-600 text-sm font-bold text-center">{uploadError}</p>
-                )}
-              </div>
-
-              <div className="text-center text-xs text-slate-400 font-medium">
-                <p>-- OU --</p>
-              </div>
-
-              {/* Opção 1: Código PIX Copia e Cola */}
-              <div className="space-y-4">
-                <p className="text-center text-sm font-black text-purple-700 uppercase tracking-widest">💳 Opção 1: PIX Copia e Cola</p>
-                <p className="text-center text-xs text-slate-500 font-medium">Copie o código e cole no seu app de banco</p>
-                <div className="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200">
-                  <div className="bg-white p-3 rounded-xl mb-3 max-h-20 overflow-y-auto">
-                    <code className="text-[10px] text-slate-600 font-mono break-all">{PIX_CODE}</code>
+              {/* QR Code PIX */}
+              {qrCode && !efiStatus?.isPaid && (
+                <div className="space-y-4">
+                  <p className="text-center text-sm font-black text-purple-700 uppercase tracking-widest">📱 Escaneie o QR Code</p>
+                  <div className="bg-white p-6 rounded-2xl border-2 border-purple-200 flex justify-center">
+                    <img src={qrCode} alt="QR Code PIX" className="w-64 h-64" />
                   </div>
-                  <button
-                    onClick={handleCopyCode}
-                    className="w-full bg-purple-600 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-md active:scale-95 transition-transform"
-                  >
-                    {codeCopied ? '✅ CÓDIGO COPIADO!' : '📋 COPIAR CÓDIGO PIX'}
-                  </button>
                 </div>
-              </div>
+              )}
 
-              <div className="text-center text-xs text-slate-400 font-medium">
-                <p>-- OU --</p>
-              </div>
+              {/* PIX Copia e Cola */}
+              {pixCopiaCola && !efiStatus?.isPaid && (
+                <>
+                  <div className="text-center text-xs text-slate-400 font-medium">
+                    <p>-- OU --</p>
+                  </div>
 
-              {/* Opção 2: Chave PIX */}
-              <div className="space-y-4">
-                <p className="text-center text-sm font-black text-green-700 uppercase tracking-widest">📱 Opção 2: Chave PIX</p>
-                <p className="text-center text-xs text-slate-500 font-medium">Digite a chave no seu app de banco</p>
-                <div className="bg-slate-50 p-5 rounded-2xl flex items-center justify-between border-2 border-slate-200">
-                  <span className="font-black text-slate-700 text-lg tracking-tight">{PIX_KEY}</span>
-                  <button
-                    onClick={handleCopyKey}
-                    className="bg-green-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md active:scale-90 transition-transform"
-                  >
-                    {copied ? '✅ COPIADO!' : 'COPIAR'}
-                  </button>
-                </div>
-              </div>
+                  <div className="space-y-4">
+                    <p className="text-center text-sm font-black text-green-700 uppercase tracking-widest">💳 PIX Copia e Cola</p>
+                    <div className="bg-green-50 p-4 rounded-2xl border-2 border-green-200">
+                      <div className="bg-white p-3 rounded-xl mb-3 max-h-20 overflow-y-auto">
+                        <code className="text-[10px] text-slate-600 font-mono break-all">{pixCopiaCola}</code>
+                      </div>
+                      <button
+                        onClick={handleCopy}
+                        className="w-full bg-green-600 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-md active:scale-95 transition-transform"
+                      >
+                        {copied ? '✅ CÓDIGO COPIADO!' : '📋 COPIAR CÓDIGO PIX'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
+              {/* Valor */}
               <div className="p-6 border-2 border-dashed border-slate-200 rounded-[2rem] space-y-4">
                 <p className="text-center text-sm font-bold text-slate-500 leading-relaxed px-2">
-                  Pague <span className="text-purple-700 font-black">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> e envie o comprovante via WhatsApp.
+                  Valor: <span className="text-purple-700 font-black">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </p>
+                <p className="text-center text-xs text-slate-400">
+                  O pagamento será confirmado automaticamente após o processamento PIX.
+                </p>
+
+                {/* Botão WhatsApp opcional */}
                 <button
-                  onClick={handleFinish}
-                  className="w-full bg-green-600 text-white font-black py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-transform active:scale-95"
+                  onClick={handleWhatsApp}
+                  className="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-transform active:scale-95"
                 >
                   <WhatsAppIcon className="w-6 h-6" />
                   CONFIRMAR NO WHATSAPP

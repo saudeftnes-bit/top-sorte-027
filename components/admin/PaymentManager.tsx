@@ -111,6 +111,13 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
         }
     };
 
+    const getPaymentMethodBadge = (method?: string) => {
+        if (method === 'efi') {
+            return <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-black">🤖 EFI</span>;
+        }
+        return <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-black">👤 MANUAL</span>;
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -220,9 +227,27 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                         {getStatusBadge(reservation.status)}
+                                        {getPaymentMethodBadge(reservation.payment_method)}
                                     </div>
+
+                                    {/* Informações Efi */}
+                                    {reservation.payment_method === 'efi' && reservation.efi_txid && (
+                                        <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                                            <p className="text-xs font-bold text-blue-700 mb-1">📝 Detalhes Efi:</p>
+                                            <div className="space-y-1">
+                                                <p className="text-xs text-blue-600">
+                                                    <span className="font-bold">TXID:</span> {reservation.efi_txid.substring(0, 20)}...
+                                                </p>
+                                                {reservation.efi_status && (
+                                                    <p className="text-xs text-blue-600">
+                                                        <span className="font-bold">Status Efi:</span> {reservation.efi_status}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Actions */}
