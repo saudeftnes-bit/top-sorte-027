@@ -373,15 +373,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                 <p className="text-center text-xs text-slate-400">
                   O pagamento será confirmado automaticamente após o processamento PIX.
                 </p>
-
-                {/* Botão WhatsApp opcional */}
-                <button
-                  onClick={handleWhatsApp}
-                  className="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-transform active:scale-95"
-                >
-                  <WhatsAppIcon className="w-6 h-6" />
-                  CONFIRMAR NO WHATSAPP
-                </button>
               </div>
             </div>
           )}
