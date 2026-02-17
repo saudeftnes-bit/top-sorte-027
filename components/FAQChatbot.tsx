@@ -246,22 +246,6 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle, reservations = {}, isOp
 
     return (
         <>
-            {/* Botão flutuante */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full p-4 shadow-2xl hover:scale-110 transition-transform active:scale-95 flex items-center gap-2"
-                style={{ width: isOpen ? 'auto' : '64px', height: '64px' }}
-            >
-                {isOpen ? (
-                    <>
-                        <span className="text-2xl">✕</span>
-                        <span className="font-bold pr-2">Fechar</span>
-                    </>
-                ) : (
-                    <span className="text-3xl">💬</span>
-                )}
-            </button>
-
             {/* Chat window */}
             {isOpen && (
                 <div className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] max-h-[calc(100vh-8rem)] bg-white rounded-3xl shadow-2xl border-2 border-purple-200 flex flex-col overflow-hidden">
