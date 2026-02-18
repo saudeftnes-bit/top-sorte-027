@@ -43,19 +43,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const { raffleId, numbers, buyer, totalPrice } = req.body;
+        const { raffleId, numbers, buyer, totalPrice, paymentTimeout } = req.body;
 
         // Validação
         if (!raffleId || !numbers || !buyer || !totalPrice) {
             return res.status(400).json({ error: 'Dados incompletos' });
         }
 
-        console.log('💳 [API Efi Charge] Criando cobrança PIX:', { raffleId, numbers, totalPrice });
+        console.log('💳 [API Efi Charge] Criando cobrança PIX:', { raffleId, numbers, totalPrice, paymentTimeout });
 
         // Criar cobrança PIX na Efi
         const efipay = getEfiClient();
         const txid = generateTxid();
-        const expirationSeconds = 1800; // 30 minutos
+        const expirationSeconds = (paymentTimeout || 15) * 60; // Dinâmico (minutos para segundos)
 
         const body: any = {
             calendario: {

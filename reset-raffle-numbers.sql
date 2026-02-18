@@ -7,14 +7,18 @@ RETURNS TABLE(deleted_count INTEGER) AS $$
 DECLARE
   count INTEGER;
 BEGIN
-  -- Deletar todas as reservas do sorteio
+  -- 1. Deletar todas as transações EFI associadas a este sorteio
+  DELETE FROM efi_transactions
+  WHERE raffle_id = raffle_id_param;
+
+  -- 2. Deletar todas as reservas do sorteio
   DELETE FROM reservations
   WHERE raffle_id = raffle_id_param;
   
   GET DIAGNOSTICS count = ROW_COUNT;
   
   -- Log para debug
-  RAISE NOTICE 'Deletadas % reservas do sorteio %', count, raffle_id_param;
+  RAISE NOTICE 'Reset completo do sorteio % concluído', raffle_id_param;
   
   RETURN QUERY SELECT count;
 END;

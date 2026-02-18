@@ -167,6 +167,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
             phone: formData.phone,
           },
           totalPrice,
+          paymentTimeout: raffle?.payment_timeout || 15,
         }),
       });
 
