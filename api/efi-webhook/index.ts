@@ -5,6 +5,28 @@ type VercelRequest = any;
 type VercelResponse = any;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    );
+
+    // OPTIONS - Preflight CORS
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    // GET ou PUT - Verificação do webhook pela EFI
+    // A EFI faz uma requisição de teste antes de registrar o webhook
+    if (req.method === 'GET' || req.method === 'PUT') {
+        console.log('✅ [Webhook Efi] Verificação recebida (método:', req.method, ')');
+        return res.status(200).json({ status: 'ok', webhook: 'active' });
+    }
+
+    // POST - Notificação de pagamento
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -14,10 +36,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         console.log('🔔 [Webhook Efi] Recebido:', JSON.stringify(payload));
 
+        // Se payload está vazio ou é uma verificação, retornar OK
+        if (!payload || Object.keys(payload).length === 0) {
+            console.log('✅ [Webhook Efi] Payload vazio - verificação da EFI');
+            return res.status(200).json({ status: 'ok' });
+        }
+
         // Validar estrutura do webhook
         if (!validateWebhook(payload)) {
-            console.error('❌ [Webhook Efi] Payload inválido');
-            return res.status(400).json({ error: 'Invalid webhook payload' });
+            console.log('⚠️ [Webhook Efi] Payload não é de pagamento PIX, retornando OK');
+            return res.status(200).json({ status: 'ok', message: 'payload recebido' });
         }
 
         // Extrair txids do payload
@@ -85,6 +113,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: true, processed: txids.length });
     } catch (error: any) {
         console.error('❌ [Webhook Efi] Erro geral:', error);
-        return res.status(500).json({ error: error.message });
+        return res.status(200).json({ status: 'ok' }); // Sempre retornar 200 para a EFI
     }
 }
