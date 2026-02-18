@@ -9,6 +9,7 @@ interface ConfirmModalProps {
     onConfirm: () => void;
     onCancel: () => void;
     variant?: 'danger' | 'warning' | 'info';
+    children?: React.ReactNode;
 }
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -19,7 +20,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     cancelLabel = 'Cancelar',
     onConfirm,
     onCancel,
-    variant = 'warning'
+    variant = 'warning',
+    children
 }) => {
     // Handle ESC key
     useEffect(() => {
@@ -80,6 +82,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                     <h2 className="text-2xl font-black text-slate-900 mb-2">{title}</h2>
                     <p className="text-slate-600 font-medium leading-relaxed">{message}</p>
                 </div>
+
+                {children}
 
                 {/* Buttons */}
                 <div className="flex gap-3">

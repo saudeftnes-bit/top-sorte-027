@@ -172,19 +172,48 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           <h2 className="text-2xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">
             {raffle?.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
           </h2>
-          <div className="flex items-center justify-center gap-2 mb-6 text-slate-500 font-bold text-sm">
-            <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-            Apenas R$ {raffle?.price_per_number?.toFixed(2).replace('.', ',') || '13,00'} por número
-          </div>
-          <button
-            onClick={onStart}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg animate-pulse hover:animate-none"
-            style={{
-              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-            }}
-          >
-            🎯 ESCOLHER MEUS NÚMEROS
-          </button>
+
+          {raffle?.status === 'finished' && (raffle.winner_number || raffle.winner_name) ? (
+            /* Winner Announcement */
+            <div className="mt-4 bg-gradient-to-br from-purple-100 to-green-100 rounded-3xl p-6 border-4 border-purple-500 relative overflow-hidden animate-in zoom-in duration-500">
+              <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-500 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-green-500 rounded-full blur-3xl"></div>
+              </div>
+
+              <div className="text-center relative z-10">
+                <span className="text-4xl mb-2 block">🏆</span>
+                <h3 className="text-xl font-black text-purple-900 uppercase tracking-tighter">Temos um Ganhador!</h3>
+                <div className="my-4 space-y-1">
+                  <p className="text-slate-600 text-xs font-bold uppercase tracking-widest">Número da Sorte</p>
+                  <p className="text-5xl font-black text-purple-600 drop-shadow-sm">{raffle.winner_number}</p>
+                </div>
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl py-3 px-4 inline-block border-2 border-white">
+                  <p className="text-sm font-black text-slate-800 uppercase">{raffle.winner_name || 'Participante Sortudo'}</p>
+                </div>
+                <p className="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">
+                  Parabéns ao ganhador!<br />Fique de olho nos próximos sorteios.
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* Normal Participation Flow */
+            <>
+              <div className="flex items-center justify-center gap-2 mb-6 text-slate-500 font-bold text-sm">
+                <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                Apenas R$ {raffle?.price_per_number?.toFixed(2).replace('.', ',') || '13,00'} por número
+              </div>
+              <button
+                onClick={onStart}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg animate-pulse hover:animate-none"
+                style={{
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                }}
+              >
+                🎯 ESCOLHER MEUS NÚMEROS
+              </button>
+            </>
+          )}
         </div>
       </section>
 

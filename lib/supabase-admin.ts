@@ -44,6 +44,32 @@ export async function updateRaffle(id: string, updates: Partial<Raffle>): Promis
     return true;
 }
 
+export async function pickRandomWinner(raffleId: string): Promise<{ number: string; buyer_name: string; buyer_phone: string } | null> {
+    console.log('🎲 [Admin] Realizando sorteio para rifa:', raffleId);
+
+    const { data, error } = await supabase.rpc('pick_random_winner', {
+        raffle_id_param: raffleId
+    });
+
+    if (error) {
+        console.error('❌ [Admin] Erro ao realizar sorteio:', error);
+        return null;
+    }
+
+    if (!data || data.length === 0) {
+        console.warn('⚠️ [Admin] Nenhum ganhador encontrado (pode não haver reservas pagas).');
+        return null;
+    }
+
+    const winner = data[0];
+    console.log('🎉 [Admin] Ganhador sorteado:', winner);
+    return {
+        number: winner.number,
+        buyer_name: winner.buyer_name,
+        buyer_phone: winner.buyer_phone
+    };
+}
+
 export async function resetRaffleNumbers(raffleId: string): Promise<number> {
     console.log('🗑️ [Admin] Zerando números do sorteio:', raffleId);
 
