@@ -84,14 +84,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Processar cada txid
         for (const txid of txids) {
             try {
+                console.log(`🔍 [Webhook Efi] Processando txid: ${txid}`);
+
                 // Consultar status atualizado na Efi
                 const response = await efipay.pixDetailCharge({ txid });
                 const status = response.status;
                 const paidAt = response.pix?.[0]?.horario || null;
 
-                console.log('🔍 [Webhook Efi] Status do txid', txid, ':', status);
+                console.log(`📊 [Webhook Efi] Status para ${txid}: ${status}`);
 
                 // Atualizar transação no banco via RPC
+                // Vamos tentar atualizar diretamente se o RPC falhar ou não estiver disponível
                 const { error: transactionError } = await supabase.rpc('update_efi_transaction_status', {
                     p_txid: txid,
                     p_status: status,
@@ -103,30 +106,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 });
 
                 if (transactionError) {
-                    console.error('❌ [Webhook Efi] Erro RPC:', transactionError);
+                    console.error(`⚠️ [Webhook Efi] Erro RPC para ${txid}:`, transactionError);
+
+                    // Fallback: Atualização direta na tabela se o RPC falhar
+                    console.log(`🔄 [Webhook Efi] Tentando atualização direta na tabela para ${txid}`);
+                    await supabase
+                        .from('efi_transactions')
+                        .update({
+                            status: status,
+                            paid_at: paidAt || null,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('txid', txid);
                 }
 
                 // Se pago, atualizar reservas para 'paid'
                 if (status === 'CONCLUIDA') {
-                    console.log('💰 [Webhook Efi] Pagamento confirmado! Atualizando reservas...');
+                    console.log(`💰 [Webhook Efi] Pagamento CONFIRMADO para ${txid}! Atualizando reservas...`);
 
-                    const { error: reservationsError } = await supabase
+                    const { data: updatedReservations, error: reservationsError } = await supabase
                         .from('reservations')
                         .update({
                             status: 'paid',
-                            efi_status: 'CONCLUIDA',
+                            updated_at: new Date().toISOString(),
+                        })
+                        .eq('efi_txid', txid)
+                        .select();
+
+                    if (reservationsError) {
+                        console.error(`❌ [Webhook Efi] Erro ao atualizar reservas para ${txid}:`, reservationsError);
+                    } else {
+                        console.log(`✅ [Webhook Efi] ${updatedReservations?.length || 0} reserva(s) atualizada(s) para PAID para o txid ${txid}`);
+                    }
+                } else {
+                    // Atualizar efi_status mesmo que não seja CONCLUIDA
+                    await supabase
+                        .from('reservations')
+                        .update({
+                            efi_status: status,
                             updated_at: new Date().toISOString(),
                         })
                         .eq('efi_txid', txid);
-
-                    if (reservationsError) {
-                        console.error('❌ [Webhook Efi] Erro ao atualizar reservas:', reservationsError);
-                    } else {
-                        console.log('✅ [Webhook Efi] Reservas atualizadas para PAID');
-                    }
                 }
             } catch (error: any) {
-                console.error('❌ [Webhook Efi] Erro ao processar txid', txid, ':', error);
+                console.error(`❌ [Webhook Efi] Erro crítico ao processar txid ${txid}:`, error);
             }
         }
 

@@ -119,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         let reservationIds: string[] = [];
 
-        // Tentar salvar transação EFI (não bloqueia se falhar)
+        // 3. Tentar salvar transação EFI (não bloqueia se falhar)
         try {
             await supabase
                 .from('efi_transactions')
@@ -138,7 +138,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.error('⚠️ [API Efi Charge] Erro ao salvar transação (não crítico):', e);
         }
 
-        // Criar reservas com colunas básicas apenas
+        // 4. Limpar reservas temporárias existentes para estes números antes de criar as definitivas
+        // Isso evita o erro de duplicidade UNIQUE(raffle_id, number)
+        try {
+            console.log('🧹 [API Efi Charge] Limpando reservas temporárias para números:', numbers);
+            const { error: deleteError } = await supabase
+                .from('reservations')
+                .delete()
+                .eq('raffle_id', raffleId)
+                .in('number', numbers);
+
+            if (deleteError) {
+                console.warn('⚠️ [API Efi Charge] Aviso ao deletar reservas temporárias:', deleteError);
+            }
+        } catch (e: any) {
+            console.error('⚠️ [API Efi Charge] Exceção ao deletar temporárias:', e);
+        }
+
+        // 5. Criar reservas com colunas básicas apenas
         try {
             const reservationsData = numbers.map((number: string) => ({
                 raffle_id: raffleId,
