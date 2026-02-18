@@ -16,9 +16,10 @@ interface CheckoutModalProps {
   onClose: () => void;
   onConfirmPurchase: (name: string, numbers: string[]) => void;
   onSetPending: (name: string, numbers: string[]) => void;
+  reservations?: import('../App').ReservationMap;
 }
 
-const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPrice, raffleId, raffle, onClose, onConfirmPurchase, onSetPending }) => {
+const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPrice, raffleId, raffle, onClose, onConfirmPurchase, onSetPending, reservations }) => {
   const [step, setStep] = useState<'info' | 'payment'>('info');
   const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
   const [copied, setCopied] = useState(false);
@@ -34,6 +35,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   // Polling de status Efi
   const { status: efiStatus, stopPolling } = useEfiPayment(efiTxid, step === 'payment');
   const timer = useReservationTimer(expiresAt);
+
+  // Monitorar confirmação via banco de dados (Global State)
+  // Isso funciona como um fallback caso o polling da EFI demore ou falhe
+  useEffect(() => {
+    if (step === 'payment' && reservations && selectedNumbers.length > 0) {
+      const allPaid = selectedNumbers.every(num => reservations[num]?.status === 'paid');
+
+      if (allPaid) {
+        console.log('✅ [Checkout] Pagamento confirmado via Banco de Dados!');
+        handleSuccess();
+      }
+    }
+  }, [reservations, selectedNumbers, step]);
 
   // States para modal personalizado
   const [showModal, setShowModal] = useState(false);
@@ -61,28 +75,32 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
   };
 
+  // Função para centralizar o sucesso
+  const handleSuccess = () => {
+    stopPolling();
+    setExpiresAt(null);
+
+    // Atualizar UI
+    onConfirmPurchase(formData.name, selectedNumbers);
+
+    // Mostrar modal de sucesso
+    setModalConfig({
+      title: 'Pagamento Confirmado! 🎉',
+      message: `✅ Seu pagamento foi confirmado com sucesso!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\nBoa sorte! Você já está concorrendo!`,
+      type: 'success',
+      onConfirm: () => {
+        setShowModal(false);
+        onClose();
+      }
+    });
+    setShowModal(true);
+  };
+
   // Handle payment confirmation via Efi
   useEffect(() => {
     if (efiStatus?.isPaid) {
       console.log('✅ [Checkout] Pagamento confirmado via Efi!');
-
-      stopPolling();
-      setExpiresAt(null);
-
-      // Atualizar UI
-      onConfirmPurchase(formData.name, selectedNumbers);
-
-      // Mostrar modal de sucesso
-      setModalConfig({
-        title: 'Pagamento Confirmado! 🎉',
-        message: `✅ Seu pagamento foi confirmado automaticamente!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\nBoa sorte! Você já está concorrendo!`,
-        type: 'success',
-        onConfirm: () => {
-          setShowModal(false);
-          onClose();
-        }
-      });
-      setShowModal(true);
+      handleSuccess();
     }
   }, [efiStatus?.isPaid]);
 

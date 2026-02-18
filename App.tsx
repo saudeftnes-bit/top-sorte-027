@@ -521,6 +521,7 @@ const App: React.FC = () => {
           totalPrice={selectedNumbers.length * PRICE_PER_NUMBER}
           raffleId={activeRaffle?.id}
           raffle={activeRaffle || undefined}
+          reservations={reservations}
           onClose={async () => {
             if (selectedNumbers.length > 0 && activeRaffle) {
               // 1. Limpar do banco

@@ -19,7 +19,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
     // Modal state
     const [showConfirmPaymentModal, setShowConfirmPaymentModal] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
-    const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+    const [pendingActionIds, setPendingActionIds] = useState<string[]>([]);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showErrorModal, setShowErrorModal] = useState(false);
@@ -45,58 +45,118 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
         setIsLoading(false);
     };
 
-    const handleConfirmPayment = async (id: string) => {
-        setPendingActionId(id);
+    const handleConfirmPayment = async (ids: string[]) => {
+        setPendingActionIds(ids);
         setShowConfirmPaymentModal(true);
     };
 
     const confirmPayment = async () => {
-        if (!pendingActionId) return;
+        if (!pendingActionIds || pendingActionIds.length === 0) return;
 
-        const success = await updateReservationStatus(pendingActionId, 'paid');
+        let allSuccess = true;
+        for (const id of pendingActionIds) {
+            const success = await updateReservationStatus(id, 'paid');
+            if (!success) allSuccess = false;
+        }
+
         setShowConfirmPaymentModal(false);
-        setPendingActionId(null);
+        setPendingActionIds([]);
 
-        if (success) {
+        if (allSuccess) {
             await loadReservations();
             setSelectedReservation(null);
-            setSuccessMessage('Pagamento confirmado com sucesso! ✅');
+            setSuccessMessage('Pagamento(s) confirmado(s) com sucesso! ✅');
             setShowSuccessModal(true);
             onDataChanged?.();
         } else {
-            setErrorMessage('Erro ao confirmar pagamento. Tente novamente.');
+            setErrorMessage('Ocorreu um erro ao confirmar alguns pagamentos. Verifique a lista.');
             setShowErrorModal(true);
         }
     };
 
-    const handleCancelReservation = async (id: string) => {
-        setPendingActionId(id);
+    const handleCancelReservation = async (ids: string[]) => {
+        setPendingActionIds(ids);
         setShowCancelModal(true);
     };
 
     const confirmCancelReservation = async () => {
-        if (!pendingActionId) return;
+        if (!pendingActionIds || pendingActionIds.length === 0) return;
 
-        const success = await updateReservationStatus(pendingActionId, 'cancelled');
+        let allSuccess = true;
+        for (const id of pendingActionIds) {
+            const success = await updateReservationStatus(id, 'cancelled');
+            if (!success) allSuccess = false;
+        }
+
         setShowCancelModal(false);
-        setPendingActionId(null);
+        setPendingActionIds([]);
 
-        if (success) {
+        if (allSuccess) {
             await loadReservations();
             setSelectedReservation(null);
-            setSuccessMessage('Reserva cancelada com sucesso!');
+            setSuccessMessage('Reserva(s) cancelada(s) com sucesso!');
             setShowSuccessModal(true);
             onDataChanged?.();
         } else {
-            setErrorMessage('Erro ao cancelar reserva. Tente novamente.');
+            setErrorMessage('Ocorreu um erro ao cancelar algumas reservas.');
             setShowErrorModal(true);
         }
     };
 
-    const filteredReservations = reservations.filter((r) => {
-        if (filter === 'all') return r.status !== 'cancelled';
-        return r.status === filter;
-    });
+    // Lógica de agrupamento
+    const groupedReservations = React.useMemo(() => {
+        const filtered = reservations.filter((r) => {
+            if (filter === 'all') return r.status !== 'cancelled';
+            return r.status === filter;
+        });
+
+        // Agrupar por nome + telefone + txid
+        const groups: Record<string, {
+            id: string; // ID da primeira reserva para referência
+            ids: string[]; // Todos os IDs do grupo
+            buyer_name: string;
+            buyer_phone: string;
+            buyer_email: string;
+            numbers: string[];
+            status: string;
+            payment_method: string;
+            efi_txid?: string;
+            efi_status?: string;
+            payment_amount: number;
+            created_at: string;
+        }> = {};
+
+        filtered.forEach(res => {
+            const key = `${res.buyer_name}-${res.buyer_phone}-${res.efi_txid || 'manual'}`;
+            if (!groups[key]) {
+                groups[key] = {
+                    id: res.id,
+                    ids: [res.id],
+                    buyer_name: res.buyer_name,
+                    buyer_phone: res.buyer_phone || '',
+                    buyer_email: res.buyer_email || '',
+                    numbers: [res.number],
+                    status: res.status,
+                    payment_method: res.payment_method || 'manual',
+                    efi_txid: res.efi_txid,
+                    efi_status: res.efi_status,
+                    payment_amount: res.payment_amount,
+                    created_at: res.created_at
+                };
+            } else {
+                groups[key].ids.push(res.id);
+                groups[key].numbers.push(res.number);
+                groups[key].payment_amount += res.payment_amount;
+                // Manter o status mais "recente" ou mais importante
+                if (res.status === 'paid') groups[key].status = 'paid';
+            }
+        });
+
+        // Ordenar por data
+        return Object.values(groups).sort((a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+    }, [reservations, filter]);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -132,7 +192,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-black text-slate-900">💳 Gerenciamento de Pagamentos</h2>
-                    <p className="text-slate-500 font-medium mt-1">{filteredReservations.length} reservas encontradas</p>
+                    <p className="text-slate-500 font-medium mt-1">{groupedReservations.length} grupos de compras encontrados</p>
                 </div>
                 <button
                     onClick={onBack}
@@ -160,7 +220,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                         : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-yellow-300'
                         }`}
                 >
-                    🟡 Pendentes ({reservations.filter(r => r.status === 'pending').length})
+                    🟡 Pendentes
                 </button>
                 <button
                     onClick={() => setFilter('paid')}
@@ -169,33 +229,33 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                         : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-green-300'
                         }`}
                 >
-                    ✅ Pagos ({reservations.filter(r => r.status === 'paid').length})
+                    ✅ Pagos
                 </button>
             </div>
 
             {/* Reservations List */}
-            <div className="space-y-3">
-                {filteredReservations.length === 0 ? (
+            <div className="space-y-4">
+                {groupedReservations.length === 0 ? (
                     <div className="bg-white rounded-2xl p-12 text-center border-2 border-slate-100">
                         <p className="text-4xl mb-4">📭</p>
                         <p className="text-lg font-bold text-slate-400">Nenhuma reserva encontrada</p>
                     </div>
                 ) : (
-                    filteredReservations.map((reservation) => (
+                    groupedReservations.map((group) => (
                         <div
-                            key={reservation.id}
+                            key={group.id}
                             className="bg-white rounded-2xl p-6 shadow-lg border-2 border-slate-100 hover:border-purple-200 transition-all"
                         >
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                                            <span className="text-lg font-black text-purple-600">#{reservation.number}</span>
+                            <div className="flex items-start justify-between gap-4 flex-wrap sm:flex-nowrap">
+                                <div className="flex-1 min-w-[200px]">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <span className="text-lg">🎟️</span>
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-black text-slate-900">{reservation.buyer_name}</h3>
+                                            <h3 className="text-lg font-black text-slate-900">{group.buyer_name}</h3>
                                             <p className="text-xs text-slate-500 font-medium">
-                                                {new Date(reservation.created_at).toLocaleDateString('pt-BR', {
+                                                {new Date(group.created_at).toLocaleDateString('pt-BR', {
                                                     day: '2-digit',
                                                     month: '2-digit',
                                                     year: 'numeric',
@@ -206,43 +266,49 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                                        {reservation.buyer_phone && (
+                                    {/* Números Selecionados */}
+                                    <div className="mb-4">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Números Escolhidos:</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {group.numbers.sort().map(num => (
+                                                <span key={num} className="bg-purple-50 text-purple-700 border border-purple-100 font-black px-2.5 py-1 rounded-lg text-sm">
+                                                    {num}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                        {group.buyer_phone && (
                                             <div className="flex items-center gap-2">
                                                 <span className="text-slate-400">📱</span>
-                                                <span className="text-sm font-medium text-slate-600">{reservation.buyer_phone}</span>
-                                            </div>
-                                        )}
-                                        {reservation.buyer_email && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-slate-400">📧</span>
-                                                <span className="text-sm font-medium text-slate-600">{reservation.buyer_email}</span>
+                                                <span className="text-sm font-medium text-slate-600">{group.buyer_phone}</span>
                                             </div>
                                         )}
                                         <div className="flex items-center gap-2">
                                             <span className="text-slate-400">💰</span>
                                             <span className="text-sm font-bold text-green-600">
-                                                R$ {reservation.payment_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                R$ {group.payment_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        {getStatusBadge(reservation.status)}
-                                        {getPaymentMethodBadge(reservation.payment_method)}
+                                        {getStatusBadge(group.status)}
+                                        {getPaymentMethodBadge(group.payment_method)}
                                     </div>
 
                                     {/* Informações Efi */}
-                                    {reservation.payment_method === 'efi' && reservation.efi_txid && (
-                                        <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                                    {group.payment_method === 'efi' && group.efi_txid && (
+                                        <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
                                             <p className="text-xs font-bold text-blue-700 mb-1">📝 Detalhes Efi:</p>
                                             <div className="space-y-1">
-                                                <p className="text-xs text-blue-600">
-                                                    <span className="font-bold">TXID:</span> {reservation.efi_txid.substring(0, 20)}...
+                                                <p className="text-xs text-blue-600 truncate">
+                                                    <span className="font-bold">TXID:</span> {group.efi_txid}
                                                 </p>
-                                                {reservation.efi_status && (
+                                                {group.efi_status && (
                                                     <p className="text-xs text-blue-600">
-                                                        <span className="font-bold">Status Efi:</span> {reservation.efi_status}
+                                                        <span className="font-bold">Status Efi:</span> {group.efi_status}
                                                     </p>
                                                 )}
                                             </div>
@@ -251,19 +317,19 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                                 </div>
 
                                 {/* Actions */}
-                                {reservation.status === 'pending' && (
-                                    <div className="flex flex-col gap-2">
+                                {group.status === 'pending' && (
+                                    <div className="flex flex-col gap-2 w-full sm:w-auto">
                                         <button
-                                            onClick={() => handleConfirmPayment(reservation.id)}
-                                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all active:scale-95 whitespace-nowrap"
+                                            onClick={() => handleConfirmPayment(group.ids)}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
                                         >
-                                            ✅ Confirmar
+                                            ✅ Confirmar Tudo
                                         </button>
                                         <button
-                                            onClick={() => handleCancelReservation(reservation.id)}
-                                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all active:scale-95 whitespace-nowrap"
+                                            onClick={() => handleCancelReservation(group.ids)}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
                                         >
-                                            ❌ Cancelar
+                                            ❌ Cancelar Tudo
                                         </button>
                                     </div>
                                 )}
@@ -284,7 +350,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                 onConfirm={confirmPayment}
                 onCancel={() => {
                     setShowConfirmPaymentModal(false);
-                    setPendingActionId(null);
+                    setPendingActionIds([]);
                 }}
             />
 
@@ -298,7 +364,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                 onConfirm={confirmCancelReservation}
                 onCancel={() => {
                     setShowCancelModal(false);
-                    setPendingActionId(null);
+                    setPendingActionIds([]);
                 }}
             />
 
