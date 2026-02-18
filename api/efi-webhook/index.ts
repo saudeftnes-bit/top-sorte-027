@@ -1,5 +1,5 @@
-import { getChargeStatus, validateWebhook } from '../lib/efi-service';
-import { supabase } from '../lib/supabase';
+import { getChargeStatus, validateWebhook } from '../../lib/efi-service';
+import { supabase } from '../../lib/supabase';
 
 type VercelRequest = any;
 type VercelResponse = any;
