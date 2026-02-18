@@ -106,6 +106,60 @@
         .animate-pulse-yellow {
             animation: pulse-yellow 1.5s infinite ease-in-out;
         }
+
+        @keyframes blink-green {
+
+            0%,
+            100% {
+                opacity: 1;
+                filter: brightness(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                filter: brightness(1.3);
+            }
+        }
+
+        @keyframes blink-yellow {
+
+            0%,
+            100% {
+                opacity: 1;
+                filter: brightness(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                filter: brightness(1.2);
+            }
+        }
+
+        @keyframes blink-red {
+
+            0%,
+            100% {
+                opacity: 1;
+                filter: brightness(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                filter: brightness(1.4);
+            }
+        }
+
+        .animate-blink-green {
+            animation: blink-green 1s infinite;
+        }
+
+        .animate-blink-yellow {
+            animation: blink-yellow 1s infinite;
+        }
+
+        .animate-blink-red {
+            animation: blink-red 1s infinite;
+        }
     </style>
     <script type="importmap">
 {

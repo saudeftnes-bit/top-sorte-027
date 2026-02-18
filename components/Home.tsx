@@ -158,8 +158,13 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           alt="Prêmio do Sorteio"
           className="w-full h-56 object-cover"
         />
-        <div className="absolute top-4 right-4 bg-purple-600 text-white font-black px-4 py-2 rounded-full shadow-lg text-sm">
-          {raffle?.status === 'active' ? 'SORTEIO ATIVO' : raffle?.status === 'finished' ? 'FINALIZADO' : 'EM BREVE'}
+        <div className={`absolute top-4 right-4 text-white font-black px-4 py-2 rounded-full shadow-lg text-xs tracking-tighter sm:text-sm sm:tracking-normal ${raffle?.status === 'active' ? 'bg-green-500 animate-blink-green' :
+            raffle?.status === 'scheduled' ? 'bg-yellow-500 animate-blink-yellow' :
+              'bg-red-500 animate-blink-red'
+          }`}>
+          {raffle?.status === 'active' ? '🟢 SORTEIO ATIVO' :
+            raffle?.status === 'scheduled' ? '🟡 AGUARDANDO PUBLICAÇÃO' :
+              '🔴 SORTEIO PAUSADO'}
         </div>
         <div className="p-6">
           <h2 className="text-2xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">

@@ -254,10 +254,17 @@ const FAQChatbot: React.FC<FAQChatbotProps> = ({ raffle, reservations = {}, isOp
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-2xl">
                             🎯
                         </div>
-                        <div>
-                            <h3 className="font-black text-lg">Assistente Top Sorte</h3>
-                            <p className="text-xs opacity-90">Online • Responde na hora!</p>
+                        <div className="flex-1">
+                            <h3 className="font-black text-lg leading-none">Assistente Top Sorte</h3>
+                            <p className="text-[10px] opacity-90 mt-1 uppercase tracking-wider font-bold">Online • Responde na hora!</p>
                         </div>
+                        <button
+                            onClick={() => setIsOpen(false)}
+                            className="w-10 h-10 bg-black/10 hover:bg-black/20 rounded-full flex items-center justify-center transition-all active:scale-95"
+                            title="Fechar Assistente"
+                        >
+                            <span className="text-xl font-black">✕</span>
+                        </button>
                     </div>
 
                     {/* Messages */}

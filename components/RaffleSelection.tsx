@@ -88,7 +88,23 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
           <h2 className="text-2xl font-black text-[#003B73]">
             {selectionMode === 'jogo_bicho' ? 'ESCOLHA SEU ANIMAL' : 'GRADE DE NÚMEROS'}
           </h2>
-          <p className="text-slate-500 text-sm font-medium italic">Selecione os números em verde</p>
+          <p className="text-slate-500 text-sm font-medium italic mb-4">Selecione os números em verde</p>
+
+          {/* Status Descriptions */}
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-6 mb-2">
+            <div className="flex items-center gap-2 group">
+              <span className="w-3 h-3 bg-green-500 rounded-full animate-blink-green shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+              <span className="text-[10px] font-black text-green-700 uppercase tracking-tighter">Sorteio Ativo</span>
+            </div>
+            <div className="flex items-center gap-2 group">
+              <span className="w-3 h-3 bg-yellow-500 rounded-full animate-blink-yellow shadow-[0_0_8px_rgba(234,179,8,0.5)]"></span>
+              <span className="text-[10px] font-black text-yellow-700 uppercase tracking-tighter">Aguardando Publicação</span>
+            </div>
+            <div className="flex items-center gap-2 group">
+              <span className="w-3 h-3 bg-red-500 rounded-full animate-blink-red shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
+              <span className="text-[10px] font-black text-red-700 uppercase tracking-tighter">Sorteio Pausado</span>
+            </div>
+          </div>
         </div>
 
         {/* Legend */}

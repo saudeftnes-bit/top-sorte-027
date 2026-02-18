@@ -23,7 +23,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     const [successMessage, setSuccessMessage] = useState('');
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [showResetModal, setShowResetModal] = useState(false);
+    const [showRestartModal, setShowRestartModal] = useState(false);
 
     // Form state
     const [title, setTitle] = useState('');
@@ -234,24 +234,21 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         }
     };
 
-    const handleResetNumbers = async () => {
+    const handleRestartContest = async () => {
         if (!raffle) return;
 
-        setShowResetModal(false);
+        setShowRestartModal(false);
 
         const { resetRaffleNumbers } = await import('../../lib/supabase-admin');
         const count = await resetRaffleNumbers(raffle.id);
 
-        if (count > 0) {
-            setSuccessMessage(`${count} número(s) zerado(s) com sucesso! ✅`);
+        if (count >= 0) {
+            setSuccessMessage(`Concurso reiniciado com sucesso! ✅\n${count} número(s) foram liberados.`);
             setShowSuccessModal(true);
             await loadData();
             onDataChanged?.();
-        } else if (count === 0) {
-            setSuccessMessage('Sorteio já está zerado! Nenhum número foi deletado.');
-            setShowSuccessModal(true);
         } else {
-            setErrorMessage('Erro ao zerar números. Verifique se a função SQL foi executada no Supabase.');
+            setErrorMessage('Erro ao reiniciar concurso. Verifique se a função SQL foi executada no Supabase.');
             setShowErrorModal(true);
         }
     };
@@ -276,10 +273,10 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                 </div>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => setShowResetModal(true)}
+                        onClick={() => setShowRestartModal(true)}
                         className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-xl font-bold transition-colors"
                     >
-                        🗑️ Zerar Números
+                        🔄 Novo Concurso
                     </button>
                     <button
                         onClick={onBack}
@@ -334,11 +331,14 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                         <select
                             value={status}
                             onChange={(e) => setStatus(e.target.value as any)}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none font-black transition-all ${status === 'active' ? 'border-green-500 bg-green-50 text-green-700 animate-blink-green' :
+                                    status === 'scheduled' ? 'border-yellow-500 bg-yellow-50 text-yellow-700 animate-blink-yellow' :
+                                        'border-red-500 bg-red-50 text-red-700 animate-blink-red'
+                                }`}
                         >
-                            <option value="active">🟢 Ativo</option>
-                            <option value="scheduled">🟡 Agendado</option>
-                            <option value="finished">🔴 Finalizado</option>
+                            <option value="active">🟢 SORTEIO ATIVO</option>
+                            <option value="scheduled">🟡 AGUARDANDO PUBLICAÇÃO</option>
+                            <option value="finished">🔴 SORTEIO PAUSADO</option>
                         </select>
                     </div>
                 </div>
@@ -591,14 +591,14 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             />
 
             <ConfirmModal
-                isOpen={showResetModal}
-                title="⚠️ Zerar Todos os Números"
-                message="Tem certeza que deseja ZERAR TODOS OS NÚMEROS deste sorteio? Esta ação NÃO PODE SER DESFEITA e irá deletar todas as reservas!"
-                confirmLabel="Sim, Zerar Tudo"
+                isOpen={showRestartModal}
+                title="🔄 Iniciar Novo Concurso"
+                message="Tem certeza que deseja REINICIAR este concurso? Isto irá APAGAR todas as reservas e deixar todos os números livres novamente. Esta ação não pode ser desfeita!"
+                confirmLabel="Sim, Reiniciar"
                 cancelLabel="Cancelar"
                 variant="danger"
-                onConfirm={handleResetNumbers}
-                onCancel={() => setShowResetModal(false)}
+                onConfirm={handleRestartContest}
+                onCancel={() => setShowRestartModal(false)}
             />
         </div>
     );
