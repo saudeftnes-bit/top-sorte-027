@@ -46,8 +46,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { raffleId, numbers, buyer, totalPrice, paymentTimeout } = req.body;
 
         // Validação
-        if (!raffleId || !numbers || !buyer || !totalPrice) {
-            return res.status(400).json({ error: 'Dados incompletos' });
+        const price = parseFloat(totalPrice);
+        if (!raffleId || !numbers || !buyer || isNaN(price) || price <= 0) {
+            console.error('❌ [API Efi Charge] Dados inválidos ou preço zerado:', { raffleId, numbers, price });
+            return res.status(400).json({ error: 'Dados inválidos ou preço zerado. Verifique as configurações do sorteio.' });
         }
 
         console.log('💳 [API Efi Charge] Criando cobrança PIX:', { raffleId, numbers, totalPrice, paymentTimeout });
@@ -165,9 +167,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 buyer_phone: buyer.phone || '',
                 buyer_email: buyer.email || '',
                 status: 'pending',
-                payment_amount: totalPrice / numbers.length,
+                payment_amount: price / numbers.length,
                 payment_method: 'efi',
                 efi_txid: pixCharge.txid,
+                expires_at: pixCharge.expiresAt, // Adicionado expires_at
             }));
 
             const { data: reservations, error: reservationsError } = await supabase

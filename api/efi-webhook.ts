@@ -128,6 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         .from('reservations')
                         .update({
                             status: 'paid',
+                            expires_at: null, // 🔥 Limpa expiração para o cleanup não deletar!
                             updated_at: new Date().toISOString(),
                         })
                         .eq('efi_txid', txid)
