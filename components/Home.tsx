@@ -154,9 +154,9 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
       {/* Featured Raffle Card */}
       <section className="relative overflow-hidden bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4 flex flex-col">
         {/* Status Badge Above Image */}
-        <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm ${raffle?.status === 'active' ? 'bg-green-500 animate-blink-green' :
-          raffle?.status === 'scheduled' ? 'bg-yellow-500 animate-blink-yellow' :
-            'bg-red-500 animate-blink-red'
+        <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm ${raffle?.status === 'active' ? 'bg-green-500' :
+          raffle?.status === 'scheduled' ? 'bg-yellow-500' :
+            'bg-red-500'
           }`}>
           {raffle?.status === 'active' ? '🟢 SORTEIO ATIVO' :
             raffle?.status === 'scheduled' ? '🟡 AGUARDANDO PUBLICAÇÃO' :

@@ -331,9 +331,9 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                         <select
                             value={status}
                             onChange={(e) => setStatus(e.target.value as any)}
-                            className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none font-black transition-all ${status === 'active' ? 'border-green-500 bg-green-50 text-green-700 animate-blink-green' :
-                                    status === 'scheduled' ? 'border-yellow-500 bg-yellow-50 text-yellow-700 animate-blink-yellow' :
-                                        'border-red-500 bg-red-50 text-red-700 animate-blink-red'
+                            className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none font-black transition-all ${status === 'active' ? 'border-green-500 bg-green-50 text-green-700' :
+                                status === 'scheduled' ? 'border-yellow-500 bg-yellow-50 text-yellow-700' :
+                                    'border-red-500 bg-red-50 text-red-700'
                                 }`}
                         >
                             <option value="active">🟢 SORTEIO ATIVO</option>
