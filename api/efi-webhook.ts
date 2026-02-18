@@ -1,5 +1,5 @@
-import { getChargeStatus, validateWebhook } from '../../lib/efi-service';
-import { supabase } from '../../lib/supabase';
+import { getChargeStatus, validateWebhook } from '../lib/efi-service';
+import { supabase } from '../lib/supabase';
 
 type VercelRequest = any;
 type VercelResponse = any;
@@ -20,7 +20,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // GET ou PUT - Verificação do webhook pela EFI
-    // A EFI faz uma requisição de teste antes de registrar o webhook
     if (req.method === 'GET' || req.method === 'PUT') {
         console.log('✅ [Webhook Efi] Verificação recebida (método:', req.method, ')');
         return res.status(200).json({ status: 'ok', webhook: 'active' });
@@ -52,7 +51,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const txids: string[] = [];
 
         if (payload.pix) {
-            // Webhook de pagamento PIX
             payload.pix.forEach((pix: any) => {
                 if (pix.txid) {
                     txids.push(pix.txid);
@@ -65,12 +63,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Processar cada txid
         for (const txid of txids) {
             try {
-                // Consultar status atualizado na Efi
                 const chargeStatus = await getChargeStatus(txid);
 
                 console.log('🔍 [Webhook Efi] Status do txid', txid, ':', chargeStatus.status);
 
-                // Atualizar transação no banco via RPC
                 const { error: transactionError } = await supabase.rpc('update_efi_transaction_status', {
                     p_txid: txid,
                     p_status: chargeStatus.status,
@@ -85,7 +81,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     console.error('❌ [Webhook Efi] Erro ao atualizar transação via RPC:', transactionError);
                 }
 
-                // Se pago, atualizar reservas para 'paid'
                 if (chargeStatus.status === 'CONCLUIDA') {
                     console.log('💰 [Webhook Efi] Pagamento confirmado! Atualizando reservas...');
 
@@ -109,10 +104,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
 
-        // Responder sucesso para a Efi
         return res.status(200).json({ success: true, processed: txids.length });
     } catch (error: any) {
         console.error('❌ [Webhook Efi] Erro geral:', error);
-        return res.status(200).json({ status: 'ok' }); // Sempre retornar 200 para a EFI
+        return res.status(200).json({ status: 'ok' });
     }
 }

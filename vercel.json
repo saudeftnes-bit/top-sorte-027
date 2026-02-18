@@ -4,6 +4,10 @@
     "framework": null,
     "rewrites": [
         {
+            "source": "/api/efi-webhook/pix",
+            "destination": "/api/efi-webhook"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/api/$1"
         }
