@@ -57,12 +57,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const txid = generateTxid();
         const expirationSeconds = 1800; // 30 minutos
 
-        const body = {
+        const body: any = {
             calendario: {
                 expiracao: expirationSeconds,
-            },
-            devedor: {
-                nome: buyer.name,
             },
             valor: {
                 original: totalPrice.toFixed(2),
@@ -77,8 +74,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ],
         };
 
+        // Adicionar devedor apenas se CPF ou CNPJ estiver disponível
+        // Em produção, a EFI exige cpf ou cnpj no devedor
+        if (buyer.cpf) {
+            body.devedor = {
+                cpf: buyer.cpf.replace(/\D/g, ''),
+                nome: buyer.name,
+            };
+        } else if (buyer.cnpj) {
+            body.devedor = {
+                cnpj: buyer.cnpj.replace(/\D/g, ''),
+                nome: buyer.name,
+            };
+        }
+
         // Criar cobrança PIX
-        const chargeResponse = await efipay.pixCreateImmediateCharge(txid, body);
+        const chargeResponse = await efipay.pixCreateImmediateCharge({ txid }, body);
 
         // Gerar QR Code
         const qrCodeResponse = await efipay.pixGenerateQRCode({
