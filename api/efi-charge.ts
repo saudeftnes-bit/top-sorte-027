@@ -177,6 +177,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('❌ [API Efi Charge] Erro:', error);
         return res.status(500).json({
             error: error.message || 'Erro ao processar pagamento',
+            details: error.response?.data || error.mensagem || null,
+            fullError: typeof error === 'object' ? JSON.stringify(error).substring(0, 500) : String(error),
         });
     }
 }
