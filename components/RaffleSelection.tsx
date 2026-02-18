@@ -72,6 +72,11 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
             RESERVA...
           </span>
         )}
+        {isPaid && reservation?.name && (
+          <span className="text-[7px] sm:text-[9px] font-black uppercase tracking-tighter text-white mt-1 leading-none w-full px-1 truncate text-center">
+            {reservation.name.split(' ')[0]}
+          </span>
+        )}
       </button>
     );
   };
