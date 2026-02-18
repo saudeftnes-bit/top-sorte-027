@@ -26,7 +26,7 @@ export async function createTemporarySelection(
     raffleId: string,
     number: string,
     sessionId: string,
-    timeoutMinutes: number = 5
+    timeoutMinutes: number = 30
 ): Promise<boolean> {
     try {
         const expiresAt = new Date(Date.now() + timeoutMinutes * 60 * 1000).toISOString();

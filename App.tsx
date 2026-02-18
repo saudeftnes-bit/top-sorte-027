@@ -160,7 +160,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!selectionStartTime || !activeRaffle) return;
 
-    const timeoutMinutes = activeRaffle.selection_timeout || 5;
+    const timeoutMinutes = activeRaffle.selection_timeout || 30;
     const timeoutMs = timeoutMinutes * 60 * 1000;
 
     const interval = setInterval(() => {
@@ -321,7 +321,7 @@ const App: React.FC = () => {
         activeRaffle.id,
         num,
         sessionId.current,
-        activeRaffle.selection_timeout || 5
+        activeRaffle.selection_timeout || 30
       );
     }
   };
