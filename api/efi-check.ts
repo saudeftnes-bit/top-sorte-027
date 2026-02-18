@@ -9,21 +9,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const clientId = (process.env.EFI_CLIENT_ID || '').trim();
     const clientSecret = (process.env.EFI_CLIENT_SECRET || '').trim();
     const cert = (process.env.EFI_CERTIFICATE_BASE64 || '').trim();
-    const pixKey = process.env.EFI_PIX_KEY || '';
 
-    const results: any = {
-        credentials: {
-            clientId: clientId.substring(0, 8) + '...' + clientId.substring(clientId.length - 4),
-            clientSecret: clientSecret.substring(0, 8) + '...' + clientSecret.substring(clientSecret.length - 4),
-            certLength: cert.length,
-            certStart: cert.substring(0, 15),
-            certEnd: cert.substring(cert.length - 15),
-            pixKey: pixKey,
-        },
-        tests: {},
-    };
+    const results: any = { tests: {} };
 
-    // TESTE 1: Produção (sandbox=false)
+    // TESTE 1: SEM prefixo (como está agora)
     try {
         const efipay = new EfiPay({
             sandbox: false,
@@ -33,45 +22,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             cert_base64: true,
             validateMtls: false,
         });
-
-        const params = {
-            inicio: new Date(Date.now() - 86400000).toISOString(),
-            fim: new Date().toISOString(),
-        };
-        const response = await efipay.pixListCharges(params);
-        results.tests.production = { success: true, message: 'Autenticação em PRODUÇÃO OK!', charges: response?.cobs?.length || 0 };
-    } catch (error: any) {
-        results.tests.production = {
-            success: false,
-            error: error.message || 'Erro desconhecido',
-            errorType: error.name || error.tipo || null,
-            fullError: typeof error === 'object' ? JSON.stringify(error).substring(0, 500) : String(error),
-        };
+        const params = { inicio: new Date(Date.now() - 86400000).toISOString(), fim: new Date().toISOString() };
+        await efipay.pixListCharges(params);
+        results.tests.semPrefixo = { success: true, message: 'OK sem prefixo!' };
+    } catch (e: any) {
+        results.tests.semPrefixo = { success: false, error: e.message || JSON.stringify(e).substring(0, 200) };
     }
 
-    // TESTE 2: Sandbox (sandbox=true)
+    // TESTE 2: COM prefixo Client_Id_ e Client_Secret_
     try {
         const efipay = new EfiPay({
-            sandbox: true,
-            client_id: clientId,
-            client_secret: clientSecret,
+            sandbox: false,
+            client_id: 'Client_Id_' + clientId,
+            client_secret: 'Client_Secret_' + clientSecret,
             certificate: cert,
             cert_base64: true,
             validateMtls: false,
         });
+        const params = { inicio: new Date(Date.now() - 86400000).toISOString(), fim: new Date().toISOString() };
+        await efipay.pixListCharges(params);
+        results.tests.comPrefixo = { success: true, message: 'OK com prefixo!' };
+    } catch (e: any) {
+        results.tests.comPrefixo = { success: false, error: e.message || JSON.stringify(e).substring(0, 200) };
+    }
 
-        const params = {
-            inicio: new Date(Date.now() - 86400000).toISOString(),
-            fim: new Date().toISOString(),
-        };
-        const response = await efipay.pixListCharges(params);
-        results.tests.sandbox = { success: true, message: 'Autenticação em SANDBOX OK!', charges: response?.cobs?.length || 0 };
-    } catch (error: any) {
-        results.tests.sandbox = {
-            success: false,
-            error: error.message || 'Erro desconhecido',
-            fullError: typeof error === 'object' ? JSON.stringify(error).substring(0, 500) : String(error),
-        };
+    // TESTE 3: Credenciais invertidas (client_id como secret e vice-versa)
+    try {
+        const efipay = new EfiPay({
+            sandbox: false,
+            client_id: clientSecret,
+            client_secret: clientId,
+            certificate: cert,
+            cert_base64: true,
+            validateMtls: false,
+        });
+        const params = { inicio: new Date(Date.now() - 86400000).toISOString(), fim: new Date().toISOString() };
+        await efipay.pixListCharges(params);
+        results.tests.invertido = { success: true, message: 'OK com credenciais invertidas!' };
+    } catch (e: any) {
+        results.tests.invertido = { success: false, error: e.message || JSON.stringify(e).substring(0, 200) };
     }
 
     return res.status(200).json(results);
