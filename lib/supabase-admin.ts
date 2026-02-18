@@ -137,6 +137,58 @@ export async function updateReservationStatus(id: string, status: 'pending' | 'p
     return true;
 }
 
+export async function confirmManualPayment(id: string, amount: number): Promise<boolean> {
+    console.log('💰 [Admin] Confirmando pagamento manual:', id, amount);
+    const { error } = await supabase
+        .from('reservations')
+        .update({
+            status: 'paid',
+            payment_amount: amount,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error confirming manual payment:', error);
+        return false;
+    }
+
+    return true;
+}
+
+export async function reactivateReservation(id: string): Promise<boolean> {
+    console.log('🎟️ [Admin] Reativando reserva:', id);
+    const { error } = await supabase
+        .from('reservations')
+        .update({
+            status: 'pending',
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error reactivating reservation:', error);
+        return false;
+    }
+
+    return true;
+}
+
+export async function deleteReservation(id: string): Promise<boolean> {
+    console.log('🗑️ [Admin] Deletando reserva:', id);
+    const { error } = await supabase
+        .from('reservations')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error deleting reservation:', error);
+        return false;
+    }
+
+    return true;
+}
+
 // ==================== WINNER PHOTOS OPERATIONS ====================
 
 export async function getWinnerPhotos(): Promise<WinnerPhoto[]> {

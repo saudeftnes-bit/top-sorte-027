@@ -86,12 +86,20 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     const handleSaveRaffle = async () => {
         if (!raffle) return;
 
+        const price = parseFloat(pricePerNumber);
+        if (isNaN(price) || price <= 0) {
+            setErrorMessage('Por favor, insira um preço válido maior que zero.');
+            setShowErrorModal(true);
+            setIsSaving(false);
+            return;
+        }
+
         setIsSaving(true);
 
         const success = await updateRaffle(raffle.id, {
             title,
             description,
-            price_per_number: parseFloat(pricePerNumber),
+            price_per_number: price,
             main_image_url: mainImageUrl,
             total_numbers: parseInt(totalNumbers),
             selection_mode: selectionMode,

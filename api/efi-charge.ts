@@ -141,16 +141,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // 4. Limpar reservas temporárias existentes para estes números antes de criar as definitivas
         // Isso evita o erro de duplicidade UNIQUE(raffle_id, number)
         try {
-            console.log('🧹 [API Efi Charge] Limpando reservas temporárias para números:', numbers);
+            console.log('🧹 [API Efi Charge] Limpando reservas anteriores (pendentes/canceladas) para números:', numbers);
             const { error: deleteError } = await supabase
                 .from('reservations')
                 .delete()
                 .eq('raffle_id', raffleId)
                 .in('number', numbers)
-                .eq('status', 'pending');
+                .or('status.eq.pending,status.eq.cancelled'); // Remove pendentes e canceladas
 
             if (deleteError) {
-                console.warn('⚠️ [API Efi Charge] Aviso ao deletar reservas temporárias:', deleteError);
+                console.warn('⚠️ [API Efi Charge] Aviso ao deletar reservas antigas:', deleteError);
             }
         } catch (e: any) {
             console.error('⚠️ [API Efi Charge] Exceção ao deletar temporárias:', e);

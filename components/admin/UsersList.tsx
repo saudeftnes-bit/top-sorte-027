@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getReservationsByRaffle } from '../../lib/supabase-admin';
-import type { Reservation } from '../../types/database';
+import { getReservationsByRaffle, confirmManualPayment, reactivateReservation, deleteReservation, getActiveRaffle } from '../../lib/supabase-admin';
+import type { Reservation, Raffle } from '../../types/database';
+import ConfirmModal from '../ConfirmModal';
 
 interface UsersListProps {
     raffleId: string;
@@ -21,13 +22,25 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
     const [buyers, setBuyers] = useState<BuyerData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [expandedBuyer, setExpandedBuyer] = useState<string | null>(null);
+    const [activeRaffle, setActiveRaffle] = useState<Raffle | null>(null);
+
+    // Modal states
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [pendingAction, setPendingAction] = useState<{ id: string; type: 'confirm' | 'delete' | 'reactivate'; number: string } | null>(null);
 
     useEffect(() => {
         loadBuyers();
     }, [raffleId]);
 
     const loadBuyers = async () => {
-        const reservations = await getReservationsByRaffle(raffleId);
+        setIsLoading(true);
+        const [reservations, raffle] = await Promise.all([
+            getReservationsByRaffle(raffleId),
+            getActiveRaffle()
+        ]);
+        setActiveRaffle(raffle);
 
         // Group by buyer (using phone or email as unique identifier)
         const buyersMap = new Map<string, BuyerData>();
@@ -52,9 +65,9 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
             buyer.reservations.push(reservation);
 
             if (reservation.status === 'paid') {
-                buyer.totalPaid += reservation.payment_amount;
+                buyer.totalPaid += (reservation.payment_amount || 0);
             } else if (reservation.status === 'pending') {
-                buyer.totalPending += reservation.payment_amount;
+                buyer.totalPending += (reservation.payment_amount || 0);
             }
         });
 
@@ -63,6 +76,26 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
 
         setBuyers(buyersArray);
         setIsLoading(false);
+    };
+
+    const handleAction = async () => {
+        if (!pendingAction) return;
+
+        let success = false;
+        if (pendingAction.type === 'confirm') {
+            success = await confirmManualPayment(pendingAction.id, activeRaffle?.price_per_number || 0);
+        } else if (pendingAction.type === 'reactivate') {
+            success = await reactivateReservation(pendingAction.id);
+        } else if (pendingAction.type === 'delete') {
+            success = await deleteReservation(pendingAction.id);
+        }
+
+        if (success) {
+            await loadBuyers();
+        }
+        setShowConfirmModal(false);
+        setShowDeleteModal(false);
+        setPendingAction(null);
     };
 
     const filteredBuyers = buyers.filter((buyer) =>
@@ -139,77 +172,184 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                         </p>
                     </div>
                 ) : (
-                    filteredBuyers.map((buyer, index) => (
-                        <div
-                            key={index}
-                            className="bg-white rounded-2xl p-6 shadow-lg border-2 border-slate-100 hover:border-purple-200 transition-all"
-                        >
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                                            <span className="text-2xl">👤</span>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-black text-slate-900">{buyer.name}</h3>
-                                            <div className="flex flex-wrap gap-2 mt-1">
-                                                {buyer.phone && (
-                                                    <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                                                        📱 {buyer.phone}
-                                                    </span>
-                                                )}
-                                                {buyer.email && (
-                                                    <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                                                        📧 {buyer.email}
-                                                    </span>
-                                                )}
+                    filteredBuyers.map((buyer, index) => {
+                        const key = buyer.phone || buyer.email || buyer.name;
+                        return (
+                            <div
+                                key={index}
+                                className="bg-white rounded-2xl p-6 shadow-lg border-2 border-slate-100 hover:border-purple-200 transition-all"
+                            >
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                                <span className="text-2xl">👤</span>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-black text-slate-900">{buyer.name}</h3>
+                                                <div className="flex flex-wrap gap-2 mt-1">
+                                                    {buyer.phone && (
+                                                        <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                                                            📱 {buyer.phone}
+                                                        </span>
+                                                    )}
+                                                    {buyer.email && (
+                                                        <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                                                            📧 {buyer.email}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        <div className="bg-purple-50 rounded-xl p-4">
-                                            <p className="text-xs font-bold text-purple-600 uppercase mb-1">Números</p>
-                                            <p className="text-lg font-black text-purple-900">{buyer.numbers.join(', ')}</p>
-                                            <p className="text-xs text-purple-600 mt-1">{buyer.numbers.length} número(s)</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            <div className="bg-purple-50 rounded-xl p-4">
+                                                <p className="text-xs font-bold text-purple-600 uppercase mb-1">Números</p>
+                                                <p className="text-lg font-black text-purple-900">{buyer.numbers.join(', ')}</p>
+                                                <p className="text-xs text-purple-600 mt-1">{buyer.numbers.length} número(s)</p>
+                                            </div>
+
+                                            <div className="bg-green-50 rounded-xl p-4">
+                                                <p className="text-xs font-bold text-green-600 uppercase mb-1">Total Pago</p>
+                                                <p className="text-lg font-black text-green-900">
+                                                    R$ {buyer.totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                </p>
+                                                <p className="text-xs text-green-600 mt-1">
+                                                    {buyer.reservations.filter(r => r.status === 'paid').length} confirmado(s)
+                                                </p>
+                                            </div>
+
+                                            <div className="bg-yellow-50 rounded-xl p-4">
+                                                <p className="text-xs font-bold text-yellow-600 uppercase mb-1">Pendente</p>
+                                                <p className="text-lg font-black text-yellow-900">
+                                                    R$ {buyer.totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                </p>
+                                                <p className="text-xs text-yellow-600 mt-1">
+                                                    {buyer.reservations.filter(r => r.status === 'pending').length} aguardando
+                                                </p>
+                                            </div>
+
+                                            <div className="bg-blue-50 rounded-xl p-4">
+                                                <p className="text-xs font-bold text-blue-600 uppercase mb-1">Status</p>
+                                                <p className="text-lg font-black text-blue-900">
+                                                    {buyer.totalPending > 0 ? '🟡 Pendente' : '✅ Ativo'}
+                                                </p>
+                                                <p className="text-xs text-blue-600 mt-1">
+                                                    {buyer.reservations.length} reserva(s)
+                                                </p>
+                                            </div>
                                         </div>
 
-                                        <div className="bg-green-50 rounded-xl p-4">
-                                            <p className="text-xs font-bold text-green-600 uppercase mb-1">Total Pago</p>
-                                            <p className="text-lg font-black text-green-900">
-                                                R$ {buyer.totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                            </p>
-                                            <p className="text-xs text-green-600 mt-1">
-                                                {buyer.reservations.filter(r => r.status === 'paid').length} confirmado(s)
-                                            </p>
-                                        </div>
+                                        {/* Expandable Details Section */}
+                                        <div className="mt-4 border-t border-slate-100 pt-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Detalhamento por Número</h4>
+                                                <button
+                                                    onClick={() => setExpandedBuyer(expandedBuyer === key ? null : key)}
+                                                    className="text-xs font-bold text-purple-600 hover:text-purple-700 underline"
+                                                >
+                                                    {expandedBuyer === key ? 'Ocultar Detalhes' : 'Gerenciar Números'}
+                                                </button>
+                                            </div>
 
-                                        <div className="bg-yellow-50 rounded-xl p-4">
-                                            <p className="text-xs font-bold text-yellow-600 uppercase mb-1">Pendente</p>
-                                            <p className="text-lg font-black text-yellow-900">
-                                                R$ {buyer.totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                            </p>
-                                            <p className="text-xs text-yellow-600 mt-1">
-                                                {buyer.reservations.filter(r => r.status === 'pending').length} aguardando
-                                            </p>
-                                        </div>
+                                            {expandedBuyer === key && (
+                                                <div className="space-y-2">
+                                                    {buyer.reservations.sort((a, b) => a.number.localeCompare(b.number)).map((res) => (
+                                                        <div key={res.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                                                            <div className="flex items-center gap-4">
+                                                                <span className="w-12 h-12 flex items-center justify-center bg-white rounded-lg border-2 border-slate-200 font-black text-slate-700">
+                                                                    {res.number}
+                                                                </span>
+                                                                <div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="text-sm font-black text-slate-800">
+                                                                            R$ {(res.payment_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                                        </p>
+                                                                        {res.status === 'paid' ? (
+                                                                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase">Pago</span>
+                                                                        ) : res.status === 'pending' ? (
+                                                                            <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold uppercase animate-pulse">Pendente</span>
+                                                                        ) : (
+                                                                            <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold uppercase">Cancelado</span>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-[10px] text-slate-400 font-medium">{new Date(res.created_at).toLocaleString()}</p>
+                                                                </div>
+                                                            </div>
 
-                                        <div className="bg-blue-50 rounded-xl p-4">
-                                            <p className="text-xs font-bold text-blue-600 uppercase mb-1">Status</p>
-                                            <p className="text-lg font-black text-blue-900">
-                                                {buyer.totalPending > 0 ? '🟡 Pendente' : '✅ Ativo'}
-                                            </p>
-                                            <p className="text-xs text-blue-600 mt-1">
-                                                {buyer.reservations.length} reserva(s)
-                                            </p>
+                                                            <div className="flex gap-1">
+                                                                {res.status !== 'paid' && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setPendingAction({ id: res.id, type: 'confirm', number: res.number });
+                                                                            setShowConfirmModal(true);
+                                                                        }}
+                                                                        className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg"
+                                                                        title="Confirmar Pagamento e Ativar"
+                                                                    >
+                                                                        ✅
+                                                                    </button>
+                                                                )}
+                                                                {res.status === 'cancelled' && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setPendingAction({ id: res.id, type: 'reactivate', number: res.number });
+                                                                            setShowConfirmModal(true);
+                                                                        }}
+                                                                        className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-lg"
+                                                                        title="Reativar Reserva"
+                                                                    >
+                                                                        🎟️
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setPendingAction({ id: res.id, type: 'delete', number: res.number });
+                                                                        setShowDeleteModal(true);
+                                                                    }}
+                                                                    className="bg-slate-200 hover:bg-red-100 hover:text-red-600 text-slate-500 p-2 rounded-lg"
+                                                                    title="Excluir Permanentemente"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
+
+            <ConfirmModal
+                isOpen={showConfirmModal}
+                title={pendingAction?.type === 'confirm' ? "Confirmar Pagamento" : "Reativar Reserva"}
+                message={pendingAction?.type === 'confirm'
+                    ? `Deseja confirmar o pagamento do número ${pendingAction.number}? O valor será corrigido para R$ ${activeRaffle?.price_per_number?.toFixed(2)} e o número voltará a ficar ocupado.`
+                    : `Deseja reativar a reserva do número ${pendingAction?.number}? Ele voltará a aparecer como reservado.`
+                }
+                confirmLabel="Confirmar"
+                cancelLabel="Cancelar"
+                variant="info"
+                onConfirm={handleAction}
+                onCancel={() => { setShowConfirmModal(false); setPendingAction(null); }}
+            />
+
+            <ConfirmModal
+                isOpen={showDeleteModal}
+                title="Excluir Reserva"
+                message={`Tem certeza que deseja EXCLUIR permanentemente o registro do número ${pendingAction?.number}? Esta ação não pode ser desfeita.`}
+                confirmLabel="Sim, Excluir"
+                cancelLabel="Cancelar"
+                variant="danger"
+                onConfirm={handleAction}
+                onCancel={() => { setShowDeleteModal(false); setPendingAction(null); }}
+            />
         </div>
     );
 };
