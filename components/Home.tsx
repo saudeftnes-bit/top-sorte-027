@@ -152,20 +152,22 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
   return (
     <div className="flex flex-col gap-8 p-4 max-w-2xl mx-auto">
       {/* Featured Raffle Card */}
-      <section className="relative overflow-hidden bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4">
-        <img
-          src={raffle?.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
-          alt="Prêmio do Sorteio"
-          className="w-full h-56 object-cover"
-        />
-        <div className={`absolute top-4 right-4 text-white font-black px-4 py-2 rounded-full shadow-lg text-xs tracking-tighter sm:text-sm sm:tracking-normal ${raffle?.status === 'active' ? 'bg-green-500 animate-blink-green' :
-            raffle?.status === 'scheduled' ? 'bg-yellow-500 animate-blink-yellow' :
-              'bg-red-500 animate-blink-red'
+      <section className="relative overflow-hidden bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4 flex flex-col">
+        {/* Status Badge Above Image */}
+        <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm ${raffle?.status === 'active' ? 'bg-green-500 animate-blink-green' :
+          raffle?.status === 'scheduled' ? 'bg-yellow-500 animate-blink-yellow' :
+            'bg-red-500 animate-blink-red'
           }`}>
           {raffle?.status === 'active' ? '🟢 SORTEIO ATIVO' :
             raffle?.status === 'scheduled' ? '🟡 AGUARDANDO PUBLICAÇÃO' :
               '🔴 SORTEIO PAUSADO'}
         </div>
+
+        <img
+          src={raffle?.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+          alt="Prêmio do Sorteio"
+          className="w-full h-56 object-cover"
+        />
         <div className="p-6">
           <h2 className="text-2xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">
             {raffle?.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
