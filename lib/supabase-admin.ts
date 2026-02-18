@@ -124,9 +124,19 @@ export async function createReservation(reservation: Omit<Reservation, 'id' | 'c
 }
 
 export async function updateReservationStatus(id: string, status: 'pending' | 'paid' | 'cancelled'): Promise<boolean> {
+    const updates: any = {
+        status,
+        updated_at: new Date().toISOString()
+    };
+
+    // Se for marcado como pago, removemos a expiração para o cleanup não cancelar o número
+    if (status === 'paid') {
+        updates.expires_at = null;
+    }
+
     const { error } = await supabase
         .from('reservations')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq('id', id);
 
     if (error) {
@@ -144,6 +154,7 @@ export async function confirmManualPayment(id: string, amount: number): Promise<
         .update({
             status: 'paid',
             payment_amount: amount,
+            expires_at: null, // Limpa expiração para evitar que o cleanup cancele
             updated_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -156,12 +167,18 @@ export async function confirmManualPayment(id: string, amount: number): Promise<
     return true;
 }
 
-export async function reactivateReservation(id: string): Promise<boolean> {
-    console.log('🎟️ [Admin] Reativando reserva:', id);
+export async function reactivateReservation(id: string, timeoutMinutes: number = 5): Promise<boolean> {
+    console.log('🎟️ [Admin] Reativando reserva:', id, 'com timeout:', timeoutMinutes);
+
+    // Calcular nova data de expiração
+    const newExpiresAt = new Date();
+    newExpiresAt.setMinutes(newExpiresAt.getMinutes() + timeoutMinutes);
+
     const { error } = await supabase
         .from('reservations')
         .update({
             status: 'pending',
+            expires_at: newExpiresAt.toISOString(), // Renova o tempo para não sumir no próximo cleanup
             updated_at: new Date().toISOString()
         })
         .eq('id', id);

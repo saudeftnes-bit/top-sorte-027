@@ -85,7 +85,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
         if (pendingAction.type === 'confirm') {
             success = await confirmManualPayment(pendingAction.id, activeRaffle?.price_per_number || 0);
         } else if (pendingAction.type === 'reactivate') {
-            success = await reactivateReservation(pendingAction.id);
+            success = await reactivateReservation(pendingAction.id, activeRaffle?.selection_timeout || 5);
         } else if (pendingAction.type === 'delete') {
             success = await deleteReservation(pendingAction.id);
         }
