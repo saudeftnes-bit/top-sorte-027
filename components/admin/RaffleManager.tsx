@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import { WhatsAppIcon } from '../../App';
-import { getActiveRaffle, updateRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto, pickRandomWinner } from '../../lib/supabase-admin';
+import { getActiveRaffle, updateRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto } from '../../lib/supabase-admin';
 import { Raffle, WinnerPhoto } from '../../types/database';
 import { uploadImage, validateImageFile } from '../../lib/storage-helper';
 
@@ -25,8 +25,6 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [showRestartModal, setShowRestartModal] = useState(false);
-    const [showDrawModal, setShowDrawModal] = useState(false);
-    const [drawResult, setDrawResult] = useState<{ number: string; buyer_name: string; buyer_phone: string } | null>(null);
 
     // Form state
     const [title, setTitle] = useState('');
@@ -256,32 +254,6 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         }
     };
 
-    const handleDrawWinner = async () => {
-        if (!raffle) return;
-        setShowDrawModal(false);
-
-        const result = await pickRandomWinner(raffle.id);
-        if (result) {
-            setDrawResult(result);
-            const message = `🎉 GANHADOR SORTEADO!\n\nNúmero: ${result.number}\nNome: ${result.buyer_name}\nTelefone: ${result.buyer_phone}\n\nO sorteio foi finalizado com sucesso!`;
-            setSuccessMessage(message);
-            setShowSuccessModal(true);
-            await loadData();
-            onDataChanged?.();
-        } else {
-            setErrorMessage('Erro ao realizar sorteio. Verifique se existem reservas com status "PAGO".');
-            setShowErrorModal(true);
-        }
-    };
-
-    const handleNotifyWinner = () => {
-        if (!drawResult) return;
-        const message = `Olá ${drawResult.buyer_name}! Parabéns! Você foi o ganhador do sorteio da Top Sorte com o número ${drawResult.number}! 🏆🥳`;
-        const phone = drawResult.buyer_phone.replace(/\D/g, '');
-        const url = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
-    };
-
 
 
     if (isLoading) {
@@ -301,13 +273,6 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                     <p className="text-slate-500 font-medium mt-1">Edite textos, imagens e configurações</p>
                 </div>
                 <div className="flex gap-3">
-                    <button
-                        onClick={() => setShowDrawModal(true)}
-                        className="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-xl font-bold transition-colors"
-                        disabled={status === 'finished'}
-                    >
-                        🎲 Realizar Sorteio
-                    </button>
                     <button
                         onClick={() => setShowRestartModal(true)}
                         className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-xl font-bold transition-colors"
@@ -611,25 +576,9 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                 confirmLabel="OK"
                 cancelLabel=""
                 variant="info"
-                onConfirm={() => {
-                    setShowSuccessModal(false);
-                    setDrawResult(null);
-                }}
-                onCancel={() => {
-                    setShowSuccessModal(false);
-                    setDrawResult(null);
-                }}
-            >
-                {drawResult && (
-                    <button
-                        onClick={handleNotifyWinner}
-                        className="w-full mb-6 bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-md group"
-                    >
-                        <WhatsAppIcon className="w-6 h-6 group-hover:animate-bounce" />
-                        NOTIFICAR GANHADOR
-                    </button>
-                )}
-            </ConfirmModal>
+                onConfirm={() => setShowSuccessModal(false)}
+                onCancel={() => setShowSuccessModal(false)}
+            />
 
             <ConfirmModal
                 isOpen={showErrorModal}
@@ -651,17 +600,6 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                 variant="danger"
                 onConfirm={handleRestartContest}
                 onCancel={() => setShowRestartModal(false)}
-            />
-
-            <ConfirmModal
-                isOpen={showDrawModal}
-                title="🎲 Realizar Sorteio Aleatório"
-                message="Tem certeza que deseja REALIZAR O SORTEIO agora? O sistema escolherá um número aleatório entre todos os participantes que já PAGARAM. Esta ação irá FINALIZAR a rifa atual."
-                confirmLabel="Sim, Sortear Ganhador!"
-                cancelLabel="Cancelar"
-                variant="info"
-                onConfirm={handleDrawWinner}
-                onCancel={() => setShowDrawModal(false)}
             />
         </div>
     );

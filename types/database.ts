@@ -12,8 +12,6 @@ export interface Raffle {
     selection_timeout?: number;
     payment_timeout?: number;
     status: 'active' | 'finished' | 'scheduled';
-    winner_number?: string;
-    winner_name?: string;
     draw_date?: string;
     created_at: string;
     updated_at: string;
