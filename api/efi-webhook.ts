@@ -1,5 +1,5 @@
-import { getChargeStatus, validateWebhook } from '../lib/efi-service';
-import { supabase } from '../lib/supabase';
+// Webhook EFI - versão simplificada para registro
+// A lógica de processamento será feita por polling no efi-charge.ts
 
 type VercelRequest = any;
 type VercelResponse = any;
@@ -14,99 +14,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
-    // OPTIONS - Preflight CORS
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    console.log('🔔 [Webhook Efi] Requisição recebida:', req.method, JSON.stringify(req.body || {}));
 
-    // GET ou PUT - Verificação do webhook pela EFI
-    if (req.method === 'GET' || req.method === 'PUT') {
-        console.log('✅ [Webhook Efi] Verificação recebida (método:', req.method, ')');
-        return res.status(200).json({ status: 'ok', webhook: 'active' });
-    }
-
-    // POST - Notificação de pagamento
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
-    try {
-        const payload = req.body;
-
-        console.log('🔔 [Webhook Efi] Recebido:', JSON.stringify(payload));
-
-        // Se payload está vazio ou é uma verificação, retornar OK
-        if (!payload || Object.keys(payload).length === 0) {
-            console.log('✅ [Webhook Efi] Payload vazio - verificação da EFI');
-            return res.status(200).json({ status: 'ok' });
-        }
-
-        // Validar estrutura do webhook
-        if (!validateWebhook(payload)) {
-            console.log('⚠️ [Webhook Efi] Payload não é de pagamento PIX, retornando OK');
-            return res.status(200).json({ status: 'ok', message: 'payload recebido' });
-        }
-
-        // Extrair txids do payload
-        const txids: string[] = [];
-
-        if (payload.pix) {
-            payload.pix.forEach((pix: any) => {
-                if (pix.txid) {
-                    txids.push(pix.txid);
-                }
-            });
-        }
-
-        console.log('📝 [Webhook Efi] TXIDs a processar:', txids);
-
-        // Processar cada txid
-        for (const txid of txids) {
-            try {
-                const chargeStatus = await getChargeStatus(txid);
-
-                console.log('🔍 [Webhook Efi] Status do txid', txid, ':', chargeStatus.status);
-
-                const { error: transactionError } = await supabase.rpc('update_efi_transaction_status', {
-                    p_txid: txid,
-                    p_status: chargeStatus.status,
-                    p_paid_at: chargeStatus.paidAt || '',
-                    p_event: {
-                        timestamp: new Date().toISOString(),
-                        payload: payload,
-                    },
-                });
-
-                if (transactionError) {
-                    console.error('❌ [Webhook Efi] Erro ao atualizar transação via RPC:', transactionError);
-                }
-
-                if (chargeStatus.status === 'CONCLUIDA') {
-                    console.log('💰 [Webhook Efi] Pagamento confirmado! Atualizando reservas...');
-
-                    const { error: reservationsError } = await supabase
-                        .from('reservations')
-                        .update({
-                            status: 'paid',
-                            efi_status: 'CONCLUIDA',
-                            updated_at: new Date().toISOString(),
-                        })
-                        .eq('efi_txid', txid);
-
-                    if (reservationsError) {
-                        console.error('❌ [Webhook Efi] Erro ao atualizar reservas:', reservationsError);
-                    } else {
-                        console.log('✅ [Webhook Efi] Reservas atualizadas para PAID');
-                    }
-                }
-            } catch (error: any) {
-                console.error('❌ [Webhook Efi] Erro ao processar txid', txid, ':', error);
-            }
-        }
-
-        return res.status(200).json({ success: true, processed: txids.length });
-    } catch (error: any) {
-        console.error('❌ [Webhook Efi] Erro geral:', error);
-        return res.status(200).json({ status: 'ok' });
-    }
+    // Sempre retornar 200 para qualquer método
+    // A EFI precisa receber 200 para registrar o webhook
+    return res.status(200).json({ status: 'ok' });
 }
