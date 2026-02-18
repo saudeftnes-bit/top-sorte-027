@@ -164,6 +164,9 @@ const App: React.FC = () => {
     const timeoutMs = timeoutMinutes * 60 * 1000;
 
     const interval = setInterval(() => {
+      // Se o checkout estiver aberto, não expiramos a reserva para evitar erros de UI e liberação indevida
+      if (isCheckoutOpen) return;
+
       const elapsed = Date.now() - selectionStartTime;
       const remaining = timeoutMs - elapsed;
 
@@ -178,7 +181,7 @@ const App: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [selectionStartTime, activeRaffle]);
+  }, [selectionStartTime, activeRaffle, isCheckoutOpen]);
 
   // Cleanup ao sair do app (beforeunload)
   useEffect(() => {

@@ -146,7 +146,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 .from('reservations')
                 .delete()
                 .eq('raffle_id', raffleId)
-                .in('number', numbers);
+                .in('number', numbers)
+                .eq('status', 'pending');
 
             if (deleteError) {
                 console.warn('⚠️ [API Efi Charge] Aviso ao deletar reservas temporárias:', deleteError);

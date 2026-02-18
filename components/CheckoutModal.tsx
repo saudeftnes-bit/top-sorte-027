@@ -31,10 +31,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [isCreatingCharge, setIsCreatingCharge] = useState(false);
   const [chargeError, setChargeError] = useState<string | null>(null);
+  const [finalPrice, setFinalPrice] = useState<number>(totalPrice);
 
   // Polling de status Efi
   const { status: efiStatus, stopPolling } = useEfiPayment(efiTxid, step === 'payment');
   const timer = useReservationTimer(expiresAt);
+  const successFired = useRef(false);
 
   // Monitorar confirmação via banco de dados (Global State)
   // Isso funciona como um fallback caso o polling da EFI demore ou falhe
@@ -77,6 +79,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
 
   // Função para centralizar o sucesso
   const handleSuccess = () => {
+    if (successFired.current) return;
+    successFired.current = true;
+
     stopPolling();
     setExpiresAt(null);
 
@@ -179,6 +184,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
       setQrCode(data.qrCode);
       setPixCopiaCola(data.pixCopiaCola);
       setExpiresAt(data.expiresAt);
+      setFinalPrice(totalPrice);
 
       // Atualizar local state como PENDING
       onSetPending(formData.name, selectedNumbers);
@@ -386,7 +392,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               {/* Valor */}
               <div className="p-6 border-2 border-dashed border-slate-200 rounded-[2rem] space-y-4">
                 <p className="text-center text-sm font-bold text-slate-500 leading-relaxed px-2">
-                  Valor: <span className="text-purple-700 font-black">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  Valor: <span className="text-purple-700 font-black">R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </p>
                 <p className="text-center text-xs text-slate-400">
                   O pagamento será confirmado automaticamente após o processamento PIX.
