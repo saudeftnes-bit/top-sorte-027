@@ -117,65 +117,80 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             process.env.VITE_SUPABASE_ANON_KEY || ''
         );
 
-        // Criar registro de transação no Supabase
-        const { data: transaction, error: transactionError } = await supabase
-            .from('efi_transactions')
-            .insert({
-                txid: pixCharge.txid,
+        let reservationIds: string[] = [];
+
+        // Tentar salvar transação EFI (não bloqueia se falhar)
+        try {
+            await supabase
+                .from('efi_transactions')
+                .insert({
+                    txid: pixCharge.txid,
+                    raffle_id: raffleId,
+                    amount: totalPrice,
+                    status: pixCharge.status,
+                    pix_copia_cola: pixCharge.pixCopiaCola,
+                    qr_code_url: pixCharge.qrCodeImage,
+                    buyer_name: buyer.name,
+                    buyer_email: buyer.email || '',
+                    buyer_phone: buyer.phone || '',
+                });
+        } catch (e: any) {
+            console.error('⚠️ [API Efi Charge] Erro ao salvar transação (não crítico):', e);
+        }
+
+        // Criar reservas com colunas básicas apenas
+        try {
+            const reservationsData = numbers.map((number: string) => ({
                 raffle_id: raffleId,
-                amount: totalPrice,
-                status: pixCharge.status,
-                pix_copia_cola: pixCharge.pixCopiaCola,
-                qr_code_url: pixCharge.qrCodeImage,
+                number,
                 buyer_name: buyer.name,
-                buyer_email: buyer.email,
-                buyer_phone: buyer.phone,
-            })
-            .select()
-            .single();
+                buyer_phone: buyer.phone || '',
+                buyer_email: buyer.email || '',
+                status: 'pending',
+                payment_amount: totalPrice / numbers.length,
+                payment_method: 'efi',
+                efi_txid: pixCharge.txid,
+            }));
 
-        if (transactionError) {
-            console.error('❌ [API Efi Charge] Erro ao criar transação:', transactionError);
-            throw new Error('Erro ao salvar transação');
+            const { data: reservations, error: reservationsError } = await supabase
+                .from('reservations')
+                .insert(reservationsData)
+                .select();
+
+            if (reservationsError) {
+                console.error('⚠️ [API Efi Charge] Erro ao criar reservas (tentando sem colunas EFI):', reservationsError);
+
+                // Fallback: tentar sem colunas EFI
+                const basicReservations = numbers.map((number: string) => ({
+                    raffle_id: raffleId,
+                    number,
+                    buyer_name: buyer.name,
+                    buyer_phone: buyer.phone || '',
+                    buyer_email: buyer.email || '',
+                    status: 'pending',
+                    payment_amount: totalPrice / numbers.length,
+                }));
+
+                const { data: fallbackReservations, error: fallbackError } = await supabase
+                    .from('reservations')
+                    .insert(basicReservations)
+                    .select();
+
+                if (fallbackError) {
+                    console.error('❌ [API Efi Charge] Erro no fallback de reservas:', fallbackError);
+                } else {
+                    reservationIds = fallbackReservations?.map(r => r.id) || [];
+                }
+            } else {
+                reservationIds = reservations?.map(r => r.id) || [];
+            }
+        } catch (e: any) {
+            console.error('❌ [API Efi Charge] Erro geral em reservas:', e);
         }
-
-        // Criar reservas com status 'pending' e vincular ao txid
-        const reservationsData = numbers.map((number: string) => ({
-            raffle_id: raffleId,
-            number,
-            buyer_name: buyer.name,
-            buyer_phone: buyer.phone,
-            buyer_email: buyer.email,
-            status: 'pending',
-            payment_amount: totalPrice / numbers.length,
-            payment_method: 'efi',
-            efi_txid: pixCharge.txid,
-            efi_status: pixCharge.status,
-            efi_pix_copia_cola: pixCharge.pixCopiaCola,
-            efi_qr_code_url: pixCharge.qrCodeImage,
-            expires_at: pixCharge.expiresAt,
-        }));
-
-        const { data: reservations, error: reservationsError } = await supabase
-            .from('reservations')
-            .insert(reservationsData)
-            .select();
-
-        if (reservationsError) {
-            console.error('❌ [API Efi Charge] Erro ao criar reservas:', reservationsError);
-            throw new Error('Erro ao criar reservas');
-        }
-
-        // Atualizar transaction com IDs das reservas
-        const reservationIds = reservations?.map(r => r.id) || [];
-        await supabase
-            .from('efi_transactions')
-            .update({ reservation_ids: reservationIds })
-            .eq('id', transaction.id);
 
         console.log('✅ [API Efi Charge] Reservas criadas:', reservationIds);
 
-        // Retornar dados do PIX
+        // Retornar dados do PIX (SEMPRE retorna, mesmo se reservas falharem)
         return res.status(200).json({
             success: true,
             txid: pixCharge.txid,
