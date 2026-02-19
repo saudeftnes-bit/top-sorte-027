@@ -359,9 +359,10 @@ export async function createManualReservation(
     raffleId: string,
     buyerName: string,
     buyerPhone: string,
-    numbers: string[]
+    numbers: string[],
+    status: 'paid' | 'pending' = 'paid'
 ): Promise<{ success: boolean; message: string }> {
-    console.log('📝 [Admin] Criando reserva manual:', { raffleId, buyerName, buyerPhone, numbers });
+    console.log('📝 [Admin] Criando reserva manual:', { raffleId, buyerName, buyerPhone, numbers, status });
 
     try {
         // 1. Verificar se números estão disponíveis
@@ -369,7 +370,8 @@ export async function createManualReservation(
             .from('reservations')
             .select('number')
             .eq('raffle_id', raffleId)
-            .in('number', numbers);
+            .in('number', numbers)
+            .neq('status', 'cancelled');
 
         if (checkError) throw checkError;
 
@@ -379,14 +381,18 @@ export async function createManualReservation(
         }
 
         // 2. Preparar payload
+        const expiresAt = status === 'pending'
+            ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h para pendente
+            : null; // Sem expiração para pago
+
         const reservations = numbers.map(num => ({
             raffle_id: raffleId,
             number: num,
             buyer_name: buyerName,
             buyer_phone: buyerPhone,
-            status: 'paid', // Status 'paid' bloqueia e confirma
-            payment_amount: 0, // Valor 0 (externo)
-            expires_at: null // Sem expiração
+            status,
+            payment_amount: 0,
+            expires_at: expiresAt
         }));
 
         // 3. Inserir

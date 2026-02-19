@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface ManualReservationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (data: { name: string; phone: string; numbers: string[] }) => Promise<boolean>;
+    onConfirm: (data: { name: string; phone: string; numbers: string[]; status: 'paid' | 'pending' }) => Promise<boolean>;
 }
 
 // Phone mask: (xx) xxxxx-xxxx
@@ -24,6 +24,7 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [numbersInput, setNumbersInput] = useState('');
+    const [reservationStatus, setReservationStatus] = useState<'paid' | 'pending'>('paid');
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const [step, setStep] = useState<Step>('form');
@@ -62,7 +63,7 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
     const handleConfirm = async () => {
         setIsLoading(true);
         setErrorMsg('');
-        const success = await onConfirm({ name, phone, numbers: parsedNumbers });
+        const success = await onConfirm({ name, phone, numbers: parsedNumbers, status: reservationStatus });
         setIsLoading(false);
 
         if (success) {
@@ -77,6 +78,7 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
         setName('');
         setPhone('');
         setNumbersInput('');
+        setReservationStatus('paid');
         setErrorMsg('');
         setStep('form');
         setParsedNumbers([]);
@@ -111,7 +113,39 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
                     <form onSubmit={handleNext} className="p-6 space-y-4">
                         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                             <p className="text-xs text-yellow-800 font-medium">
-                                ⚠️ Reservas manuais são criadas como <span className="font-black">PAGAS</span> e os números ficarão indisponíveis para outros usuários.
+                                ⚠️ Reservas manuais bloqueiam os números para outros usuários. Defina o status abaixo.
+                            </p>
+                        </div>
+
+                        {/* Status Selector */}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Status da Reserva</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setReservationStatus('paid')}
+                                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm border-2 transition-all ${reservationStatus === 'paid'
+                                            ? 'bg-green-500 border-green-500 text-white shadow-md shadow-green-200'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-green-300'
+                                        }`}
+                                >
+                                    <span>✅</span> Pago
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setReservationStatus('pending')}
+                                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm border-2 transition-all ${reservationStatus === 'pending'
+                                            ? 'bg-yellow-400 border-yellow-400 text-white shadow-md shadow-yellow-200'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-yellow-300'
+                                        }`}
+                                >
+                                    <span>⏳</span> Pendente
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-1">
+                                {reservationStatus === 'paid'
+                                    ? 'Número marcado como PAGO — sem expiração.'
+                                    : 'Número marcado como PENDENTE — expira em 24h se não confirmado.'}
                             </p>
                         </div>
 
@@ -215,6 +249,15 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
                                             </span>
                                         ))}
                                     </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">{reservationStatus === 'paid' ? '✅' : '⏳'}</span>
+                                <div>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Status</p>
+                                    <p className={`font-black text-lg ${reservationStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'}`}>
+                                        {reservationStatus === 'paid' ? 'PAGO' : 'PENDENTE'}
+                                    </p>
                                 </div>
                             </div>
                         </div>

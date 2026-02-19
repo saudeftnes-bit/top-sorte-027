@@ -100,22 +100,21 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
         setPendingAction(null);
     };
 
-    const handleManualReservation = async (data: { name: string; phone: string; numbers: string[] }) => {
+    const handleManualReservation = async (data: { name: string; phone: string; numbers: string[]; status: 'paid' | 'pending' }) => {
         if (!activeRaffle) return false;
 
         const result = await createManualReservation(
             activeRaffle.id,
             data.name,
             data.phone,
-            data.numbers
+            data.numbers,
+            data.status
         );
 
         if (result.success) {
-            alert('🎉 Reserva realizada com sucesso!');
             await loadBuyers();
             return true;
         } else {
-            alert(`❌ Erro: ${result.message}`);
             return false;
         }
     };
