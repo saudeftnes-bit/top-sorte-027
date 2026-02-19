@@ -158,12 +158,10 @@ const AdminPanel: React.FC = () => {
                             setShowRaffleList(false);
                             setCurrentSection('raffle');
                         }}
-                        onEditRaffle={(id) => {
-                            // Find raffle by id could be done here, or just passed. 
-                            // Simplified: Just switch view, logic in RaffleManager handles id
-                            // Logic refinement needed: accessing raffle details requires full object or fetching.
-                            // RaffleList passes ID. 
-                            // Let's assume we fetch or pass full object in onManageRaffle
+                        onEditRaffle={(raffle) => {
+                            setActiveRaffle(raffle);
+                            setShowRaffleList(false);
+                            setCurrentSection('raffle');
                         }}
                     />
                 ) : (

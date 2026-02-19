@@ -4,7 +4,7 @@ import type { Raffle } from '../../types/database';
 import ConfirmModal from '../ConfirmModal';
 
 interface RaffleListProps {
-    onEditRaffle: (raffleId: string) => void;
+    onEditRaffle: (raffle: Raffle) => void;
     onCreateRaffle: () => void;
     onManageRaffle: (raffle: Raffle) => void;
 }
@@ -106,8 +106,8 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
                                                 #{raffle.code || '----'}
                                             </span>
                                             <span className={`text-xs font-bold px-2 py-1 rounded-md uppercase ${raffle.status === 'active' ? 'bg-green-100 text-green-700' :
-                                                    raffle.status === 'scheduled' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-red-100 text-red-700'
+                                                raffle.status === 'scheduled' ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-red-100 text-red-700'
                                                 }`}>
                                                 {raffle.status === 'active' ? 'Ativa' :
                                                     raffle.status === 'scheduled' ? 'Agendada' : 'Finalizada'}
@@ -131,7 +131,7 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
                                         {raffle.status === 'active' ? '⏸️ Pausar' : '▶️ Ativar'}
                                     </button>
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); onEditRaffle(raffle.id); }}
+                                        onClick={(e) => { e.stopPropagation(); onEditRaffle(raffle); }}
                                         className="flex-1 md:flex-none px-4 py-2 rounded-xl font-bold text-sm bg-blue-50 hover:bg-blue-100 text-blue-600"
                                     >
                                         ✏️ Editar
