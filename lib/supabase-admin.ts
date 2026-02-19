@@ -360,9 +360,11 @@ export async function createManualReservation(
     buyerName: string,
     buyerPhone: string,
     numbers: string[],
-    status: 'paid' | 'pending' = 'paid'
+    status: 'paid' | 'pending' = 'paid',
+    buyerEmail?: string,
+    paymentAmount: number = 0
 ): Promise<{ success: boolean; message: string }> {
-    console.log('📝 [Admin] Criando reserva manual:', { raffleId, buyerName, buyerPhone, numbers, status });
+    console.log('📝 [Admin] Criando reserva manual:', { raffleId, buyerName, buyerPhone, buyerEmail, numbers, status, paymentAmount });
 
     try {
         // 1. Verificar se números estão disponíveis
@@ -390,8 +392,9 @@ export async function createManualReservation(
             number: num,
             buyer_name: buyerName,
             buyer_phone: buyerPhone,
+            buyer_email: buyerEmail || null,
             status,
-            payment_amount: 0,
+            payment_amount: paymentAmount,
             expires_at: expiresAt
         }));
 
