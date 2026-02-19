@@ -8,10 +8,12 @@ import { uploadImage, validateImageFile } from '../../lib/storage-helper';
 interface RaffleManagerProps {
     raffleId: string;
     onBack: () => void;
+    onGoToDashboard?: () => void;  // Optional: go to the raffle dashboard (only when editing)
+    onGoToList?: () => void;       // Optional: go to the raffle list
     onDataChanged?: () => void;
 }
 
-const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataChanged }) => {
+const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToDashboard, onGoToList, onDataChanged }) => {
     const [raffle, setRaffle] = useState<Raffle | null>(null);
     const [winnerPhotos, setWinnerPhotos] = useState<WinnerPhoto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -305,21 +307,55 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         );
     }
 
+    const isCreating = !raffleId;
+
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-black text-slate-900">🎯 Gerenciar Sorteio</h2>
-                    <p className="text-slate-500 font-medium mt-1">Edite textos, imagens e configurações</p>
-                </div>
-                <div className="flex gap-3">
+            <div className="flex flex-col gap-3">
+                {/* Breadcrumb Navigation */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        onClick={onGoToList || onBack}
+                        className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 text-sm"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                        Lista de Rifas
+                    </button>
+
+                    {!isCreating && onGoToDashboard && (
+                        <button
+                            onClick={onGoToDashboard}
+                            className="flex items-center gap-2 bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 text-sm"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            Dashboard
+                        </button>
+                    )}
+
                     <button
                         onClick={onBack}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition-colors"
+                        className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-500 px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 text-sm border border-slate-200"
                     >
-                        ← Voltar
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Voltar
                     </button>
+                </div>
+
+                {/* Title */}
+                <div>
+                    <h2 className="text-2xl font-black text-slate-900">
+                        {isCreating ? '✨ Nova Rifa' : '🎯 Editar Sorteio'}
+                    </h2>
+                    <p className="text-slate-500 font-medium mt-1">
+                        {isCreating ? 'Preencha os dados para criar uma nova rifa' : 'Edite textos, imagens e configurações'}
+                    </p>
                 </div>
             </div>
 

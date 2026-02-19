@@ -186,15 +186,7 @@ const AdminPanel: React.FC = () => {
                     />
                 ) : (
                     <>
-                        <button
-                            onClick={() => {
-                                setShowRaffleList(true);
-                                setActiveRaffle(null);
-                            }}
-                            className="mb-6 flex items-center gap-2 text-slate-500 hover:text-purple-600 font-bold transition-colors"
-                        >
-                            <span>←</span> Voltar para Lista de Rifas
-                        </button>
+
 
                         {currentSection === 'dashboard' && activeRaffle && (
                             <AdminDashboard
@@ -213,9 +205,18 @@ const AdminPanel: React.FC = () => {
                                         setCurrentSection('dashboard');
                                     } else {
                                         setShowRaffleList(true);
+                                        setActiveRaffle(null);
                                     }
                                     refreshData();
                                 }}
+                                onGoToList={() => {
+                                    setShowRaffleList(true);
+                                    setActiveRaffle(null);
+                                }}
+                                onGoToDashboard={activeRaffle?.id ? () => {
+                                    setCurrentSection('dashboard');
+                                    refreshData();
+                                } : undefined}
                                 onDataChanged={refreshData}
                             />
                         )}
