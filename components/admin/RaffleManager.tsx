@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import { WhatsAppIcon } from '../../App';
-import { getActiveRaffle, updateRaffle, createRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto } from '../../lib/supabase-admin';
+import { getActiveRaffle, updateRaffle, createRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto, getAllRaffles, getRaffleAnalytics } from '../../lib/supabase-admin';
 import { Raffle, WinnerPhoto } from '../../types/database';
 import { uploadImage, validateImageFile } from '../../lib/storage-helper';
 
@@ -136,6 +136,30 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
         }
 
         setIsSaving(true);
+
+        // REGRA 1: Não permitir ativar se já houver outra ativa
+        if (status === 'active') {
+            const raffles = await getAllRaffles();
+            const otherActive = raffles.find(r => r.status === 'active' && r.id !== raffleId);
+            if (otherActive) {
+                setErrorMessage(`Já existe uma rifa ativa (${otherActive.title}). Encerre-a antes de ativar uma nova.`);
+                setShowErrorModal(true);
+                setIsSaving(false);
+                return;
+            }
+        }
+
+        // REGRA 2: Não permitir encerrar manualmente se não estiver 100%
+        if (status === 'finished') {
+            const analytics = await getRaffleAnalytics(raffleId);
+            const total = parseInt(totalNumbers);
+            if (analytics.numbersSold < total) {
+                setErrorMessage(`Não é possível encerrar manualmente. Esta rifa ainda possui números disponíveis (${analytics.numbersSold}/${total}).`);
+                setShowErrorModal(true);
+                setIsSaving(false);
+                return;
+            }
+        }
 
         const raffleData = {
             title,

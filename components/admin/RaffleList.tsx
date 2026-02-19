@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAllRaffles, deleteRaffle, updateRaffle } from '../../lib/supabase-admin';
+import { getAllRaffles, deleteRaffle, updateRaffle, getRaffleAnalytics } from '../../lib/supabase-admin';
 import type { Raffle } from '../../types/database';
 import ConfirmModal from '../ConfirmModal';
 
@@ -45,8 +45,28 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
 
     const toggleStatus = async (raffle: Raffle, e: React.MouseEvent) => {
         e.stopPropagation();
-        const newStatus = raffle.status === 'active' ? 'finished' : 'active';
-        await updateRaffle(raffle.id, { status: newStatus });
+        const nextStatus = raffle.status === 'active' ? 'finished' : 'active';
+
+        // REGRA 1: Não permitir ativar se já houver outra ativa
+        if (nextStatus === 'active') {
+            const allRaffles = await getAllRaffles();
+            const otherActive = allRaffles.find(r => r.status === 'active' && r.id !== raffle.id);
+            if (otherActive) {
+                alert(`Já existe uma rifa ativa (${otherActive.title}). Encerre-a antes de ativar uma nova.`);
+                return;
+            }
+        }
+
+        // REGRA 2: Não permitir encerrar manualmente se não estiver 100%
+        if (nextStatus === 'finished') {
+            const analytics = await getRaffleAnalytics(raffle.id);
+            if (analytics.numbersSold < (raffle.total_numbers || 10000)) {
+                alert(`Não é possível encerrar manualmente. Esta rifa ainda possui números disponíveis (${analytics.numbersSold}/${raffle.total_numbers || 10000}).`);
+                return;
+            }
+        }
+
+        await updateRaffle(raffle.id, { status: nextStatus });
         await loadRaffles();
     };
 
@@ -66,8 +86,8 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
                     onClick={hasActiveRaffle ? onBack : undefined}
                     disabled={!hasActiveRaffle}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all text-sm ${hasActiveRaffle
-                            ? 'bg-purple-100 hover:bg-purple-200 text-purple-700 active:scale-95 cursor-pointer'
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        ? 'bg-purple-100 hover:bg-purple-200 text-purple-700 active:scale-95 cursor-pointer'
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                         }`}
                     title={hasActiveRaffle ? 'Ir para o Dashboard da rifa ativa' : 'Nenhuma rifa selecionada'}
                 >
@@ -84,7 +104,14 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
                     <p className="text-slate-500 font-medium">Gerencie seus sorteios</p>
                 </div>
                 <button
-                    onClick={onCreateRaffle}
+                    onClick={async () => {
+                        const allRaffles = await getAllRaffles();
+                        if (allRaffles.some(r => r.status === 'active')) {
+                            alert('Não é possível criar uma nova rifa enquanto houver uma em andamento.');
+                        } else {
+                            onCreateRaffle();
+                        }
+                    }}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2"
                 >
                     <span>➕</span> Nova Rifa

@@ -136,6 +136,19 @@ export async function createRaffle(raffle: Omit<Raffle, 'id' | 'created_at' | 'u
         }
     }
 
+    // 2. Check if another raffle is already active
+    if (raffle.status === 'active') {
+        const { count } = await supabase
+            .from('raffles')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'active');
+
+        if (count && count > 0) {
+            console.error('❌ Não é possível criar rifa ativa pois já existe uma em andamento.');
+            return null;
+        }
+    }
+
     const { data, error } = await supabase
         .from('raffles')
         .insert([{ ...raffle, code: nextCode }])
@@ -317,13 +330,16 @@ export async function deleteWinnerPhoto(id: string): Promise<boolean> {
 export async function getRaffleAnalytics(raffleId: string): Promise<RaffleAnalytics> {
     const reservations = await getReservationsByRaffle(raffleId);
 
+    const raffleData = await supabase.from('raffles').select('total_numbers').eq('id', raffleId).single();
+    const totalPossible = raffleData.data?.total_numbers || 10000;
+
     const paidReservations = reservations.filter(r => r.status === 'paid');
     const pendingReservations = reservations.filter(r => r.status === 'pending');
 
-    const totalRevenue = paidReservations.reduce((sum, r) => sum + r.payment_amount, 0);
+    const totalRevenue = paidReservations.reduce((sum, r) => sum + (r.payment_amount || 0), 0);
     const numbersSold = paidReservations.length;
     const numbersPending = pendingReservations.length;
-    const numbersAvailable = 100 - numbersSold - numbersPending;
+    const numbersAvailable = totalPossible - numbersSold - numbersPending;
 
     // Count unique buyers
     const uniqueBuyers = new Set(paidReservations.map(r => r.buyer_phone || r.buyer_email)).size;
