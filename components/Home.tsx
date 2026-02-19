@@ -203,14 +203,14 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-6">
             {otherRaffles.map((otherRaffle) => (
-              <div key={otherRaffle.id} className="bg-white rounded-2xl p-4 shadow-md border-2 border-slate-100 flex flex-col gap-3">
+              <div key={otherRaffle.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col">
                 <div className="relative rounded-xl overflow-hidden aspect-video">
                   <img
                     src={otherRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
                     alt={otherRaffle.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-56 object-cover"
                   />
                   <div className={`absolute top-2 left-2 text-white font-bold px-2 py-1 rounded-lg text-[10px] uppercase ${otherRaffle.status === 'active' ? 'bg-green-500' : 'bg-slate-500'
                     }`}>
@@ -223,18 +223,18 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
                   )}
                 </div>
 
-                <div className="flex-1">
-                  <h4 className="font-black text-[#003B73] text-sm leading-tight mb-1 line-clamp-2 uppercase">
+                <div className="p-6">
+                  <h4 className="text-xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">
                     {otherRaffle.title}
                   </h4>
-                  <p className="text-xs text-slate-500 font-bold mb-3">
-                    R$ {otherRaffle.price_per_number.toFixed(2).replace('.', ',')} / número
-                  </p>
+                  <div className="flex items-center justify-center gap-2 mb-6 text-slate-500 font-bold text-sm">
+                    R$ {otherRaffle.price_per_number.toFixed(2).replace('.', ',')} por número
+                  </div>
                   <button
                     onClick={() => onSelectRaffle?.(otherRaffle)}
-                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs uppercase tracking-wide transition-colors"
+                    className="w-full bg-slate-600 hover:bg-slate-700 text-white font-black py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg"
                   >
-                    {otherRaffle.status === 'active' ? 'Participar' : 'Ver Grade'}
+                    👀 Visualizar rifa
                   </button>
                 </div>
               </div>
