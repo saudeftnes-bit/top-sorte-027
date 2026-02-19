@@ -340,8 +340,8 @@ export async function getRaffleAnalytics(raffleId: string): Promise<RaffleAnalyt
 // ==================== REAL-TIME SUBSCRIPTIONS ====================
 
 export function subscribeToReservations(raffleId: string, callback: (payload: any) => void) {
-    const channelName = `reservations_${raffleId}`;
-    console.log(`📡 [Real-time] Subscribing to channel: ${channelName}`);
+    const channelName = `reservations_channel_${raffleId}`;
+    console.log(`📡 [Real-time] Subscribing to channel: ${channelName} for raffle: ${raffleId}`);
 
     return supabase
         .channel(channelName)
@@ -350,10 +350,18 @@ export function subscribeToReservations(raffleId: string, callback: (payload: an
             {
                 event: '*',
                 schema: 'public',
-                table: 'reservations',
-                filter: `raffle_id=eq.${raffleId}`,
+                table: 'reservations'
             },
-            callback
+            (payload) => {
+                const newRaffleId = (payload.new as any)?.raffle_id;
+                const oldRaffleId = (payload.old as any)?.raffle_id;
+
+                // Manual check: If the update belongs to THIS raffle
+                if (newRaffleId === raffleId || oldRaffleId === raffleId) {
+                    console.log(`📡 [Real-time] Match found for raffle ${raffleId}!`, payload.eventType);
+                    callback(payload);
+                }
+            }
         )
         .subscribe();
 }
