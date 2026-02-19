@@ -21,6 +21,20 @@ export async function getActiveRaffle(): Promise<Raffle | null> {
     return data;
 }
 
+export async function getAllRaffles(): Promise<Raffle[]> {
+    const { data, error } = await supabase
+        .from('raffles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching all raffles:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
 export async function updateRaffle(id: string, updates: Partial<Raffle>): Promise<boolean> {
     console.log('📝 [Admin] Atualizando sorteio:', id, updates);
 
@@ -41,6 +55,20 @@ export async function updateRaffle(id: string, updates: Partial<Raffle>): Promis
     }
 
     console.log('✅ [Admin] Sorteio atualizado com sucesso!', data);
+    return true;
+}
+
+export async function deleteRaffle(id: string): Promise<boolean> {
+    console.log('🗑️ [Admin] Deletando sorteio:', id);
+    const { error } = await supabase
+        .from('raffles')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('❌ [Admin] Erro ao deletar sorteio:', error);
+        return false;
+    }
     return true;
 }
 
@@ -77,9 +105,25 @@ export async function resetRaffleNumbers(raffleId: string): Promise<number> {
 
 
 export async function createRaffle(raffle: Omit<Raffle, 'id' | 'created_at' | 'updated_at'>): Promise<Raffle | null> {
+    // 1. Get the last raffle code
+    const { data: lastRaffle } = await supabase
+        .from('raffles')
+        .select('code')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+    let nextCode = '0001';
+    if (lastRaffle && lastRaffle.code) {
+        const lastCodeInt = parseInt(lastRaffle.code, 10);
+        if (!isNaN(lastCodeInt)) {
+            nextCode = (lastCodeInt + 1).toString().padStart(4, '0');
+        }
+    }
+
     const { data, error } = await supabase
         .from('raffles')
-        .insert([raffle])
+        .insert([{ ...raffle, code: nextCode }])
         .select()
         .single();
 
@@ -90,6 +134,8 @@ export async function createRaffle(raffle: Omit<Raffle, 'id' | 'created_at' | 'u
 
     return data;
 }
+
+
 
 // ==================== RESERVATION OPERATIONS ====================
 

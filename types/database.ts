@@ -2,6 +2,7 @@
 
 export interface Raffle {
     id: string;
+    code?: string; // Sequential identifier (e.g., "0001")
     title: string;
     description: string;
     price_per_number: number;

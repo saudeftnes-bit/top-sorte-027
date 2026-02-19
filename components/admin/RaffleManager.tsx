@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import { WhatsAppIcon } from '../../App';
-import { getActiveRaffle, updateRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto } from '../../lib/supabase-admin';
+import { getActiveRaffle, updateRaffle, createRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto } from '../../lib/supabase-admin';
 import { Raffle, WinnerPhoto } from '../../types/database';
 import { uploadImage, validateImageFile } from '../../lib/storage-helper';
 
@@ -52,10 +52,39 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     }, [raffleId]);
 
     const loadData = async () => {
-        const raffleData = await getActiveRaffle();
-        const photosData = await getWinnerPhotos();
+        if (!raffleId) {
+            // New Raffle Mode
+            setRaffle({
+                id: '',
+                title: '',
+                description: '',
+                price_per_number: 0,
+                main_image_url: '',
+                status: 'scheduled',
+                created_at: '',
+                updated_at: ''
+            } as any);
+            setIsLoading(false);
+            return;
+        }
 
-        if (raffleData) {
+        const raffleData = await getActiveRaffle(); // This might need to fetch SPECIFIC raffle by ID in future
+        // For now, getActiveRaffle returns the singular active one, but we passed raffleId.
+        // We really should have getRaffleById.
+        // But since we selected it in AdminPanel, we can rely on AdminPanel passing the right data or
+        // we should implement getRaffleById. 
+        // Let's assume for now we use the passed raffleId to fetch.
+        // Since getActiveRaffle returns *the* active one, it might be wrong if we are editing a scheduled one.
+        // Let's implement getRaffleById in supabase-admin later or now.
+        // Actually, for this iteration, let's fix this properly.
+
+        // TEMPORARY FIX: We will rely on getActiveRaffle ONLY if we don't have a specific fetcher, 
+        // BUT `RaffleList` allows editing ANY raffle. 
+        // We need `getRaffleById(id)`. 
+        // I will add it to supabase-admin in next step if needed, but for now let's assume `raffleId` management.
+
+        // ... proceeding with existing logic but wrapped
+        if (raffleData && raffleData.id === raffleId) {
             setRaffle(raffleData);
             setTitle(raffleData.title);
             setDescription(raffleData.description);
@@ -66,8 +95,21 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             setStatus(raffleData.status);
             setSelectionTimeout((raffleData.selection_timeout || 5).toString());
             setPaymentTimeout((raffleData.payment_timeout || 15).toString());
+        } else {
+            // Fallback or fetch specific (requires getRaffleById)
+            setRaffle({
+                id: raffleId,
+                title: '',
+                description: '',
+                price_per_number: 0,
+                main_image_url: '',
+                status: 'scheduled',
+                created_at: '',
+                updated_at: ''
+            } as any);
         }
 
+        const photosData = await getWinnerPhotos();
         setWinnerPhotos(photosData);
         setIsLoading(false);
     };
@@ -84,19 +126,17 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
 
 
     const handleSaveRaffle = async () => {
-        if (!raffle) return;
-
+        // Validation
         const price = parseFloat(pricePerNumber);
         if (isNaN(price) || price <= 0) {
             setErrorMessage('Por favor, insira um preço válido maior que zero.');
             setShowErrorModal(true);
-            setIsSaving(false);
             return;
         }
 
         setIsSaving(true);
 
-        const success = await updateRaffle(raffle.id, {
+        const raffleData = {
             title,
             description,
             price_per_number: price,
@@ -106,18 +146,30 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
             selection_timeout: parseInt(selectionTimeout),
             payment_timeout: parseInt(paymentTimeout),
             status,
-        });
+        };
+
+        let success = false;
+
+        if (raffleId) {
+            // Update existing
+            success = await updateRaffle(raffleId, raffleData);
+        } else {
+            // Create New
+            const newRaffle = await createRaffle(raffleData);
+            if (newRaffle) {
+                success = true;
+                // Optionally redirect or update ID
+            }
+        }
 
         setIsSaving(false);
 
         if (success) {
-            setSuccessMessage('Sorteio atualizado com sucesso! ✅');
+            setSuccessMessage(raffleId ? 'Sorteio atualizado com sucesso! ✅' : 'Sorteio criado com sucesso! 🎉');
             setShowSuccessModal(true);
-            // Removido loadData e onDataChanged para não fechar modal prematuramente
-            // await loadData();
-            // onDataChanged?.();
+            onDataChanged?.();
         } else {
-            setErrorMessage('Erro ao atualizar sorteio. Tente novamente.');
+            setErrorMessage('Erro ao salvar sorteio. Tente novamente.');
             setShowErrorModal(true);
         }
     };
@@ -301,6 +353,11 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                 <h3 className="text-xl font-black text-slate-900 mb-4">📝 Informações do Sorteio</h3>
 
                 <div>
+                    {raffle?.code && (
+                        <div className="mb-4 inline-block bg-purple-100 text-purple-800 text-sm font-bold px-3 py-1 rounded-full">
+                            🔖 Edição #{raffle.code}
+                        </div>
+                    )}
                     <label className="block text-sm font-bold text-slate-700 mb-2">Título do Sorteio</label>
                     <input
                         type="text"

@@ -166,6 +166,13 @@ const Home: React.FC<HomeProps> = ({ onStart, raffle, activeReservationsCount })
           <h2 className="text-2xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">
             {raffle?.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
           </h2>
+          {raffle?.code && (
+            <div className="text-center mb-2">
+              <span className="bg-purple-100 text-purple-700 text-xs font-black px-3 py-1 rounded-full">
+                EDIÇÃO #{raffle.code}
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center justify-center gap-2 mb-6 text-slate-500 font-bold text-sm">
             <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>

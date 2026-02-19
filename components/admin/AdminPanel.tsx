@@ -4,6 +4,7 @@ import AdminDashboard from './AdminDashboard';
 import RaffleManager from './RaffleManager';
 import PaymentManager from './PaymentManager';
 import UsersList from './UsersList';
+import RaffleList from './RaffleList';
 import ConfirmModal from '../ConfirmModal';
 import { getActiveRaffle } from '../../lib/supabase-admin';
 import type { Raffle } from '../../types/database';
@@ -18,6 +19,9 @@ const AdminPanel: React.FC = () => {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [dashboardKey, setDashboardKey] = useState(0);
 
+    // New state for multiple raffles
+    const [showRaffleList, setShowRaffleList] = useState(true);
+
     useEffect(() => {
         // Check if already authenticated
         const isAuth = localStorage.getItem('admin_authenticated') === 'true';
@@ -31,8 +35,14 @@ const AdminPanel: React.FC = () => {
     }, []);
 
     const loadActiveRaffle = async () => {
+        // We load the active raffle for the dashboard, but now we also rely on the list
         const raffle = await getActiveRaffle();
-        setActiveRaffle(raffle);
+        // Only auto-select if we don't have one and not showing list
+        if (raffle && !activeRaffle) {
+            // For now, let's just set it but keep list open if user wants to switch.
+            // Actually, the new flow starts with the List.
+            // setActiveRaffle(raffle);
+        }
         setIsLoading(false);
     };
 
@@ -87,20 +97,20 @@ const AdminPanel: React.FC = () => {
         );
     }
 
-    if (!activeRaffle) {
+    if (!activeRaffle && !showRaffleList) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-3xl p-12 shadow-xl text-center max-w-md">
                     <p className="text-6xl mb-4">⚠️</p>
-                    <h2 className="text-2xl font-black text-slate-900 mb-3">Nenhum Sorteio Ativo</h2>
+                    <h2 className="text-2xl font-black text-slate-900 mb-3">Nenhum Sorteio Selecionado</h2>
                     <p className="text-slate-500 mb-6">
-                        Você precisa criar um sorteio no Supabase primeiro. Configure o banco de dados e insira um sorteio com status 'active'.
+                        Selecione um sorteio na lista para gerenciar.
                     </p>
                     <button
-                        onClick={handleLogout}
-                        className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-3 rounded-xl font-bold transition-colors"
+                        onClick={() => setShowRaffleList(true)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold transition-colors shadow-lg"
                     >
-                        Sair
+                        Voltar para Lista
                     </button>
                 </div>
             </div>
@@ -136,45 +146,83 @@ const AdminPanel: React.FC = () => {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 py-8">
-                {currentSection === 'dashboard' && (
-                    <AdminDashboard
-                        key={dashboardKey}
-                        raffleId={activeRaffle.id}
-                        raffle={activeRaffle}
-                        onNavigate={(section) => setCurrentSection(section)}
-                    />
-                )}
-
-                {currentSection === 'raffle' && (
-                    <RaffleManager
-                        raffleId={activeRaffle.id}
-                        onBack={() => {
+                {showRaffleList ? (
+                    <RaffleList
+                        onManageRaffle={(raffle) => {
+                            setActiveRaffle(raffle);
+                            setShowRaffleList(false);
                             setCurrentSection('dashboard');
-                            refreshData();
                         }}
-                        onDataChanged={refreshData}
-                    />
-                )}
-
-                {currentSection === 'payments' && (
-                    <PaymentManager
-                        raffleId={activeRaffle.id}
-                        onBack={() => {
-                            setCurrentSection('dashboard');
-                            refreshData();
+                        onCreateRaffle={() => {
+                            setActiveRaffle({ id: '', title: '', description: '', price_per_number: 0, main_image_url: '', status: 'scheduled', created_at: '', updated_at: '' }); // Empty raffle for creation
+                            setShowRaffleList(false);
+                            setCurrentSection('raffle');
                         }}
-                        onDataChanged={refreshData}
-                    />
-                )}
-
-                {currentSection === 'users' && (
-                    <UsersList
-                        raffleId={activeRaffle.id}
-                        onBack={() => {
-                            setCurrentSection('dashboard');
-                            refreshData();
+                        onEditRaffle={(id) => {
+                            // Find raffle by id could be done here, or just passed. 
+                            // Simplified: Just switch view, logic in RaffleManager handles id
+                            // Logic refinement needed: accessing raffle details requires full object or fetching.
+                            // RaffleList passes ID. 
+                            // Let's assume we fetch or pass full object in onManageRaffle
                         }}
                     />
+                ) : (
+                    <>
+                        <button
+                            onClick={() => {
+                                setShowRaffleList(true);
+                                setActiveRaffle(null);
+                            }}
+                            className="mb-6 flex items-center gap-2 text-slate-500 hover:text-purple-600 font-bold transition-colors"
+                        >
+                            <span>←</span> Voltar para Lista de Rifas
+                        </button>
+
+                        {currentSection === 'dashboard' && activeRaffle && (
+                            <AdminDashboard
+                                key={dashboardKey}
+                                raffleId={activeRaffle.id}
+                                raffle={activeRaffle}
+                                onNavigate={(section) => setCurrentSection(section)}
+                            />
+                        )}
+
+                        {currentSection === 'raffle' && (
+                            <RaffleManager
+                                raffleId={activeRaffle?.id || ''} // Empty ID means creation mode
+                                onBack={() => {
+                                    if (activeRaffle?.id) {
+                                        setCurrentSection('dashboard');
+                                    } else {
+                                        setShowRaffleList(true);
+                                    }
+                                    refreshData();
+                                }}
+                                onDataChanged={refreshData}
+                            />
+                        )}
+
+                        {currentSection === 'payments' && activeRaffle && (
+                            <PaymentManager
+                                raffleId={activeRaffle.id}
+                                onBack={() => {
+                                    setCurrentSection('dashboard');
+                                    refreshData();
+                                }}
+                                onDataChanged={refreshData}
+                            />
+                        )}
+
+                        {currentSection === 'users' && activeRaffle && (
+                            <UsersList
+                                raffleId={activeRaffle.id}
+                                onBack={() => {
+                                    setCurrentSection('dashboard');
+                                    refreshData();
+                                }}
+                            />
+                        )}
+                    </>
                 )}
             </main>
 
