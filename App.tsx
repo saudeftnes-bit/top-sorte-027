@@ -145,6 +145,16 @@ const App: React.FC = () => {
     };
   }, [activeRaffle?.id, view]);
 
+  // Bug Fix: Limpar seleções ao trocar de sorteio
+  useEffect(() => {
+    if (activeRaffle?.id) {
+      console.log('🧹 [Cleanup] Sorteio alterado, limpando seleções locais...');
+      setSelectedNumbers([]);
+      setSelectionStartTime(null);
+      setSelectionTimeRemaining(null);
+    }
+  }, [activeRaffle?.id]);
+
   // Timer de seleção: Iniciar quando primeiro número for selecionado
   useEffect(() => {
     if (selectedNumbers.length > 0 && !selectionStartTime) {
@@ -282,10 +292,17 @@ const App: React.FC = () => {
     }
   }
 
-  const handleSelectRaffle = (raffle: Raffle) => {
+  const handleSelectRaffle = async (raffle: Raffle) => {
+    // Se já havia outro sorteio e tínhamos seleções, limpamos no banco primeiro
+    if (activeRaffle && activeRaffle.id !== raffle.id && selectedNumbers.length > 0) {
+      console.log('🧹 [Cleanup] Limpando seleções do sorteio anterior antes de trocar...');
+      const { cleanupSessionSelections } = await import('./lib/selection-manager');
+      await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+    }
+
     setActiveRaffle(raffle);
     loadDataForActiveRaffle(raffle.id);
-    // Se quiser ir direto pra seleção:
+    setSelectedNumbers([]); // Garantia extra
     setView('selecting');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
