@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WhatsAppIcon } from '../App';
 import { getActiveRaffle, getWinnerPhotos } from '../lib/supabase-admin';
+import { supabase } from '../lib/supabase';
 import { getYouTubeEmbedUrl } from '../lib/video-utils';
 import type { Raffle, WinnerPhoto } from '../types/database';
 
@@ -16,6 +17,7 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
   const [raffle, setRaffle] = useState<Raffle | null>(null);
   const [winnersPhotos, setWinnersPhotos] = useState<WinnerPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeReservations, setActiveReservations] = useState(0);
 
   // Carregar script do Instagram (apenas uma vez)
   useEffect(() => {
@@ -121,6 +123,15 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
 
         if (raffleData) {
           setRaffle(raffleData);
+
+          // Contar reservas ativas (pagas ou pendentes)
+          const { count } = await supabase
+            .from('reservations')
+            .select('id', { count: 'exact', head: true })
+            .eq('raffle_id', raffleData.id)
+            .in('status', ['paid', 'pending']);
+
+          setActiveReservations(count || 0);
         }
 
         if (photosData && photosData.length > 0) {
@@ -177,15 +188,46 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
             <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
             Apenas R$ {raffle?.price_per_number?.toFixed(2).replace('.', ',') || '13,00'} por número
           </div>
-          <button
-            onClick={onStart}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg animate-pulse hover:animate-none"
-            style={{
-              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-            }}
-          >
-            🎯 ESCOLHER MEUS NÚMEROS
-          </button>
+          {/* Botão de CTA ou aviso de grade preenchida */}
+          {(() => {
+            const totalNumbers = raffle?.total_numbers || 0;
+            const isSoldOut = totalNumbers > 0 && activeReservations >= totalNumbers;
+
+            if (isSoldOut) {
+              return (
+                <div className="w-full bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 shadow-xl border-2 border-amber-400/50 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-2xl animate-bounce">🏆</span>
+                    <span className="text-amber-400 font-black text-lg uppercase tracking-tight">Grade Preenchida!</span>
+                    <span className="text-2xl animate-bounce">🏆</span>
+                  </div>
+                  <p className="text-slate-300 text-sm font-medium mb-3">
+                    Todos os números já foram reservados.
+                  </p>
+                  <div className="bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-3">
+                    <p className="text-amber-300 font-black text-sm uppercase tracking-wider">
+                      ⏳ Aguarde o sorteio!
+                    </p>
+                    <p className="text-slate-400 text-xs mt-1 font-medium">
+                      Em breve abriremos um novo concurso. Fique ligado!
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <button
+                onClick={onStart}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg animate-pulse hover:animate-none"
+                style={{
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                }}
+              >
+                🎯 ESCOLHER MEUS NÚMEROS
+              </button>
+            );
+          })()}
         </div>
       </section>
 
