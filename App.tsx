@@ -311,21 +311,34 @@ const App: React.FC = () => {
     try {
       // Load reservations
       const reservationsData = await getReservationsByRaffle(raffleId);
-      console.log('📊 [Data] Loaded', reservationsData.length, 'reservations for raffle', raffleId);
-      setDbReservations(reservationsData);
 
-      // Convert to legacy format for compatibility
-      const reservationsMap: ReservationMap = {};
-      reservationsData.forEach((res) => {
-        if (res.status !== 'cancelled') {
-          reservationsMap[res.number] = {
-            name: res.buyer_name,
-            status: res.status as NumberStatus,
-          };
+      // GUARDRAIL: Check if the user is still on the same raffle before updating state
+      // This prevents "stale" data from an old raffle overwrite the current one
+      setActiveRaffle(current => {
+        if (current?.id !== raffleId) {
+          console.warn('⚠️ [Data] Rejecting stale data for raffle:', raffleId, '(Current:', current?.id, ')');
+          return current;
         }
+
+        console.log('📊 [Data] Loaded', reservationsData.length, 'reservations for raffle', raffleId);
+        setDbReservations(reservationsData);
+
+        // Convert to legacy format for compatibility
+        const reservationsMap: ReservationMap = {};
+        reservationsData.forEach((res) => {
+          if (res.status !== 'cancelled') {
+            reservationsMap[res.number] = {
+              name: res.buyer_name,
+              status: res.status as NumberStatus,
+            };
+          }
+        });
+        setReservations(reservationsMap);
+        console.log('📊 [Data] Updated UI with', Object.keys(reservationsMap).length, 'active reservations');
+
+        return current;
       });
-      setReservations(reservationsMap);
-      console.log('📊 [Data] Updated UI with', Object.keys(reservationsMap).length, 'active reservations');
+
     } catch (error) {
       console.error("Error loading reservations:", error)
     }
@@ -587,8 +600,11 @@ const App: React.FC = () => {
             totalNumbers={activeRaffle?.total_numbers}
             selectionMode={activeRaffle?.selection_mode}
             sessionId={sessionId.current}
-            isReadOnly={activeRaffle && activeRaffle.total_numbers > 0 &&
-              Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length >= activeRaffle.total_numbers}
+            isReadOnly={
+              (activeRaffle?.status === 'finished') ||
+              (activeRaffle && activeRaffle.total_numbers > 0 &&
+                Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length >= activeRaffle.total_numbers)
+            }
             raffleCode={activeRaffle?.code}
           />
         )}

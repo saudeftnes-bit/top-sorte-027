@@ -25,7 +25,7 @@ export async function getPublicRaffles(): Promise<Raffle[]> {
     const { data, error } = await supabase
         .from('raffles')
         .select('*')
-        .in('status', ['active', 'scheduled'])
+        .in('status', ['active', 'scheduled', 'finished'])
         .order('created_at', { ascending: false });
 
     if (error) {
