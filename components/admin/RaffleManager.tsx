@@ -24,7 +24,6 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
     const [successMessage, setSuccessMessage] = useState('');
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [showRestartModal, setShowRestartModal] = useState(false);
 
     // Form state
     const [title, setTitle] = useState('');
@@ -295,24 +294,6 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
         }
     };
 
-    const handleRestartContest = async () => {
-        if (!raffle) return;
-
-        setShowRestartModal(false);
-
-        const { resetRaffleNumbers } = await import('../../lib/supabase-admin');
-        const count = await resetRaffleNumbers(raffle.id);
-
-        if (count >= 0) {
-            setSuccessMessage(`Concurso reiniciado com sucesso! ✅\n${count} número(s) foram liberados.`);
-            setShowSuccessModal(true);
-            await loadData();
-            onDataChanged?.();
-        } else {
-            setErrorMessage('Erro ao reiniciar concurso. Verifique se a função SQL foi executada no Supabase.');
-            setShowErrorModal(true);
-        }
-    };
 
 
 
@@ -333,12 +314,6 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                     <p className="text-slate-500 font-medium mt-1">Edite textos, imagens e configurações</p>
                 </div>
                 <div className="flex gap-3">
-                    <button
-                        onClick={() => setShowRestartModal(true)}
-                        className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-xl font-bold transition-colors"
-                    >
-                        🔄 Novo Concurso
-                    </button>
                     <button
                         onClick={onBack}
                         className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition-colors"
@@ -654,17 +629,6 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onDataC
                 variant="danger"
                 onConfirm={() => setShowErrorModal(false)}
                 onCancel={() => setShowErrorModal(false)}
-            />
-
-            <ConfirmModal
-                isOpen={showRestartModal}
-                title="🔄 Iniciar Novo Concurso"
-                message="Tem certeza que deseja REINICIAR este concurso? Isto irá APAGAR todas as reservas e deixar todos os números livres novamente. Esta ação não pode ser desfeita!"
-                confirmLabel="Sim, Reiniciar"
-                cancelLabel="Cancelar"
-                variant="danger"
-                onConfirm={handleRestartContest}
-                onCancel={() => setShowRestartModal(false)}
             />
         </div>
     );
