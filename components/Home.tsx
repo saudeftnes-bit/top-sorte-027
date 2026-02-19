@@ -204,7 +204,7 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
                   <p className="text-slate-300 text-sm font-medium mb-3">
                     Todos os números já foram reservados.
                   </p>
-                  <div className="bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-3">
+                  <div className="bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-3 mb-4">
                     <p className="text-amber-300 font-black text-sm uppercase tracking-wider">
                       ⏳ Aguarde o sorteio!
                     </p>
@@ -212,6 +212,13 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
                       Em breve abriremos um novo concurso. Fique ligado!
                     </p>
                   </div>
+
+                  <button
+                    onClick={onStart}
+                    className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 text-sm uppercase"
+                  >
+                    <span>👁️</span> Ver Tabela Completa
+                  </button>
                 </div>
               );
             }
