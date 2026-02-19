@@ -104,14 +104,20 @@ const App: React.FC = () => {
 
     console.log('🔔 [Real-time] Setting up subscription for raffle:', activeRaffle.id);
 
+    // Ref para evitar múltiplas recargas simultâneas (debounce)
+    let reloadTimeout: NodeJS.Timeout | null = null;
+
     const subscription = subscribeToReservations(activeRaffle.id, (payload) => {
       console.log(`🔔 [Real-time] Mudança detectada no sorteio ${activeRaffle.id}:`, {
         evento: payload.eventType,
         numero: (payload.new as any)?.number || (payload.old as any)?.number
       });
 
-      // Recarregar dados para refletir as mudanças (cores, nomes, etc)
-      loadDataForActiveRaffle(activeRaffle.id);
+      // Debounce: Recarregar dados após 200ms de calma (evita sobrecarga se selecionar muitos rápido)
+      if (reloadTimeout) clearTimeout(reloadTimeout);
+      reloadTimeout = setTimeout(() => {
+        loadDataForActiveRaffle(activeRaffle.id);
+      }, 200);
     });
 
     // Check subscription status

@@ -340,8 +340,11 @@ export async function getRaffleAnalytics(raffleId: string): Promise<RaffleAnalyt
 // ==================== REAL-TIME SUBSCRIPTIONS ====================
 
 export function subscribeToReservations(raffleId: string, callback: (payload: any) => void) {
-    const channelName = `reservations_realtime_${raffleId}`;
-    console.log(`📡 [Real-time] Subscribing to: ${channelName}`);
+    // Garantir que a ID esteja sempre em minúsculas para comparação
+    const normalizedRaffleId = raffleId.toLowerCase();
+    const channelName = `reservations_realtime_${normalizedRaffleId}`;
+
+    console.log(`📡 [Real-time] Iniciando inscrição para: ${channelName}`);
 
     return supabase
         .channel(channelName)
@@ -353,16 +356,24 @@ export function subscribeToReservations(raffleId: string, callback: (payload: an
                 table: 'reservations'
             },
             (payload) => {
-                // Com REPLICA IDENTITY FULL, o raffle_id estará presente mesmo no DELETE
-                const payloadRaffleId = (payload.new as any)?.raffle_id || (payload.old as any)?.raffle_id;
+                // Com REPLICA IDENTITY FULL ou INSERT/UPDATE normais, extraímos a raffle_id
+                const newId = (payload.new as any)?.raffle_id;
+                const oldId = (payload.old as any)?.raffle_id;
 
-                if (payloadRaffleId === raffleId) {
-                    console.log(`📡 [Real-time] Evento recebido para rifa ${raffleId}:`, payload.eventType);
+                const payloadRaffleId = (newId || oldId || '').toString().toLowerCase();
+
+                if (payloadRaffleId === normalizedRaffleId) {
+                    console.log(`📡 [Real-time] Match! Evento [${payload.eventType}] no sorteio ${normalizedRaffleId}`);
                     callback(payload);
+                } else {
+                    // Log silencioso para debug se necessário
+                    // console.log(`📡 [Real-time] Ignorando evento de outro sorteio: ${payloadRaffleId}`);
                 }
             }
         )
-        .subscribe();
+        .subscribe((status) => {
+            console.log(`📡 [Real-time] Status da conexão (${normalizedRaffleId}):`, status);
+        });
 }
 
 export async function createManualReservation(
