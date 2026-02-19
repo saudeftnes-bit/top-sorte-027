@@ -120,24 +120,49 @@ const App: React.FC = () => {
     // Check subscription status
     subscription.subscribe((status) => {
       console.log('🔔 [Real-time] Subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('🔔 [Real-time] Subscription confirmed, loading fresh data...');
+        loadDataForActiveRaffle(activeRaffle.id);
+      }
     });
 
     return () => {
-      console.log('🔔 [Real-time] Cleaning up subscription');
+      console.log('🔔 [Real-time] Cleaning up subscription for raffle:', activeRaffle.id);
       subscription.unsubscribe();
     };
   }, [activeRaffle?.id]);
+
+  // Cleanup periódico de reservas expiradas (Garante que números pendurados sejam liberados)
+  useEffect(() => {
+    if (view !== 'selecting') return;
+
+    console.log('🧹 [Cleanup] Agendando limpeza periódica a cada 60s');
+    const interval = setInterval(async () => {
+      try {
+        const { cleanupExpiredReservations } = await import('./lib/cleanup');
+        const count = await cleanupExpiredReservations();
+        if (count > 0) {
+          console.log(`🧹 [Cleanup] Limpeza periódica liberou ${count} número(s)`);
+          if (activeRaffle) loadDataForActiveRaffle(activeRaffle.id);
+        }
+      } catch (err) {
+        console.warn('⚠️ [Cleanup] Erro na limpeza periódica:', err);
+      }
+    }, 60000); // 1 minuto
+
+    return () => clearInterval(interval);
+  }, [view, activeRaffle?.id]);
 
   // FALLBACK: Polling para garantir sincronização se realtime DELETE falhar
   useEffect(() => {
     if (!activeRaffle || view !== 'selecting') return;
 
-    console.log('🔄 [Polling] Iniciando polling de sincronização a cada 2s');
+    console.log('🔄 [Polling] Iniciando polling de sincronização a cada 5s');
 
     const pollingInterval = setInterval(() => {
-      console.log('🔄 [Polling] Recarregando dados...');
+      console.log('🔄 [Polling] Verificando novos status...');
       loadDataForActiveRaffle(activeRaffle.id);
-    }, 2000); // Recarrega a cada 2 segundos
+    }, 5000); // Recarrega a cada 5 segundos (Equilíbrio entre performance e rapidez)
 
     return () => {
       console.log('🔄 [Polling] Parando polling');

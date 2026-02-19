@@ -340,8 +340,11 @@ export async function getRaffleAnalytics(raffleId: string): Promise<RaffleAnalyt
 // ==================== REAL-TIME SUBSCRIPTIONS ====================
 
 export function subscribeToReservations(raffleId: string, callback: (payload: any) => void) {
+    const channelName = `reservations_${raffleId}`;
+    console.log(`📡 [Real-time] Subscribing to channel: ${channelName}`);
+
     return supabase
-        .channel('reservations_channel')
+        .channel(channelName)
         .on(
             'postgres_changes',
             {
