@@ -22,6 +22,7 @@ const App: React.FC = () => {
 
   // Supabase state
   const [activeRaffle, setActiveRaffle] = useState<Raffle | null>(null);
+  const [publicRaffles, setPublicRaffles] = useState<Raffle[]>([]); // New state for list of raffles
   const [dbReservations, setDbReservations] = useState<Reservation[]>([]);
 
   // Estado centralizado com status reais: Verde (livre), Roxo (pago), Amarelo (em reserva)
@@ -113,7 +114,7 @@ const App: React.FC = () => {
 
       // Reload data when real-time update is received
       console.log('🔔 [Real-time] Reloading raffle data...');
-      loadRaffleData();
+      loadDataForActiveRaffle(activeRaffle.id);
     });
 
     // Check subscription status
@@ -135,7 +136,7 @@ const App: React.FC = () => {
 
     const pollingInterval = setInterval(() => {
       console.log('🔄 [Polling] Recarregando dados...');
-      loadRaffleData();
+      loadDataForActiveRaffle(activeRaffle.id);
     }, 2000); // Recarrega a cada 2 segundos
 
     return () => {
@@ -220,32 +221,73 @@ const App: React.FC = () => {
         // Continuar mesmo se limpeza falhar
       }
 
-      // 2. Carregar dados da rifa
-      const raffle = await getActiveRaffle();
-      if (raffle) {
-        setActiveRaffle(raffle);
+      // 2. Carregar TODOS os sorteios públicos (ativos e agendados)
+      const { getPublicRaffles } = await import('./lib/supabase-admin');
+      const raffles = await getPublicRaffles();
+      setPublicRaffles(raffles);
 
-        // Load reservations
-        const reservationsData = await getReservationsByRaffle(raffle.id);
-        console.log('📊 [Data] Loaded', reservationsData.length, 'reservations');
-        setDbReservations(reservationsData);
+      // Se não tiver nenhum raffle ativo setado, pega o primeiro (mais recente)
+      // Mas se já tivermos um activeRaffle, mantemos ele (a menos que ele não exista mais na lista?)
+      // Na verdade, se recarregarmos, pode ser bom atualizar o activeRaffle com os dados mais novos da lista
+      // Mas cuidado para não mudar o raffle que o usuário está vendo se o usuário selecionou um específico.
 
-        // Convert to legacy format for compatibility
-        const reservationsMap: ReservationMap = {};
-        reservationsData.forEach((res) => {
-          if (res.status !== 'cancelled') {
-            reservationsMap[res.number] = {
-              name: res.buyer_name,
-              status: res.status as NumberStatus,
-            };
-          }
-        });
-        setReservations(reservationsMap);
-        console.log('📊 [Data] Updated UI with', Object.keys(reservationsMap).length, 'active reservations');
+      if (raffles.length > 0) {
+        let raffleToLoad = activeRaffle;
+
+        // Se não tem nada selecionado, seleciona o primeiro (mais recente)
+        if (!raffleToLoad) {
+          // Prefer active over scheduled if mixed? 
+          // Usually we want the most recent created one regardless, or the most recent ACTIVE one.
+          // getPublicRaffles orders by created_at desc.
+          const activeOne = raffles.find(r => r.status === 'active') || raffles[0];
+          raffleToLoad = activeOne;
+        } else {
+          // Update current active raffle object with fresh data from list
+          const updated = raffles.find(r => r.id === raffleToLoad!.id);
+          if (updated) raffleToLoad = updated;
+        }
+
+        if (raffleToLoad) {
+          setActiveRaffle(raffleToLoad);
+          await loadDataForActiveRaffle(raffleToLoad.id);
+        }
       }
+
     } catch (error) {
       console.error('❌ [Data] Error loading raffle data:', error);
     }
+  };
+
+  const loadDataForActiveRaffle = async (raffleId: string) => {
+    try {
+      // Load reservations
+      const reservationsData = await getReservationsByRaffle(raffleId);
+      console.log('📊 [Data] Loaded', reservationsData.length, 'reservations for raffle', raffleId);
+      setDbReservations(reservationsData);
+
+      // Convert to legacy format for compatibility
+      const reservationsMap: ReservationMap = {};
+      reservationsData.forEach((res) => {
+        if (res.status !== 'cancelled') {
+          reservationsMap[res.number] = {
+            name: res.buyer_name,
+            status: res.status as NumberStatus,
+          };
+        }
+      });
+      setReservations(reservationsMap);
+      console.log('📊 [Data] Updated UI with', Object.keys(reservationsMap).length, 'active reservations');
+    } catch (error) {
+      console.error("Error loading reservations:", error)
+    }
+  }
+
+  const handleSelectRaffle = (raffle: Raffle) => {
+    setActiveRaffle(raffle);
+    loadDataForActiveRaffle(raffle.id);
+    // Se quiser ir direto pra seleção:
+    setView('selecting');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleClearAll = async () => {
@@ -470,7 +512,9 @@ const App: React.FC = () => {
         ) : view === 'home' ? (
           <Home
             onStart={handleParticipate}
+            onSelectRaffle={handleSelectRaffle}
             raffle={activeRaffle}
+            raffles={publicRaffles}
             activeReservationsCount={Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length}
           />
         ) : view === 'videos' ? (

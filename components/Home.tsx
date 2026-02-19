@@ -23,6 +23,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
   // Filter other raffles (exclude current active one)
   const otherRaffles = raffles.filter(r => r.id !== raffle?.id);
 
+
   // Carregar script do Instagram (apenas uma vez)
   useEffect(() => {
     if (!document.getElementById('instagram-embed-script')) {

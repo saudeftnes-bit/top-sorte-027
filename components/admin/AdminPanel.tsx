@@ -163,6 +163,26 @@ const AdminPanel: React.FC = () => {
                             setShowRaffleList(false);
                             setCurrentSection('raffle');
                         }}
+                        onBack={() => {
+                            // If we have an active raffle, go back to dashboard.
+                            // If not, maybe just stay or go to a safe state?
+                            // For now, let's assume if there is an active raffle we go to dashboard,
+                            // otherwise staying in list is the default state if no raffle is selected.
+                            // But usually "Back" from list implies going to the main view if list is a sub-view.
+                            // In this architecture, List IS a main view when no raffle is active.
+                            // If the user wants to go to the "Dashboard" of a specific raffle, they select it.
+                            // If they want to just "go back" from the list... where to?
+                            // Maybe the user meant "Dashboard" as in "Raffle Dashboard" but they are in the list.
+                            // If they are in the list, there IS NO active raffle to go to the dashboard OF.
+                            // So "Back" might strictly mean "Close List".
+                            // But wait, if showRaffleList is true, activeRaffle might be null.
+                            // If activeRaffle IS set, we can go back to it.
+                            if (activeRaffle) {
+                                setShowRaffleList(false);
+                                setCurrentSection('dashboard');
+                            }
+                        }}
+                        hasActiveRaffle={!!activeRaffle}
                     />
                 ) : (
                     <>

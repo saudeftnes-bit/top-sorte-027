@@ -7,9 +7,11 @@ interface RaffleListProps {
     onEditRaffle: (raffle: Raffle) => void;
     onCreateRaffle: () => void;
     onManageRaffle: (raffle: Raffle) => void;
+    onBack: () => void;
+    hasActiveRaffle: boolean;
 }
 
-const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, onManageRaffle }) => {
+const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, onManageRaffle, onBack, hasActiveRaffle }) => {
     const [raffles, setRaffles] = useState<Raffle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -59,9 +61,20 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-black text-slate-900">📚 Minhas Rifas</h2>
-                    <p className="text-slate-500 font-medium">Gerencie seus sorteios</p>
+                <div className="flex items-center gap-4">
+                    {hasActiveRaffle && (
+                        <button
+                            onClick={onBack}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-xl transition-colors"
+                            title="Voltar ao Dashboard"
+                        >
+                            ⬅️
+                        </button>
+                    )}
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900">📚 Minhas Rifas</h2>
+                        <p className="text-slate-500 font-medium">Gerencie seus sorteios</p>
+                    </div>
                 </div>
                 <button
                     onClick={onCreateRaffle}
