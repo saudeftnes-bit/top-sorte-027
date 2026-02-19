@@ -21,6 +21,21 @@ export async function getActiveRaffle(): Promise<Raffle | null> {
     return data;
 }
 
+export async function getPublicRaffles(): Promise<Raffle[]> {
+    const { data, error } = await supabase
+        .from('raffles')
+        .select('*')
+        .in('status', ['active', 'scheduled'])
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching public raffles:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
 export async function getAllRaffles(): Promise<Raffle[]> {
     const { data, error } = await supabase
         .from('raffles')

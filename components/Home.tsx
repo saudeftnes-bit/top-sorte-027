@@ -6,17 +6,22 @@ import type { Raffle, WinnerPhoto } from '../types/database';
 
 interface HomeProps {
   onStart: () => void;
+  onSelectRaffle?: (raffle: Raffle) => void;
   raffle: Raffle | null;
+  raffles?: Raffle[];
   activeReservationsCount: number;
 }
 
-const Home: React.FC<HomeProps> = ({ onStart, raffle, activeReservationsCount }) => {
+const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = [], activeReservationsCount }) => {
   // Slideshow state
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Dynamic data from Supabase
   const [winnersPhotos, setWinnersPhotos] = useState<WinnerPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Filter other raffles (exclude current active one)
+  const otherRaffles = raffles.filter(r => r.id !== raffle?.id);
 
   // Carregar script do Instagram (apenas uma vez)
   useEffect(() => {
@@ -191,6 +196,59 @@ const Home: React.FC<HomeProps> = ({ onStart, raffle, activeReservationsCount })
         </div>
       </section>
 
+      {/* Outros Sorteios Disponíveis */}
+      {otherRaffles.length > 0 && (
+        <section className="mt-8">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+              <span className="text-2xl">🍀</span>
+              OUTROS SORTEIOS
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {otherRaffles.map((otherRaffle) => (
+              <div key={otherRaffle.id} className="bg-white rounded-2xl p-4 shadow-md border-2 border-slate-100 flex flex-col gap-3">
+                <div className="relative rounded-xl overflow-hidden aspect-video">
+                  <img
+                    src={otherRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+                    alt={otherRaffle.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className={`absolute top-2 left-2 text-white font-bold px-2 py-1 rounded-lg text-[10px] uppercase ${otherRaffle.status === 'active' ? 'bg-green-500' :
+                    otherRaffle.status === 'scheduled' ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`}>
+                    {otherRaffle.status === 'active' ? 'ATIVO' :
+                      otherRaffle.status === 'scheduled' ? 'EM BREVE' :
+                        'PAUSADO'}
+                  </div>
+                  {otherRaffle.code && (
+                    <div className="absolute bottom-2 right-2 bg-purple-600 text-white font-black px-2 py-1 rounded-lg text-[10px]">
+                      #{otherRaffle.code}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <h4 className="font-black text-[#003B73] text-sm leading-tight mb-1 line-clamp-2 uppercase">
+                    {otherRaffle.title}
+                  </h4>
+                  <p className="text-xs text-slate-500 font-bold mb-3">
+                    R$ {otherRaffle.price_per_number.toFixed(2).replace('.', ',')} / número
+                  </p>
+                  <button
+                    onClick={() => onSelectRaffle?.(otherRaffle)}
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs uppercase tracking-wide transition-colors"
+                  >
+                    Participar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Seção Como Funciona */}
       <section className="mt-6">
