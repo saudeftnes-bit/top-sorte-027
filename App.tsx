@@ -173,8 +173,10 @@ const App: React.FC = () => {
   // Bug Fix: Limpar seleções ao trocar de sorteio
   useEffect(() => {
     if (activeRaffle?.id) {
-      console.log('🧹 [Cleanup] Sorteio alterado, limpando seleções locais...');
+      console.log('🧹 [Cleanup] Sorteio alterado, limpando estados locais...');
       setSelectedNumbers([]);
+      setReservations({});
+      setDbReservations([]);
       setSelectionStartTime(null);
       setSelectionTimeRemaining(null);
     }
@@ -325,9 +327,13 @@ const App: React.FC = () => {
       await cleanupSessionSelections(activeRaffle.id, sessionId.current);
     }
 
+    // Reset total dos estados ANTES de carregar o novo
+    setSelectedNumbers([]);
+    setReservations({});
+    setDbReservations([]);
+
     setActiveRaffle(raffle);
     loadDataForActiveRaffle(raffle.id);
-    setSelectedNumbers([]); // Garantia extra
     setView('selecting');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
