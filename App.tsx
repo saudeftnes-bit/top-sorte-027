@@ -29,6 +29,9 @@ const App: React.FC = () => {
   // Estado centralizado com status reais
   const [reservations, setReservations] = useState<ReservationMap>({});
 
+  // Estatísticas específicas da rifa principal (Home) para evitar vazamento
+  const [featuredStats, setFeaturedStats] = useState({ paid: 0, pending: 0 });
+
   // Session ID para identificar este usuário
   const sessionId = useRef<string>(getOrCreateSessionId());
 
@@ -45,6 +48,9 @@ const App: React.FC = () => {
     return localStorage.getItem('adminMode') === 'true';
   });
   const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Ref para rastrear a ID da rifa pedida por último (evita race conditions)
+  const lastRequestedRaffleId = useRef<string | null>(null);
 
   const PRICE_PER_NUMBER = (selectedRaffle || featuredRaffle)?.price_per_number || 13.00;
 
@@ -286,16 +292,25 @@ const App: React.FC = () => {
         const activeOne = raffles.find(r => r.status === 'active') || raffles[0];
         setFeaturedRaffle(activeOne);
 
+        // Carregar estatísticas exclusivas da rifa principal (Home)
+        const activeOneReservations = await getReservationsByRaffle(activeOne.id);
+        const paid = activeOneReservations.filter(r => r.status === 'paid').length;
+        const pending = activeOneReservations.filter(r => r.status === 'pending').length;
+        setFeaturedStats({ paid, pending });
+
         // Se o usuário ainda não escolheu uma para ver, a selecionada inicial é a featured
         if (!selectedRaffle) {
           setSelectedRaffle(activeOne);
-          await loadDataForActiveRaffle(activeOne.id);
+          loadDataForActiveRaffle(activeOne.id);
         } else {
           // Atualizar dados da que já estava selecionada se ela ainda existir na lista
           const updatedSelected = raffles.find(r => r.id === selectedRaffle.id);
           if (updatedSelected) {
             setSelectedRaffle(updatedSelected);
-            await loadDataForActiveRaffle(updatedSelected.id);
+            // Só recarrega os números se estiver na visualização de seleção
+            if (view === 'selecting') {
+              loadDataForActiveRaffle(updatedSelected.id);
+            }
           }
         }
       }
@@ -307,33 +322,37 @@ const App: React.FC = () => {
 
   const loadDataForActiveRaffle = async (raffleId: string) => {
     try {
+      lastRequestedRaffleId.current = raffleId;
       // Load reservations
       const reservationsData = await getReservationsByRaffle(raffleId);
 
-      // GUARDRAIL: Check if the user is still on the same raffle before updating state
-      // This prevents "stale" data from an old raffle overwrite the current one
+      // GUARDRAIL 1: Verificar se esta ainda é a última ID que o usuário pediu
+      if (lastRequestedRaffleId.current !== raffleId) {
+        console.warn('⚠️ [Data] Descartando resposta de sorteio antigo:', raffleId);
+        return;
+      }
+
+      console.log('📊 [Data] Aplicando dados para rifa:', raffleId);
+      setDbReservations(reservationsData);
+
+      // Convert to legacy format for compatibility
+      const reservationsMap: ReservationMap = {};
+      reservationsData.forEach((res) => {
+        if (res.status !== 'cancelled') {
+          reservationsMap[res.number] = {
+            name: res.buyer_name,
+            status: res.status as NumberStatus,
+          };
+        }
+      });
+      setReservations(reservationsMap);
+
+      // GUARDRAIL 2: Verificar novamente o selectedRaffle (segurança extra)
       setSelectedRaffle(current => {
         if (current?.id !== raffleId) {
           console.warn('⚠️ [Data] Rejecting stale data for raffle:', raffleId, '(Current:', current?.id, ')');
           return current;
         }
-
-        console.log('📊 [Data] Loaded', reservationsData.length, 'reservations for raffle', raffleId);
-        setDbReservations(reservationsData);
-
-        // Convert to legacy format for compatibility
-        const reservationsMap: ReservationMap = {};
-        reservationsData.forEach((res) => {
-          if (res.status !== 'cancelled') {
-            reservationsMap[res.number] = {
-              name: res.buyer_name,
-              status: res.status as NumberStatus,
-            };
-          }
-        });
-        setReservations(reservationsMap);
-        console.log('📊 [Data] Updated UI with', Object.keys(reservationsMap).length, 'active reservations');
-
         return current;
       });
 
@@ -445,8 +464,17 @@ const App: React.FC = () => {
   };
 
   const handleParticipate = () => {
+    // LIMPEZA SÍNCRONA: Antes de entrar, limpamos tudo para garantir que não herda dados de outras rifas
+    setSelectedNumbers([]);
+    setReservations({});
+    setDbReservations([]);
+    setSelectionStartTime(null);
+    setSelectionTimeRemaining(null);
+
     setSelectedRaffle(featuredRaffle);
-    if (featuredRaffle) loadRaffleData(); // Recarregar dados para garantir consistência
+    if (featuredRaffle) {
+      loadDataForActiveRaffle(featuredRaffle.id);
+    }
     setView('selecting');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -584,7 +612,7 @@ const App: React.FC = () => {
             onSelectRaffle={handleSelectRaffle}
             featuredRaffle={featuredRaffle}
             raffles={publicRaffles}
-            activeReservationsCount={Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length}
+            activeReservationsCount={featuredStats.paid + featuredStats.pending}
           />
         ) : view === 'videos' ? (
           <InstagramVideos onBack={() => setView('home')} />
