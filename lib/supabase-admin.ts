@@ -1,4 +1,4 @@
-import { supabase as supabaseClient } from './supabase';
+Ôªøimport { supabase as supabaseClient } from './supabase';
 export const supabase = supabaseClient;
 import type { Raffle, Reservation, WinnerPhoto, RaffleAnalytics } from '../types/database';
 
@@ -300,10 +300,10 @@ export async function createManualReservation(
     buyerPhone: string,
     numbers: string[]
 ): Promise<{ success: boolean; message: string }> {
-    console.log('?? [Admin] Criando reserva manual:', { raffleId, buyerName, buyerPhone, numbers });
+    console.log('üìù [Admin] Criando reserva manual:', { raffleId, buyerName, buyerPhone, numbers });
 
     try {
-        // 1. Verificar se n˙meros est„o disponÌveis
+        // 1. Verificar se n√∫meros est√£o dispon√≠veis
         const { data: existing, error: checkError } = await supabase
             .from('reservations')
             .select('number')
@@ -314,7 +314,7 @@ export async function createManualReservation(
 
         if (existing && existing.length > 0) {
             const takenNumbers = existing.map((r: any) => r.number).join(', ');
-            return { success: false, message: \Os seguintes n˙meros j· est„o ocupados: \\ };
+            return { success: false, message: `Os seguintes n√∫meros j√° est√£o ocupados: ${takenNumbers}` };
         }
 
         // 2. Preparar payload
@@ -325,7 +325,7 @@ export async function createManualReservation(
             buyer_phone: buyerPhone,
             status: 'paid', // Status 'paid' bloqueia e confirma
             payment_amount: 0, // Valor 0 (externo)
-            expires_at: null // Sem expiraÁ„o
+            expires_at: null // Sem expira√ß√£o
         }));
 
         // 3. Inserir
@@ -338,7 +338,7 @@ export async function createManualReservation(
         return { success: true, message: 'Reserva manual criada com sucesso!' };
 
     } catch (error: any) {
-        console.error('? [Admin] Erro ao criar reserva manual:', error);
-        return { success: false, message: \Erro ao criar reserva: \\ };
+        console.error('‚ùå [Admin] Erro ao criar reserva manual:', error);
+        return { success: false, message: `Erro ao criar reserva: ${error.message || 'Erro desconhecido'}` };
     }
 }
