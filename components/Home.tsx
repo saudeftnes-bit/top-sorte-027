@@ -158,9 +158,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
           raffle?.status === 'scheduled' ? 'bg-yellow-500' :
             'bg-red-500'
           }`}>
-          {raffle?.status === 'active' ? '🟢 SORTEIO ATIVO' :
-            raffle?.status === 'scheduled' ? '🟡 AGUARDANDO PUBLICAÇÃO' :
-              '🔴 SORTEIO PAUSADO'}
+          {raffle?.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 SORTEIO ENCERRADO (VISUALIZAÇÃO)'}
         </div>
 
         <img
@@ -187,12 +185,10 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
           {/* Botão de CTA ou aviso de grade preenchida */}
           <button
             onClick={onStart}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg animate-pulse hover:animate-none"
-            style={{
-              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-            }}
+            className={`w-full ${raffle?.status === 'active' ? 'bg-purple-600 hover:bg-purple-700 animate-pulse' : 'bg-slate-600 hover:bg-slate-700'
+              } text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg`}
           >
-            🎯 ESCOLHER MEUS NÚMEROS
+            {raffle?.status === 'active' ? '🎯 ESCOLHER MEUS NÚMEROS' : '👀 VER RESULTADOS'}
           </button>
         </div>
       </section>
@@ -202,8 +198,8 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
         <section className="mt-8">
           <div className="flex items-center justify-between mb-4 px-2">
             <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-              <span className="text-2xl">🍀</span>
-              OUTROS SORTEIOS
+              <span className="text-2xl">📚</span>
+              EDIÇÕES ENCERRADAS
             </h3>
           </div>
 
@@ -216,13 +212,9 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
                     alt={otherRaffle.title}
                     className="w-full h-full object-cover"
                   />
-                  <div className={`absolute top-2 left-2 text-white font-bold px-2 py-1 rounded-lg text-[10px] uppercase ${otherRaffle.status === 'active' ? 'bg-green-500' :
-                    otherRaffle.status === 'scheduled' ? 'bg-yellow-500' :
-                      'bg-red-500'
+                  <div className={`absolute top-2 left-2 text-white font-bold px-2 py-1 rounded-lg text-[10px] uppercase ${otherRaffle.status === 'active' ? 'bg-green-500' : 'bg-slate-500'
                     }`}>
-                    {otherRaffle.status === 'active' ? 'ATIVO' :
-                      otherRaffle.status === 'scheduled' ? 'EM BREVE' :
-                        'PAUSADO'}
+                    {otherRaffle.status === 'active' ? 'ATIVO' : 'ENCERRADO'}
                   </div>
                   {otherRaffle.code && (
                     <div className="absolute bottom-2 right-2 bg-purple-600 text-white font-black px-2 py-1 rounded-lg text-[10px]">
@@ -242,7 +234,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
                     onClick={() => onSelectRaffle?.(otherRaffle)}
                     className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs uppercase tracking-wide transition-colors"
                   >
-                    Participar
+                    {otherRaffle.status === 'active' ? 'Participar' : 'Ver Grade'}
                   </button>
                 </div>
               </div>

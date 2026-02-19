@@ -100,7 +100,11 @@ const App: React.FC = () => {
 
   // Separate effect for real-time subscription to prevent multiple subscriptions
   useEffect(() => {
-    if (!activeRaffle) return;
+    // IMPORTANTE: Só assina realtime se o sorteio estiver ATIVO
+    if (!activeRaffle || activeRaffle.status !== 'active') {
+      console.log('📴 [Real-time] Sorteio não está ativo. Ignorando inscrição.');
+      return;
+    }
 
     console.log('🔔 [Real-time] Setting up subscription for raffle:', activeRaffle.id);
 
@@ -137,7 +141,7 @@ const App: React.FC = () => {
 
   // Cleanup periódico de reservas expiradas (Garante que números pendurados sejam liberados)
   useEffect(() => {
-    if (view !== 'selecting') return;
+    if (view !== 'selecting' || !activeRaffle || activeRaffle.status !== 'active') return;
 
     console.log('🧹 [Cleanup] Agendando limpeza periódica a cada 60s');
     const interval = setInterval(async () => {
@@ -158,7 +162,7 @@ const App: React.FC = () => {
 
   // FALLBACK: Polling para garantir sincronização se realtime DELETE falhar
   useEffect(() => {
-    if (!activeRaffle || view !== 'selecting') return;
+    if (!activeRaffle || activeRaffle.status !== 'active' || view !== 'selecting') return;
 
     console.log('🔄 [Polling] Iniciando polling de sincronização a cada 5s');
 
@@ -201,6 +205,11 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!selectionStartTime || !activeRaffle) return;
 
+    // If raffle is not active, do not run countdown for selections
+    if (activeRaffle.status !== 'active') {
+      return;
+    }
+
     const timeoutMinutes = activeRaffle.selection_timeout || 5;
     const timeoutMs = timeoutMinutes * 60 * 1000;
 
@@ -227,7 +236,7 @@ const App: React.FC = () => {
   // Cleanup ao sair do app (beforeunload)
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (activeRaffle && sessionId.current && selectedNumbers.length > 0) {
+      if (activeRaffle && activeRaffle.status === 'active' && sessionId.current && selectedNumbers.length > 0) {
         console.log('🧹 [Cleanup] Usuário fechando app...');
         cleanupSessionSelections(activeRaffle.id, sessionId.current);
       }
