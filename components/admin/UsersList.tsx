@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { getReservationsByRaffle, confirmManualPayment, reactivateReservation, deleteReservation, getActiveRaffle } from '../../lib/supabase-admin';
+import { getReservationsByRaffle, confirmManualPayment, reactivateReservation, deleteReservation, getActiveRaffle, createManualReservation } from '../../lib/supabase-admin';
 import type { Reservation, Raffle } from '../../types/database';
 import ConfirmModal from '../ConfirmModal';
+import ManualReservationModal from './ManualReservationModal';
 
 interface UsersListProps {
     raffleId: string;
@@ -28,6 +29,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
     // Modal states
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showManualReservationModal, setShowManualReservationModal] = useState(false);
     const [pendingAction, setPendingAction] = useState<{ id: string; type: 'confirm' | 'delete' | 'reactivate'; number: string } | null>(null);
 
     useEffect(() => {
@@ -98,6 +100,26 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
         setPendingAction(null);
     };
 
+    const handleManualReservation = async (data: { name: string; phone: string; numbers: string[] }) => {
+        if (!activeRaffle) return false;
+
+        const result = await createManualReservation(
+            activeRaffle.id,
+            data.name,
+            data.phone,
+            data.numbers
+        );
+
+        if (result.success) {
+            alert('🎉 Reserva realizada com sucesso!');
+            await loadBuyers();
+            return true;
+        } else {
+            alert(`❌ Erro: ${result.message}`);
+            return false;
+        }
+    };
+
     const filteredBuyers = buyers.filter((buyer) =>
         buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         buyer.phone?.includes(searchTerm) ||
@@ -120,12 +142,20 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                     <h2 className="text-2xl font-black text-slate-900">👥 Usuários Compradores</h2>
                     <p className="text-slate-500 font-medium mt-1">Total de {buyers.length} compradores</p>
                 </div>
-                <button
-                    onClick={onBack}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition-colors"
-                >
-                    ← Voltar
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setShowManualReservationModal(true)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-lg shadow-purple-200 active:scale-95 flex items-center gap-2"
+                    >
+                        <span>📝</span> Nova Reserva Manual
+                    </button>
+                    <button
+                        onClick={onBack}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition-colors"
+                    >
+                        ← Voltar
+                    </button>
+                </div>
             </div>
 
             {/* Search */}
@@ -327,20 +357,6 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
             </div>
 
             <ConfirmModal
-                isOpen={showConfirmModal}
-                title={pendingAction?.type === 'confirm' ? "Confirmar Pagamento" : "Reativar Reserva"}
-                message={pendingAction?.type === 'confirm'
-                    ? `Deseja confirmar o pagamento do número ${pendingAction.number}? O valor será corrigido para R$ ${activeRaffle?.price_per_number?.toFixed(2)} e o número voltará a ficar ocupado.`
-                    : `Deseja reativar a reserva do número ${pendingAction?.number}? Ele voltará a aparecer como reservado.`
-                }
-                confirmLabel="Confirmar"
-                cancelLabel="Cancelar"
-                variant="info"
-                onConfirm={handleAction}
-                onCancel={() => { setShowConfirmModal(false); setPendingAction(null); }}
-            />
-
-            <ConfirmModal
                 isOpen={showDeleteModal}
                 title="Excluir Reserva"
                 message={`Tem certeza que deseja EXCLUIR permanentemente o registro do número ${pendingAction?.number}? Esta ação não pode ser desfeita.`}
@@ -349,6 +365,12 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                 variant="danger"
                 onConfirm={handleAction}
                 onCancel={() => { setShowDeleteModal(false); setPendingAction(null); }}
+            />
+
+            <ManualReservationModal
+                isOpen={showManualReservationModal}
+                onClose={() => setShowManualReservationModal(false)}
+                onConfirm={handleManualReservation}
             />
         </div>
     );

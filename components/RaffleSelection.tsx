@@ -9,6 +9,7 @@ interface RaffleSelectionProps {
   totalNumbers?: number;
   selectionMode?: 'loteria' | 'jogo_bicho';
   sessionId?: string;
+  isReadOnly?: boolean;
 }
 
 const RaffleSelection: React.FC<RaffleSelectionProps> = ({
@@ -17,7 +18,8 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
   reservations,
   totalNumbers = 100,
   selectionMode = 'loteria',
-  sessionId
+  sessionId,
+  isReadOnly = false
 }) => {
   // Gerar números baseado na quantidade total
   const numbers = Array.from({ length: totalNumbers }, (_, i) => {
@@ -62,8 +64,9 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
     return (
       <button
         key={num}
-        onClick={() => onToggleNumber(num)}
-        className={buttonClasses}
+        onClick={() => !isReadOnly && onToggleNumber(num)}
+        disabled={isReadOnly}
+        className={buttonClasses + (isReadOnly ? ' opacity-90 cursor-default' : '')}
         title={reservation ? `Reservado para ${reservation.name}` : `Número ${num}`}
       >
         <span className={spanClasses}>{num}</span>
@@ -82,13 +85,19 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
   };
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <div className="bg-white rounded-[2.5rem] p-6 shadow-xl mb-6 border border-slate-100">
-        <div className="text-center mb-6">
+    <div className="p-4 max-w-2xl mx-auto pb-32">
+      <div className="bg-white rounded-[2.5rem] p-6 shadow-xl mb-6 border border-slate-100 relative overflow-hidden">
+        {isReadOnly && (
+          <div className="absolute top-0 left-0 right-0 bg-amber-400 text-amber-900 text-center text-xs font-black py-2 uppercase tracking-wider z-20 shadow-sm animate-pulse">
+            Grade Completa - Apenas Visualização
+          </div>
+        )}
+
+        <div className={`text-center mb-6 transition-opacity ${isReadOnly ? 'mt-8 opacity-50' : ''}`}>
           <h2 className="text-2xl font-black text-[#003B73]">
             {selectionMode === 'jogo_bicho' ? 'ESCOLHA SEU ANIMAL' : 'GRADE DE NÚMEROS'}
           </h2>
-          <p className="text-slate-500 text-sm font-medium italic">Selecione os números em verde</p>
+          {!isReadOnly && <p className="text-slate-500 text-sm font-medium italic">Selecione os números em verde</p>}
         </div>
 
         {/* Legend */}

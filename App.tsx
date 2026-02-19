@@ -468,7 +468,11 @@ const App: React.FC = () => {
         {view === 'admin' ? (
           <AdminPanel />
         ) : view === 'home' ? (
-          <Home onStart={handleParticipate} />
+          <Home
+            onStart={handleParticipate}
+            raffle={activeRaffle}
+            activeReservationsCount={Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length}
+          />
         ) : view === 'videos' ? (
           <InstagramVideos onBack={() => setView('home')} />
         ) : (
@@ -479,80 +483,86 @@ const App: React.FC = () => {
             totalNumbers={activeRaffle?.total_numbers}
             selectionMode={activeRaffle?.selection_mode}
             sessionId={sessionId.current}
+            isReadOnly={activeRaffle && activeRaffle.total_numbers > 0 &&
+              Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length >= activeRaffle.total_numbers}
           />
         )}
       </main>
 
-      {selectedNumbers.length > 0 && view === 'selecting' && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full">
-          <div className="max-w-md mx-auto flex items-center justify-between">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-500 uppercase">{selectedNumbers.length} Números selecionados</span>
-                {selectionTimeRemaining && (
-                  <span className={`text-xs font-bold ${selectionTimeRemaining < 60 ? 'text-red-600 animate-pulse' : 'text-orange-600'
-                    }`}>
-                    ⏱️ {Math.floor(selectionTimeRemaining / 60)}:{String(selectionTimeRemaining % 60).padStart(2, '0')}
-                  </span>
-                )}
+      {
+        selectedNumbers.length > 0 && view === 'selecting' && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full">
+            <div className="max-w-md mx-auto flex items-center justify-between">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500 uppercase">{selectedNumbers.length} Números selecionados</span>
+                  {selectionTimeRemaining && (
+                    <span className={`text-xs font-bold ${selectionTimeRemaining < 60 ? 'text-red-600 animate-pulse' : 'text-orange-600'
+                      }`}>
+                      ⏱️ {Math.floor(selectionTimeRemaining / 60)}:{String(selectionTimeRemaining % 60).padStart(2, '0')}
+                    </span>
+                  )}
+                </div>
+                <span className="text-xl font-black text-[#003B73]">
+                  Total: R$ {(selectedNumbers.length * PRICE_PER_NUMBER).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
               </div>
-              <span className="text-xl font-black text-[#003B73]">
-                Total: R$ {(selectedNumbers.length * PRICE_PER_NUMBER).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleClearAll}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-4 py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase"
-              >
-                Limpar
-              </button>
-              <button
-                onClick={() => setIsCheckoutOpen(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-transform active:scale-95 animate-button-pulse"
-              >
-                RESERVAR AGORA
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleClearAll}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-4 py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase"
+                >
+                  Limpar
+                </button>
+                <button
+                  onClick={() => setIsCheckoutOpen(true)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-transform active:scale-95 animate-button-pulse"
+                >
+                  RESERVAR AGORA
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {isCheckoutOpen && (
-        <CheckoutModal
-          selectedNumbers={selectedNumbers}
-          totalPrice={selectedNumbers.length * PRICE_PER_NUMBER}
-          raffleId={activeRaffle?.id}
-          raffle={activeRaffle || undefined}
-          reservations={reservations}
-          onClose={async () => {
-            if (selectedNumbers.length > 0 && activeRaffle) {
-              // 1. Limpar do banco
-              const { cleanupSessionSelections } = await import('./lib/selection-manager');
-              await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+      {
+        isCheckoutOpen && (
+          <CheckoutModal
+            selectedNumbers={selectedNumbers}
+            totalPrice={selectedNumbers.length * PRICE_PER_NUMBER}
+            raffleId={activeRaffle?.id}
+            raffle={activeRaffle || undefined}
+            reservations={reservations}
+            onClose={async () => {
+              if (selectedNumbers.length > 0 && activeRaffle) {
+                // 1. Limpar do banco
+                const { cleanupSessionSelections } = await import('./lib/selection-manager');
+                await cleanupSessionSelections(activeRaffle.id, sessionId.current);
 
-              // 2. Aguardar processamento
-              await new Promise(resolve => setTimeout(resolve, 150));
+                // 2. Aguardar processamento
+                await new Promise(resolve => setTimeout(resolve, 150));
 
-              // 3. Limpar estados locais
-              setSelectedNumbers([]);
-              setReservations(prev => {
-                const updated = { ...prev };
-                Object.keys(updated).forEach(num => {
-                  if (updated[num]?.name === sessionId.current) {
-                    delete updated[num];
-                  }
+                // 3. Limpar estados locais
+                setSelectedNumbers([]);
+                setReservations(prev => {
+                  const updated = { ...prev };
+                  Object.keys(updated).forEach(num => {
+                    if (updated[num]?.name === sessionId.current) {
+                      delete updated[num];
+                    }
+                  });
+                  return updated;
                 });
-                return updated;
-              });
-            }
-            setIsCheckoutOpen(false);
-            setView('selecting');
-          }}
-          onConfirmPurchase={confirmPurchase}
-          onSetPending={setPending}
-        />
-      )}
+              }
+              setIsCheckoutOpen(false);
+              setView('selecting');
+            }}
+            onConfirmPurchase={confirmPurchase}
+            onSetPending={setPending}
+          />
+        )
+      }
 
 
       <FAQChatbot
@@ -561,7 +571,7 @@ const App: React.FC = () => {
         isOpen={isFAQOpen}
         onToggle={setIsFAQOpen}
       />
-    </div>
+    </div >
   );
 };
 

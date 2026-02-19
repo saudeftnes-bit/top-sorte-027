@@ -293,3 +293,52 @@ export function subscribeToReservations(raffleId: string, callback: (payload: an
         )
         .subscribe();
 }
+
+export async function createManualReservation(
+    raffleId: string,
+    buyerName: string,
+    buyerPhone: string,
+    numbers: string[]
+): Promise<{ success: boolean; message: string }> {
+    console.log('?? [Admin] Criando reserva manual:', { raffleId, buyerName, buyerPhone, numbers });
+
+    try {
+        // 1. Verificar se números estão disponíveis
+        const { data: existing, error: checkError } = await supabase
+            .from('reservations')
+            .select('number')
+            .eq('raffle_id', raffleId)
+            .in('number', numbers);
+
+        if (checkError) throw checkError;
+
+        if (existing && existing.length > 0) {
+            const takenNumbers = existing.map((r: any) => r.number).join(', ');
+            return { success: false, message: \Os seguintes números já estão ocupados: \\ };
+        }
+
+        // 2. Preparar payload
+        const reservations = numbers.map(num => ({
+            raffle_id: raffleId,
+            number: num,
+            buyer_name: buyerName,
+            buyer_phone: buyerPhone,
+            status: 'paid', // Status 'paid' bloqueia e confirma
+            payment_amount: 0, // Valor 0 (externo)
+            expires_at: null // Sem expiração
+        }));
+
+        // 3. Inserir
+        const { error: insertError } = await supabase
+            .from('reservations')
+            .insert(reservations);
+
+        if (insertError) throw insertError;
+
+        return { success: true, message: 'Reserva manual criada com sucesso!' };
+
+    } catch (error: any) {
+        console.error('? [Admin] Erro ao criar reserva manual:', error);
+        return { success: false, message: \Erro ao criar reserva: \\ };
+    }
+}

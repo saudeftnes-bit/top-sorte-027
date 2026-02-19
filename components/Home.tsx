@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { WhatsAppIcon } from '../App';
-import { getActiveRaffle, getWinnerPhotos } from '../lib/supabase-admin';
-import { supabase } from '../lib/supabase';
+import { getWinnerPhotos } from '../lib/supabase-admin';
 import { getYouTubeEmbedUrl } from '../lib/video-utils';
 import type { Raffle, WinnerPhoto } from '../types/database';
 
 interface HomeProps {
   onStart: () => void;
+  raffle: Raffle | null;
+  activeReservationsCount: number;
 }
 
-const Home: React.FC<HomeProps> = ({ onStart }) => {
+const Home: React.FC<HomeProps> = ({ onStart, raffle, activeReservationsCount }) => {
   // Slideshow state
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Dynamic data from Supabase
-  const [raffle, setRaffle] = useState<Raffle | null>(null);
   const [winnersPhotos, setWinnersPhotos] = useState<WinnerPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeReservations, setActiveReservations] = useState(0);
 
   // Carregar script do Instagram (apenas uma vez)
   useEffect(() => {
@@ -112,27 +111,11 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
     }
   ];
 
-  // Load data from Supabase
+  // Load data from Supabase (photos only, raffle comes from props)
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [raffleData, photosData] = await Promise.all([
-          getActiveRaffle(),
-          getWinnerPhotos()
-        ]);
-
-        if (raffleData) {
-          setRaffle(raffleData);
-
-          // Contar reservas ativas (pagas ou pendentes)
-          const { count } = await supabase
-            .from('reservations')
-            .select('id', { count: 'exact', head: true })
-            .eq('raffle_id', raffleData.id)
-            .in('status', ['paid', 'pending']);
-
-          setActiveReservations(count || 0);
-        }
+        const photosData = await getWinnerPhotos();
 
         if (photosData && photosData.length > 0) {
           setWinnersPhotos(photosData);
@@ -191,7 +174,7 @@ const Home: React.FC<HomeProps> = ({ onStart }) => {
           {/* Botão de CTA ou aviso de grade preenchida */}
           {(() => {
             const totalNumbers = raffle?.total_numbers || 0;
-            const isSoldOut = totalNumbers > 0 && activeReservations >= totalNumbers;
+            const isSoldOut = totalNumbers > 0 && activeReservationsCount >= totalNumbers;
 
             if (isSoldOut) {
               return (
