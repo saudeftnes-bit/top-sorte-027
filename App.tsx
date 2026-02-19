@@ -485,6 +485,7 @@ const App: React.FC = () => {
             sessionId={sessionId.current}
             isReadOnly={activeRaffle && activeRaffle.total_numbers > 0 &&
               Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length >= activeRaffle.total_numbers}
+            raffleCode={activeRaffle?.code}
           />
         )}
       </main>

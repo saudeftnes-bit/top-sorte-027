@@ -10,6 +10,7 @@ interface RaffleSelectionProps {
   selectionMode?: 'loteria' | 'jogo_bicho';
   sessionId?: string;
   isReadOnly?: boolean;
+  raffleCode?: string;
 }
 
 const RaffleSelection: React.FC<RaffleSelectionProps> = ({
@@ -19,7 +20,8 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
   totalNumbers = 100,
   selectionMode = 'loteria',
   sessionId,
-  isReadOnly = false
+  isReadOnly = false,
+  raffleCode
 }) => {
   // Gerar números baseado na quantidade total
   const numbers = Array.from({ length: totalNumbers }, (_, i) => {
@@ -97,7 +99,12 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
           <h2 className="text-2xl font-black text-[#003B73]">
             {selectionMode === 'jogo_bicho' ? 'ESCOLHA SEU ANIMAL' : 'GRADE DE NÚMEROS'}
           </h2>
-          {!isReadOnly && <p className="text-slate-500 text-sm font-medium italic">Selecione os números em verde</p>}
+          {raffleCode && (
+            <div className="inline-block bg-purple-100 text-purple-700 text-xs font-black px-3 py-1 rounded-full mt-2 mb-1">
+              EDIÇÃO #{raffleCode}
+            </div>
+          )}
+          {!isReadOnly && <p className="text-slate-500 text-sm font-medium italic mt-1">Selecione os números em verde</p>}
         </div>
 
         {/* Legend */}
