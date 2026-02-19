@@ -21,11 +21,12 @@ const App: React.FC = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   // Supabase state
-  const [activeRaffle, setActiveRaffle] = useState<Raffle | null>(null);
-  const [publicRaffles, setPublicRaffles] = useState<Raffle[]>([]); // New state for list of raffles
+  const [featuredRaffle, setFeaturedRaffle] = useState<Raffle | null>(null); // The main 'active' raffle for the site
+  const [selectedRaffle, setSelectedRaffle] = useState<Raffle | null>(null); // The raffle currently being viewed in grid
+  const [publicRaffles, setPublicRaffles] = useState<Raffle[]>([]);
   const [dbReservations, setDbReservations] = useState<Reservation[]>([]);
 
-  // Estado centralizado com status reais: Verde (livre), Roxo (pago), Amarelo (em reserva)
+  // Estado centralizado com status reais
   const [reservations, setReservations] = useState<ReservationMap>({});
 
   // Session ID para identificar este usuário
@@ -45,7 +46,7 @@ const App: React.FC = () => {
   });
   const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
 
-  const PRICE_PER_NUMBER = activeRaffle?.price_per_number || 13.00;
+  const PRICE_PER_NUMBER = (selectedRaffle || featuredRaffle)?.price_per_number || 13.00;
 
   // Check for admin route
   useEffect(() => {
@@ -92,27 +93,27 @@ const App: React.FC = () => {
       window.removeEventListener('storage', handleStorageChange);
 
       // Limpar seleções temporárias ao sair da página
-      if (activeRaffle) {
-        cleanupSessionSelections(activeRaffle.id, sessionId.current);
+      if (featuredRaffle) {
+        cleanupSessionSelections(featuredRaffle.id, sessionId.current);
       }
     };
   }, []);
 
   // Separate effect for real-time subscription to prevent multiple subscriptions
   useEffect(() => {
-    // IMPORTANTE: Só assina realtime se o sorteio estiver ATIVO
-    if (!activeRaffle || activeRaffle.status !== 'active') {
-      console.log('📴 [Real-time] Sorteio não está ativo. Ignorando inscrição.');
+    // IMPORTANTE: Só assina realtime se o sorteio selecionado estiver ATIVO
+    if (!selectedRaffle || selectedRaffle.status !== 'active') {
+      console.log('📴 [Real-time] Sorteio selecionado não está ativo ou não existe. Ignorando inscrição.');
       return;
     }
 
-    console.log('🔔 [Real-time] Setting up subscription for raffle:', activeRaffle.id);
+    console.log('🔔 [Real-time] Setting up subscription for raffle:', selectedRaffle.id);
 
     // Ref para evitar múltiplas recargas simultâneas (debounce)
     let reloadTimeout: NodeJS.Timeout | null = null;
 
-    const subscription = subscribeToReservations(activeRaffle.id, (payload) => {
-      console.log(`🔔 [Real-time] Mudança detectada no sorteio ${activeRaffle.id}:`, {
+    const subscription = subscribeToReservations(selectedRaffle.id, (payload) => {
+      console.log(`🔔 [Real-time] Mudança detectada no sorteio ${selectedRaffle.id}:`, {
         evento: payload.eventType,
         numero: (payload.new as any)?.number || (payload.old as any)?.number
       });
@@ -120,7 +121,7 @@ const App: React.FC = () => {
       // Debounce: Recarregar dados após 200ms de calma (evita sobrecarga se selecionar muitos rápido)
       if (reloadTimeout) clearTimeout(reloadTimeout);
       reloadTimeout = setTimeout(() => {
-        loadDataForActiveRaffle(activeRaffle.id);
+        loadDataForActiveRaffle(selectedRaffle.id);
       }, 200);
     });
 
@@ -129,19 +130,19 @@ const App: React.FC = () => {
       console.log('🔔 [Real-time] Subscription status:', status);
       if (status === 'SUBSCRIBED') {
         console.log('🔔 [Real-time] Subscription confirmed, loading fresh data...');
-        loadDataForActiveRaffle(activeRaffle.id);
+        loadDataForActiveRaffle(selectedRaffle.id);
       }
     });
 
     return () => {
-      console.log('🔔 [Real-time] Cleaning up subscription for raffle:', activeRaffle.id);
+      console.log('🔔 [Real-time] Cleaning up subscription for raffle:', selectedRaffle.id);
       subscription.unsubscribe();
     };
-  }, [activeRaffle?.id]);
+  }, [selectedRaffle?.id]);
 
   // Cleanup periódico de reservas expiradas (Garante que números pendurados sejam liberados)
   useEffect(() => {
-    if (view !== 'selecting' || !activeRaffle || activeRaffle.status !== 'active') return;
+    if (view !== 'selecting' || !selectedRaffle || selectedRaffle.status !== 'active') return;
 
     console.log('🧹 [Cleanup] Agendando limpeza periódica a cada 60s');
     const interval = setInterval(async () => {
@@ -150,7 +151,7 @@ const App: React.FC = () => {
         const count = await cleanupExpiredReservations();
         if (count > 0) {
           console.log(`🧹 [Cleanup] Limpeza periódica liberou ${count} número(s)`);
-          if (activeRaffle) loadDataForActiveRaffle(activeRaffle.id);
+          if (selectedRaffle) loadDataForActiveRaffle(selectedRaffle.id);
         }
       } catch (err) {
         console.warn('⚠️ [Cleanup] Erro na limpeza periódica:', err);
@@ -158,36 +159,36 @@ const App: React.FC = () => {
     }, 60000); // 1 minuto
 
     return () => clearInterval(interval);
-  }, [view, activeRaffle?.id]);
+  }, [view, selectedRaffle?.id]);
 
   // FALLBACK: Polling para garantir sincronização se realtime DELETE falhar
   useEffect(() => {
-    if (!activeRaffle || activeRaffle.status !== 'active' || view !== 'selecting') return;
+    if (!selectedRaffle || selectedRaffle.status !== 'active' || view !== 'selecting') return;
 
     console.log('🔄 [Polling] Iniciando polling de sincronização a cada 5s');
 
     const pollingInterval = setInterval(() => {
       console.log('🔄 [Polling] Verificando novos status...');
-      loadDataForActiveRaffle(activeRaffle.id);
+      loadDataForActiveRaffle(selectedRaffle.id);
     }, 5000); // Recarrega a cada 5 segundos (Equilíbrio entre performance e rapidez)
 
     return () => {
       console.log('🔄 [Polling] Parando polling');
       clearInterval(pollingInterval);
     };
-  }, [activeRaffle?.id, view]);
+  }, [selectedRaffle?.id, view]);
 
   // Bug Fix: Limpar seleções ao trocar de sorteio
   useEffect(() => {
-    if (activeRaffle?.id) {
-      console.log('🧹 [Cleanup] Sorteio alterado, limpando estados locais...');
+    if (selectedRaffle?.id) {
+      console.log('🧹 [Cleanup] Sorteio selecionado alterado, limpando estados locais...');
       setSelectedNumbers([]);
       setReservations({});
       setDbReservations([]);
       setSelectionStartTime(null);
       setSelectionTimeRemaining(null);
     }
-  }, [activeRaffle?.id]);
+  }, [selectedRaffle?.id]);
 
   // Timer de seleção: Iniciar quando primeiro número for selecionado
   useEffect(() => {
@@ -203,14 +204,14 @@ const App: React.FC = () => {
 
   // Countdown: Atualizar tempo restante a cada segundo
   useEffect(() => {
-    if (!selectionStartTime || !activeRaffle) return;
+    if (!selectionStartTime || !selectedRaffle) return;
 
     // If raffle is not active, do not run countdown for selections
-    if (activeRaffle.status !== 'active') {
+    if (selectedRaffle.status !== 'active') {
       return;
     }
 
-    const timeoutMinutes = activeRaffle.selection_timeout || 5;
+    const timeoutMinutes = selectedRaffle.selection_timeout || 5;
     const timeoutMs = timeoutMinutes * 60 * 1000;
 
     const interval = setInterval(() => {
@@ -231,30 +232,30 @@ const App: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [selectionStartTime, activeRaffle, isCheckoutOpen]);
+  }, [selectionStartTime, selectedRaffle, isCheckoutOpen]);
 
   // Cleanup ao sair do app (beforeunload)
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (activeRaffle && activeRaffle.status === 'active' && sessionId.current && selectedNumbers.length > 0) {
+      if (selectedRaffle && selectedRaffle.status === 'active' && sessionId.current && selectedNumbers.length > 0) {
         console.log('🧹 [Cleanup] Usuário fechando app...');
-        cleanupSessionSelections(activeRaffle.id, sessionId.current);
+        cleanupSessionSelections(selectedRaffle.id, sessionId.current);
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [activeRaffle, selectedNumbers.length]);
+  }, [selectedRaffle, selectedNumbers.length]);
 
   // Cleanup ao desmontar componente
   useEffect(() => {
     return () => {
-      if (activeRaffle && sessionId.current && selectedNumbers.length > 0) {
+      if (selectedRaffle && sessionId.current && selectedNumbers.length > 0) {
         console.log('🧹 [Cleanup] Componente desmontando...');
-        cleanupSessionSelections(activeRaffle.id, sessionId.current);
+        cleanupSessionSelections(selectedRaffle.id, sessionId.current);
       }
     };
-  }, [activeRaffle?.id]);
+  }, [selectedRaffle?.id]);
 
 
   const loadRaffleData = async () => {
@@ -281,24 +282,21 @@ const App: React.FC = () => {
       // Mas cuidado para não mudar o raffle que o usuário está vendo se o usuário selecionou um específico.
 
       if (raffles.length > 0) {
-        let raffleToLoad = activeRaffle;
+        // Encontrar a rifa principal (featured) - a que está ativa
+        const activeOne = raffles.find(r => r.status === 'active') || raffles[0];
+        setFeaturedRaffle(activeOne);
 
-        // Se não tem nada selecionado, seleciona o primeiro (mais recente)
-        if (!raffleToLoad) {
-          // Prefer active over scheduled if mixed? 
-          // Usually we want the most recent created one regardless, or the most recent ACTIVE one.
-          // getPublicRaffles orders by created_at desc.
-          const activeOne = raffles.find(r => r.status === 'active') || raffles[0];
-          raffleToLoad = activeOne;
+        // Se o usuário ainda não escolheu uma para ver, a selecionada inicial é a featured
+        if (!selectedRaffle) {
+          setSelectedRaffle(activeOne);
+          await loadDataForActiveRaffle(activeOne.id);
         } else {
-          // Update current active raffle object with fresh data from list
-          const updated = raffles.find(r => r.id === raffleToLoad!.id);
-          if (updated) raffleToLoad = updated;
-        }
-
-        if (raffleToLoad) {
-          setActiveRaffle(raffleToLoad);
-          await loadDataForActiveRaffle(raffleToLoad.id);
+          // Atualizar dados da que já estava selecionada se ela ainda existir na lista
+          const updatedSelected = raffles.find(r => r.id === selectedRaffle.id);
+          if (updatedSelected) {
+            setSelectedRaffle(updatedSelected);
+            await loadDataForActiveRaffle(updatedSelected.id);
+          }
         }
       }
 
@@ -314,7 +312,7 @@ const App: React.FC = () => {
 
       // GUARDRAIL: Check if the user is still on the same raffle before updating state
       // This prevents "stale" data from an old raffle overwrite the current one
-      setActiveRaffle(current => {
+      setSelectedRaffle(current => {
         if (current?.id !== raffleId) {
           console.warn('⚠️ [Data] Rejecting stale data for raffle:', raffleId, '(Current:', current?.id, ')');
           return current;
@@ -346,31 +344,33 @@ const App: React.FC = () => {
 
   const handleSelectRaffle = async (raffle: Raffle) => {
     // Se já havia outro sorteio e tínhamos seleções, limpamos no banco primeiro
-    if (activeRaffle && activeRaffle.id !== raffle.id && selectedNumbers.length > 0) {
+    if (selectedRaffle && selectedRaffle.id !== raffle.id && selectedNumbers.length > 0) {
       console.log('🧹 [Cleanup] Limpando seleções do sorteio anterior antes de trocar...');
       const { cleanupSessionSelections } = await import('./lib/selection-manager');
-      await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+      await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
     }
 
-    // Reset total dos estados ANTES de carregar o novo
+    // Reset total dos estados ANTES de carregar o novo (LIMPEZA SÍNCRONA)
     setSelectedNumbers([]);
     setReservations({});
     setDbReservations([]);
+    setSelectionStartTime(null);
+    setSelectionTimeRemaining(null);
 
-    setActiveRaffle(raffle);
+    setSelectedRaffle(raffle);
     loadDataForActiveRaffle(raffle.id);
     setView('selecting');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleClearAll = async () => {
-    if (!activeRaffle) return;
+    if (!selectedRaffle) return;
 
     console.log('🧹 [Clear] Limpando todas as seleções...');
 
     // 1. Limpar do banco primeiro
     const { cleanupSessionSelections } = await import('./lib/selection-manager');
-    await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+    await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
 
     // 2. Aguardar processamento do realtime
     await new Promise(resolve => setTimeout(resolve, 200));
@@ -397,7 +397,7 @@ const App: React.FC = () => {
 
 
   const toggleNumber = async (num: string) => {
-    if (!activeRaffle) return;
+    if (!selectedRaffle) return;
 
     const reservation = reservations[num];
     const isSelected = selectedNumbers.includes(num);
@@ -413,7 +413,7 @@ const App: React.FC = () => {
 
       // 1. Remover do banco primeiro
       const { removeTemporarySelection } = await import('./lib/selection-manager');
-      const removed = await removeTemporarySelection(activeRaffle.id, num, sessionId.current);
+      const removed = await removeTemporarySelection(selectedRaffle.id, num, sessionId.current);
 
       if (removed) {
         // 2. Aguardar processamento do realtime
@@ -436,15 +436,17 @@ const App: React.FC = () => {
       // Importar função dinamicamente para evitar problemas de build
       const { createTemporarySelection } = await import('./lib/selection-manager');
       await createTemporarySelection(
-        activeRaffle.id,
+        selectedRaffle.id,
         num,
         sessionId.current,
-        activeRaffle.selection_timeout || 30
+        selectedRaffle.selection_timeout || 30
       );
     }
   };
 
   const handleParticipate = () => {
+    setSelectedRaffle(featuredRaffle);
+    if (featuredRaffle) loadRaffleData(); // Recarregar dados para garantir consistência
     setView('selecting');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -503,12 +505,6 @@ const App: React.FC = () => {
       newReservations[num] = { name, status: 'paid' };
     });
     setReservations(newReservations);
-
-    // NÃO fechar o modal ainda - usuário precisa ver a tela de pagamento
-    // O modal será fechado quando o usuário clicar no X ou completar o pagamento
-    // setSelectedNumbers([]);
-    // setIsCheckoutOpen(false);
-    // setView('selecting');
   };
 
   return (
@@ -586,7 +582,7 @@ const App: React.FC = () => {
           <Home
             onStart={handleParticipate}
             onSelectRaffle={handleSelectRaffle}
-            raffle={activeRaffle}
+            featuredRaffle={featuredRaffle}
             raffles={publicRaffles}
             activeReservationsCount={Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length}
           />
@@ -597,15 +593,15 @@ const App: React.FC = () => {
             selectedNumbers={selectedNumbers}
             onToggleNumber={toggleNumber}
             reservations={reservations}
-            totalNumbers={activeRaffle?.total_numbers}
-            selectionMode={activeRaffle?.selection_mode}
+            totalNumbers={selectedRaffle?.total_numbers}
+            selectionMode={selectedRaffle?.selection_mode}
             sessionId={sessionId.current}
             isReadOnly={
-              (activeRaffle?.status === 'finished') ||
-              (activeRaffle && activeRaffle.total_numbers > 0 &&
-                Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length >= activeRaffle.total_numbers)
+              (selectedRaffle?.status === 'finished') ||
+              (selectedRaffle && selectedRaffle.total_numbers > 0 &&
+                Object.values(reservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length >= selectedRaffle.total_numbers)
             }
-            raffleCode={activeRaffle?.code}
+            raffleCode={selectedRaffle?.code}
           />
         )}
       </main>
@@ -652,14 +648,14 @@ const App: React.FC = () => {
           <CheckoutModal
             selectedNumbers={selectedNumbers}
             totalPrice={selectedNumbers.length * PRICE_PER_NUMBER}
-            raffleId={activeRaffle?.id}
-            raffle={activeRaffle || undefined}
+            raffleId={selectedRaffle?.id}
+            raffle={selectedRaffle || undefined}
             reservations={reservations}
             onClose={async () => {
-              if (selectedNumbers.length > 0 && activeRaffle) {
+              if (selectedNumbers.length > 0 && selectedRaffle) {
                 // 1. Limpar do banco
                 const { cleanupSessionSelections } = await import('./lib/selection-manager');
-                await cleanupSessionSelections(activeRaffle.id, sessionId.current);
+                await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
 
                 // 2. Aguardar processamento
                 await new Promise(resolve => setTimeout(resolve, 150));
@@ -687,7 +683,7 @@ const App: React.FC = () => {
 
 
       <FAQChatbot
-        raffle={activeRaffle || undefined}
+        raffle={selectedRaffle || undefined}
         reservations={reservations}
         isOpen={isFAQOpen}
         onToggle={setIsFAQOpen}

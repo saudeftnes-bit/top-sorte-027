@@ -7,12 +7,12 @@ import type { Raffle, WinnerPhoto } from '../types/database';
 interface HomeProps {
   onStart: () => void;
   onSelectRaffle?: (raffle: Raffle) => void;
-  raffle: Raffle | null;
+  featuredRaffle: Raffle | null;
   raffles?: Raffle[];
   activeReservationsCount: number;
 }
 
-const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = [], activeReservationsCount }) => {
+const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, raffles = [], activeReservationsCount }) => {
   // Slideshow state
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -21,7 +21,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
   const [isLoading, setIsLoading] = useState(true);
 
   // Filter other raffles (exclude current active one)
-  const otherRaffles = raffles.filter(r => r.id !== raffle?.id);
+  const otherRaffles = raffles.filter(r => r.id !== featuredRaffle?.id);
 
 
   // Carregar script do Instagram (apenas uma vez)
@@ -154,41 +154,41 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, raffle, raffles = 
       {/* Featured Raffle Card */}
       <section className="relative overflow-hidden bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4 flex flex-col">
         {/* Status Badge Above Image */}
-        <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm ${raffle?.status === 'active' ? 'bg-green-500' :
-          raffle?.status === 'scheduled' ? 'bg-yellow-500' :
+        <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm ${featuredRaffle?.status === 'active' ? 'bg-green-500' :
+          featuredRaffle?.status === 'scheduled' ? 'bg-yellow-500' :
             'bg-red-500'
           }`}>
-          {raffle?.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 SORTEIO ENCERRADO (VISUALIZAÇÃO)'}
+          {featuredRaffle?.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 SORTEIO ENCERRADO (VISUALIZAÇÃO)'}
         </div>
 
         <img
-          src={raffle?.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+          src={featuredRaffle?.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
           alt="Prêmio do Sorteio"
           className="w-full h-56 object-cover"
         />
         <div className="p-6">
           <h2 className="text-2xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">
-            {raffle?.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
+            {featuredRaffle?.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
           </h2>
-          {raffle?.code && (
+          {featuredRaffle?.code && (
             <div className="text-center mb-2">
               <span className="bg-purple-100 text-purple-700 text-xs font-black px-3 py-1 rounded-full">
-                EDIÇÃO #{raffle.code}
+                EDIÇÃO #{featuredRaffle.code}
               </span>
             </div>
           )}
 
           <div className="flex items-center justify-center gap-2 mb-6 text-slate-500 font-bold text-sm">
             <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-            Apenas R$ {raffle?.price_per_number?.toFixed(2).replace('.', ',') || '13,00'} por número
+            Apenas R$ {featuredRaffle?.price_per_number?.toFixed(2).replace('.', ',') || '13,00'} por número
           </div>
           {/* Botão de CTA ou aviso de grade preenchida */}
           <button
             onClick={onStart}
-            className={`w-full ${raffle?.status === 'active' ? 'bg-purple-600 hover:bg-purple-700 animate-pulse' : 'bg-slate-600 hover:bg-slate-700'
+            className={`w-full ${featuredRaffle?.status === 'active' ? 'bg-purple-600 hover:bg-purple-700 animate-pulse' : 'bg-slate-600 hover:bg-slate-700'
               } text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg`}
           >
-            {raffle?.status === 'active' ? '🎯 ESCOLHER MEUS NÚMEROS' : '👀 VER RESULTADOS'}
+            {featuredRaffle?.status === 'active' ? '🎯 ESCOLHER MEUS NÚMEROS' : '👀 VER RESULTADOS'}
           </button>
         </div>
       </section>
