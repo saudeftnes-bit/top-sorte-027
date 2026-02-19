@@ -105,13 +105,12 @@ const App: React.FC = () => {
     console.log('🔔 [Real-time] Setting up subscription for raffle:', activeRaffle.id);
 
     const subscription = subscribeToReservations(activeRaffle.id, (payload) => {
-      console.log(`🔔 [Real-time] Event matched for raffle: ${activeRaffle.id}`, {
-        event: payload.eventType,
-        number: payload.new?.number || payload.old?.number,
-        status: payload.new?.status
+      console.log(`🔔 [Real-time] Mudança detectada no sorteio ${activeRaffle.id}:`, {
+        evento: payload.eventType,
+        numero: (payload.new as any)?.number || (payload.old as any)?.number
       });
 
-      // Reload data when real-time update is received
+      // Recarregar dados para refletir as mudanças (cores, nomes, etc)
       loadDataForActiveRaffle(activeRaffle.id);
     });
 
