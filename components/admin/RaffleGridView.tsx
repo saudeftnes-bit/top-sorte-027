@@ -203,41 +203,43 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                         {/* THE ACTUAL PRINT AREA - New Visual Model */}
                         <div
                             ref={printRef}
-                            className="bg-[#001D3D] w-full max-w-[450px] mx-auto p-12 flex flex-col items-center text-white font-sans overflow-hidden min-h-[800px] border-[12px] border-white/5 shadow-2xl"
+                            className="bg-[#001D3D] w-full max-w-[420px] mx-auto p-10 flex flex-col items-center text-white font-sans overflow-hidden min-h-[750px] border-[10px] border-white/5 shadow-2xl"
                             style={{ backgroundImage: 'radial-gradient(circle at top, #003566 0%, #001D3D 100%)' }}
                         >
-                            {/* Logo / Brand Header */}
-                            <div className="bg-yellow-400 text-[#001D3D] px-6 py-2 rounded-full font-black text-sm uppercase tracking-[0.3em] mb-12 shadow-[0_0_30px_rgba(255,214,10,0.3)]">
-                                TOPSORTE_27
+                            {/* Logo / Brand Header - CENTERED and CORRECTED */}
+                            <div className="flex justify-center w-full mb-10">
+                                <div className="bg-yellow-400 text-[#001D3D] px-8 py-2.5 rounded-full font-black text-base uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(255,214,10,0.3)] text-center">
+                                    TOPSORTE_027
+                                </div>
                             </div>
 
                             {/* Main Title */}
-                            <div className="text-center mb-16 px-4">
-                                <h2 className="text-slate-400 font-extrabold uppercase tracking-widest text-sm mb-4">Resultado Oficial</h2>
-                                <h1 className="text-4xl sm:text-5xl font-black tracking-tighter uppercase italic leading-tight text-center">
-                                    <span className="text-white block mb-2">Vencedores do</span>
+                            <div className="text-center mb-14 px-4 w-full">
+                                <h2 className="text-slate-400 font-extrabold uppercase tracking-widest text-xs mb-3">Resultado Oficial</h2>
+                                <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase italic leading-tight text-center">
+                                    <span className="text-white block mb-1">Vencedores do</span>
                                     <span className="text-yellow-400 block drop-shadow-lg">Concurso #{raffle.code || '000'}</span>
                                 </h1>
                             </div>
 
-                            {/* Winners List Area */}
-                            <div className="w-full flex-1 space-y-6">
+                            {/* Winners List Area - NO TRUNCATE, better spacing */}
+                            <div className="w-full flex-1 space-y-5">
                                 {winnerNumbers.length > 0 ? (
                                     winnerNumbers.sort((a, b) => parseInt(a) - parseInt(b)).map((num) => (
-                                        <div key={num} className="flex items-center gap-6 bg-white/5 border border-white/10 p-6 rounded-[2rem] backdrop-blur-sm">
-                                            <div className="w-16 h-16 bg-yellow-400 text-[#001D3D] rounded-2xl flex items-center justify-center font-black text-2xl shadow-[0_0_20px_rgba(255,214,10,0.2)]">
+                                        <div key={num} className="flex items-center gap-5 bg-white/5 border border-white/10 p-5 rounded-[1.8rem] backdrop-blur-sm">
+                                            <div className="w-14 h-14 min-w-[3.5rem] bg-yellow-400 text-[#001D3D] rounded-2xl flex items-center justify-center font-black text-2xl shadow-[0_0_20px_rgba(255,214,10,0.2)]">
                                                 {num}
                                             </div>
-                                            <div className="flex-1 overflow-hidden">
-                                                <p className="text-slate-400 font-black text-xs uppercase tracking-widest mb-1">Ganhador(a)</p>
-                                                <p className="text-2xl sm:text-3xl font-black text-white uppercase italic tracking-tighter truncate">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-0.5">Ganhador(a)</p>
+                                                <p className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tighter break-words leading-tight">
                                                     {reservations[num]?.name || '---'}
                                                 </p>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="h-64 flex items-center justify-center border-2 border-dashed border-white/10 rounded-[3rem]">
+                                    <div className="h-64 flex items-center justify-center border-2 border-dashed border-white/10 rounded-[2.5rem]">
                                         <p className="text-white/30 font-black uppercase text-center px-10 leading-relaxed italic">
                                             Selecione os números na tabela <br /> para gerar o resultado
                                         </p>
@@ -246,12 +248,12 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                             </div>
 
                             {/* Footer Message */}
-                            <div className="mt-16 text-center w-full">
-                                <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent mx-auto mb-10"></div>
-                                <h3 className="text-2xl sm:text-3xl font-black text-yellow-400 uppercase italic tracking-tighter animate-pulse mb-4 text-center">
+                            <div className="mt-14 text-center w-full">
+                                <div className="h-[2px] w-1/4 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent mx-auto mb-8"></div>
+                                <h3 className="text-2xl sm:text-3xl font-black text-yellow-400 uppercase italic tracking-tighter animate-pulse mb-3 text-center">
                                     PARABÉNS AOS GANHADORES!
                                 </h3>
-                                <p className="text-white/40 font-bold text-sm tracking-widest uppercase">Obrigado a todos por participar</p>
+                                <p className="text-white/40 font-bold text-xs tracking-widest uppercase">Obrigado a todos por participar</p>
                             </div>
                         </div>
 
