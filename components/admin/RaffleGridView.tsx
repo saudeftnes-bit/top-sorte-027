@@ -122,8 +122,8 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             {/* Capture Area */}
             <div
                 ref={gridRef}
-                className="bg-white p-8 rounded-3xl border border-slate-100 shadow-xl overflow-hidden"
-                style={{ minWidth: '800px' }} // Ensure enough width for a nice screenshot
+                className="bg-white p-4 sm:p-8 rounded-3xl border border-slate-100 shadow-xl overflow-hidden"
+                style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }} // Vertical limit for mobile sharing
             >
                 <div className="text-center mb-10">
                     <div className="inline-block bg-purple-600 text-white px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4">
@@ -133,19 +133,19 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                     {raffle.status === 'finished' && (
                         <div className="mb-6">
                             <div className="inline-block relative">
-                                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic py-2 px-6 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-sm select-none">
-                                    Rifa Encerrada
+                                <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic py-2 px-6 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-sm select-none">
+                                    Sorteio Pausado
                                 </h2>
                                 <div className="absolute -inset-1 bg-red-500 opacity-20 blur-xl animate-pulse rounded-full -z-10"></div>
                             </div>
                         </div>
                     )}
 
-                    <h1 className="text-3xl font-black text-slate-900 mb-1">{raffle.title}</h1>
+                    <h1 className="text-2xl font-black text-slate-900 mb-1 leading-tight">{raffle.title}</h1>
                     <p className="text-slate-500 font-bold">Edição #{raffle.code}</p>
                 </div>
 
-                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2 max-w-5xl mx-auto">
+                <div className="grid grid-cols-5 gap-2 max-w-full mx-auto">
                     {numbers.map((num) => {
                         const reservation = reservations[num];
                         const isWinner = winnerNumbers.includes(num);
