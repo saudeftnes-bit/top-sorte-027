@@ -85,9 +85,6 @@ export const HistoricalRaffleView: React.FC<HistoricalRaffleViewProps> = ({ raff
                             </h2>
                             <div className="absolute -inset-1 bg-red-500 opacity-20 blur-xl animate-pulse rounded-full -z-10"></div>
                         </div>
-                        <p className="text-slate-500 font-bold text-sm tracking-widest uppercase">
-                            Esta edição foi finalizada e os números foram revelados
-                        </p>
                     </div>
 
                     <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 p-2 sm:p-6">

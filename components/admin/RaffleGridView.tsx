@@ -183,25 +183,58 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                     })}
                 </div>
 
-                {/* Footer Legend for Screenshot */}
-                <div className="mt-12 pt-8 border-t border-slate-100 flex justify-center gap-8">
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-green-500 rounded shadow-sm"></div>
-                        <span className="text-xs font-bold text-slate-600">PAGO</span>
+                {/* Legend */}
+                <div className="flex flex-wrap justify-center gap-6 mb-10 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm max-w-2xl mx-auto">
+                    <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 bg-green-600 rounded-lg shadow-sm"></div>
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Disponível</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded shadow-sm"></div>
-                        <span className="text-xs font-bold text-slate-600">RESERVADO</span>
+                    <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 bg-purple-600 rounded-lg shadow-sm"></div>
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Pago</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-slate-50 border border-slate-200 rounded shadow-sm"></div>
-                        <span className="text-xs font-bold text-slate-600">LIVRE</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-yellow-400 border-2 border-yellow-600 rounded shadow-sm"></div>
-                        <span className="text-xs font-bold text-slate-600 font-orange-600 uppercase">🏆 VENCEDOR</span>
+                    <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 bg-white border-4 border-yellow-400 rounded-lg shadow-sm animate-pulse"></div>
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Vencedor</span>
                     </div>
                 </div>
+
+                {/* Winners Table - Added below the grid and included in screenshot */}
+                {winnerNumbers.length > 0 && (
+                    <div className="mt-12 max-w-2xl mx-auto bg-white rounded-3xl border-2 border-slate-100 shadow-xl overflow-hidden mb-10">
+                        <div className="bg-slate-900 text-white py-4 px-6">
+                            <h3 className="text-lg font-black uppercase italic tracking-tighter flex items-center gap-2">
+                                👑 Lista de Vencedores
+                            </h3>
+                        </div>
+                        <div className="p-0">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 border-b-2 border-slate-100">
+                                    <tr>
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-widest w-24 text-center">Nº</th>
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-widest">Nome do Ganhador</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {winnerNumbers.sort((a, b) => parseInt(a) - parseInt(b)).map((num) => (
+                                        <tr key={num} className="hover:bg-yellow-50/50 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="w-10 h-10 bg-yellow-400 text-yellow-900 rounded-xl flex items-center justify-center font-black text-sm mx-auto shadow-sm">
+                                                    {num}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-slate-900 font-black text-lg uppercase tracking-tight">
+                                                    {reservations[num]?.name || 'Pendente / Não Encontrado'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
