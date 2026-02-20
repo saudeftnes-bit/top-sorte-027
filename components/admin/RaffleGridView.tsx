@@ -13,7 +13,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [winnerNumbers, setWinnerNumbers] = useState<string[]>([]);
     const [isCapturing, setIsCapturing] = useState(false);
-    const gridRef = useRef<HTMLDivElement>(null);
+    const printRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         loadReservations();
@@ -46,24 +46,24 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
     };
 
     const downloadScreenshot = async () => {
-        if (!gridRef.current) return;
+        if (!printRef.current) return;
 
         setIsCapturing(true);
         // Small delay to ensure UI updates before capture
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 150));
 
         try {
-            const canvas = await html2canvas(gridRef.current, {
+            const canvas = await html2canvas(printRef.current, {
                 useCORS: true,
-                scale: 2, // Better quality
-                backgroundColor: '#f8fafc',
+                scale: 3, // Very high quality for sharing
+                backgroundColor: '#ffffff',
             });
 
             const image = canvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.href = image;
-            const winnersText = winnerNumbers.length > 0 ? `vencedores-${winnerNumbers.join('-')}` : 'nenhum-vencedor';
-            link.download = `grade-rifa-${raffle.code || 'export'}-${winnersText}.png`;
+            const winnersText = winnerNumbers.length > 0 ? `vencedores-${winnerNumbers.join('-')}` : 'resultado';
+            link.download = `ganhadores-${raffle.code || 'top-sorte'}-${winnersText}.png`;
             link.click();
         } catch (error) {
             console.error('Error capturing screenshot:', error);
@@ -75,8 +75,8 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
+            <div className="flex items-center justify-center h-96">
+                <div className="animate-spin rounded-full h-16 w-16 border-8 border-purple-600 border-t-transparent"></div>
             </div>
         );
     }
@@ -85,156 +85,184 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
     const numbers = Array.from({ length: total }, (_, i) => (i + 1).toString().padStart(total >= 1000 ? 3 : 2, '0'));
 
     return (
-        <div className="space-y-6">
-            {/* Header Control */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div>
-                    <h2 className="text-xl font-black text-slate-900">📸 Captura de Grade</h2>
-                    <p className="text-sm text-slate-500 font-medium">Selecione o vencedor e baixe o print</p>
+        <div className="space-y-10 pb-20">
+            {/* Header Control - Larger */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center text-3xl">📸</div>
+                    <div>
+                        <h2 className="text-3xl font-black text-slate-900 tracking-tight">Gerador de Prints</h2>
+                        <p className="text-lg text-slate-500 font-bold">Gerencie os vencedores e gere o resultado final</p>
+                    </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-3">
                     <button
                         onClick={downloadScreenshot}
-                        disabled={isCapturing}
-                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center gap-2"
+                        disabled={isCapturing || winnerNumbers.length === 0}
+                        className="bg-green-600 hover:bg-green-700 disabled:bg-slate-200 disabled:text-slate-400 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl active:scale-95 flex items-center gap-3 text-lg"
                     >
-                        {isCapturing ? '⌛ Processando...' : '📥 Baixar Print da Grade'}
+                        {isCapturing ? '⌛ PROCESSANDO...' : '📥 BAIXAR PRINT RESULTADO'}
                     </button>
                     <button
                         onClick={onBack}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-2.5 rounded-xl font-bold transition-colors"
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-8 py-4 rounded-2xl font-black transition-colors text-lg"
                     >
-                        Voltar
+                        VOLTAR
                     </button>
                 </div>
             </div>
 
-            {/* Hint */}
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl">
-                <div className="flex items-center gap-3">
-                    <span className="text-xl">💡</span>
-                    <p className="text-sm text-blue-700 font-medium">
-                        Clique em um número para destacá-lo como o **VENCEDOR** antes de capturar o print.
-                    </p>
-                </div>
-            </div>
-
-            {/* Capture Area */}
-            <div
-                ref={gridRef}
-                className="bg-white p-4 sm:p-8 rounded-3xl border border-slate-100 shadow-xl overflow-hidden"
-                style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }} // Vertical limit for mobile sharing
-            >
-                <div className="text-center mb-10">
-                    <div className="inline-block bg-purple-600 text-white px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4">
-                        Top Sorte 027 - Grade Oficial
-                    </div>
-
-                    {raffle.status === 'finished' && (
-                        <div className="mb-6">
-                            <div className="inline-block relative">
-                                <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic py-2 px-6 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-sm select-none">
-                                    Rifa Finalizada
-                                </h2>
-                                <div className="absolute -inset-1 bg-red-500 opacity-20 blur-xl animate-pulse rounded-full -z-10"></div>
-                            </div>
-                        </div>
-                    )}
-
-                    <h1 className="text-2xl font-black text-slate-900 mb-1 leading-tight">{raffle.title}</h1>
-                    <p className="text-slate-500 font-bold">Edição #{raffle.code}</p>
-                </div>
-
-                <div className="grid grid-cols-5 gap-2 max-w-full mx-auto">
-                    {numbers.map((num) => {
-                        const reservation = reservations[num];
-                        const isWinner = winnerNumbers.includes(num);
-                        const isPaid = reservation?.status === 'paid';
-                        const isPending = reservation?.status === 'pending';
-
-                        return (
-                            <div
-                                key={num}
-                                onClick={() => handleNumberClick(num)}
-                                className={`
-                                    relative aspect-square flex flex-col items-center justify-center rounded-lg border-2 transition-all cursor-pointer
-                                    ${isWinner
-                                        ? 'bg-yellow-400 border-yellow-600 scale-110 z-10 shadow-lg ring-4 ring-yellow-200'
-                                        : isPaid
-                                            ? 'bg-green-500 border-green-600 text-white'
-                                            : isPending
-                                                ? 'bg-yellow-100 border-yellow-300 text-yellow-700'
-                                                : 'bg-slate-50 border-slate-200 text-slate-400'}
-                                `}
-                            >
-                                <span className={`text-xs font-black ${isWinner ? 'text-yellow-950' : ''}`}>
-                                    {num}
-                                </span>
-                                {isWinner && (
-                                    <span className="absolute -top-1 -right-1 text-xs">👑</span>
-                                )}
-                                {isPaid && reservation && !isWinner && (
-                                    <span className="text-[8px] font-bold uppercase truncate w-full px-1 text-center opacity-75">
-                                        {reservation.name.split(' ')[0]}
-                                    </span>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {/* Legend */}
-                <div className="flex flex-wrap justify-center gap-6 mb-10 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm max-w-2xl mx-auto">
-                    <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 bg-green-600 rounded-lg shadow-sm"></div>
-                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Disponível</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 bg-purple-600 rounded-lg shadow-sm"></div>
-                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Pago</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 bg-white border-4 border-yellow-400 rounded-lg shadow-sm animate-pulse"></div>
-                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Vencedor</span>
-                    </div>
-                </div>
-
-                {/* Winners Table - Added below the grid and included in screenshot */}
-                {winnerNumbers.length > 0 && (
-                    <div className="mt-12 max-w-2xl mx-auto bg-white rounded-3xl border-2 border-slate-100 shadow-xl overflow-hidden mb-10">
-                        <div className="bg-slate-900 text-white py-4 px-6">
-                            <h3 className="text-lg font-black uppercase italic tracking-tighter flex items-center gap-2">
-                                👑 Lista de Vencedores
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                {/* Column 1: Admin Management */}
+                <div className="space-y-8">
+                    {/* Management Grid - Larger cards */}
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                                🔢 Seleção de Vencedores
                             </h3>
+                            <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-sm font-black uppercase tracking-widest">
+                                {winnerNumbers.length} SELECIONADOS
+                            </div>
                         </div>
-                        <div className="p-0">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50 border-b-2 border-slate-100">
-                                    <tr>
-                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-widest w-24 text-center">Nº</th>
-                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-widest">Nome do Ganhador</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {winnerNumbers.sort((a, b) => parseInt(a) - parseInt(b)).map((num) => (
-                                        <tr key={num} className="hover:bg-yellow-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="w-10 h-10 bg-yellow-400 text-yellow-900 rounded-xl flex items-center justify-center font-black text-sm mx-auto shadow-sm">
-                                                    {num}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-slate-900 font-black text-lg uppercase tracking-tight">
-                                                    {reservations[num]?.name || 'Pendente / Não Encontrado'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+
+                        <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 mb-8">
+                            {numbers.map((num) => {
+                                const reservation = reservations[num];
+                                const isWinner = winnerNumbers.includes(num);
+                                const isPaid = reservation?.status === 'paid';
+
+                                return (
+                                    <div
+                                        key={num}
+                                        onClick={() => handleNumberClick(num)}
+                                        className={`
+                                            aspect-square flex flex-col items-center justify-center rounded-xl border-2 transition-all cursor-pointer select-none
+                                            ${isWinner
+                                                ? 'bg-yellow-400 border-yellow-600 scale-110 z-10 shadow-lg ring-4 ring-yellow-100'
+                                                : isPaid
+                                                    ? 'bg-blue-600 border-blue-700 text-white'
+                                                    : 'bg-slate-50 border-slate-200 text-slate-300'}
+                                        `}
+                                    >
+                                        <span className={`text-sm font-black ${isWinner ? 'text-yellow-950' : ''}`}>
+                                            {num}
+                                        </span>
+                                        {isWinner && <span className="absolute -top-1 -right-1 text-sm">👑</span>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Winners Management Table - LARGE as requested */}
+                        {winnerNumbers.length > 0 && (
+                            <div className="overflow-hidden bg-white rounded-3xl border-2 border-slate-100 shadow-sm mt-10">
+                                <div className="bg-slate-50 py-4 px-6 border-b border-slate-100">
+                                    <h4 className="font-black text-slate-500 uppercase text-xs tracking-widest">Painel Administrativo de Ganhadores</h4>
+                                </div>
+                                <table className="w-full">
+                                    <tbody className="divide-y divide-slate-100">
+                                        {winnerNumbers.sort((a, b) => parseInt(a) - parseInt(b)).map((num) => (
+                                            <tr key={num} className="group">
+                                                <td className="px-6 py-6 w-24">
+                                                    <div className="w-14 h-14 bg-yellow-400 text-yellow-950 rounded-2xl flex items-center justify-center font-black text-xl shadow-md ring-4 ring-yellow-50">
+                                                        {num}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-6">
+                                                    <p className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+                                                        {reservations[num]?.name || 'Pendente / Manual'}
+                                                    </p>
+                                                    <p className="text-slate-400 font-bold text-sm">Vencedor Confirmado</p>
+                                                </td>
+                                                <td className="px-6 py-6 text-right">
+                                                    <button
+                                                        onClick={() => handleNumberClick(num)}
+                                                        className="text-red-400 hover:text-red-600 font-black text-sm uppercase opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        REMOVER
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Column 2: Print Preview - VERY VISIBLE as requested */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-3 ml-4">
+                        <span className="text-2xl">📱</span>
+                        <h3 className="text-2xl font-black text-slate-900">Prévia do Print (Mobile)</h3>
+                    </div>
+
+                    <div className="relative group">
+                        {/* THE ACTUAL PRINT AREA - New Visual Model */}
+                        <div
+                            ref={printRef}
+                            className="bg-[#001D3D] w-full max-w-[450px] mx-auto p-12 flex flex-col items-center text-white font-sans overflow-hidden min-h-[800px] border-[12px] border-white/5 shadow-2xl"
+                            style={{ backgroundImage: 'radial-gradient(circle at top, #003566 0%, #001D3D 100%)' }}
+                        >
+                            {/* Logo / Brand Header */}
+                            <div className="bg-yellow-400 text-[#001D3D] px-6 py-2 rounded-full font-black text-sm uppercase tracking-[0.3em] mb-12 shadow-[0_0_30px_rgba(255,214,10,0.3)]">
+                                TOPSORTE_27
+                            </div>
+
+                            {/* Main Title */}
+                            <div className="text-center mb-16 px-4">
+                                <h2 className="text-slate-400 font-extrabold uppercase tracking-widest text-sm mb-4">Resultado Oficial</h2>
+                                <h1 className="text-4xl sm:text-5xl font-black tracking-tighter uppercase italic leading-tight text-center">
+                                    <span className="text-white block mb-2">Vencedores do</span>
+                                    <span className="text-yellow-400 block drop-shadow-lg">Concurso #{raffle.code || '000'}</span>
+                                </h1>
+                            </div>
+
+                            {/* Winners List Area */}
+                            <div className="w-full flex-1 space-y-6">
+                                {winnerNumbers.length > 0 ? (
+                                    winnerNumbers.sort((a, b) => parseInt(a) - parseInt(b)).map((num) => (
+                                        <div key={num} className="flex items-center gap-6 bg-white/5 border border-white/10 p-6 rounded-[2rem] backdrop-blur-sm">
+                                            <div className="w-16 h-16 bg-yellow-400 text-[#001D3D] rounded-2xl flex items-center justify-center font-black text-2xl shadow-[0_0_20px_rgba(255,214,10,0.2)]">
+                                                {num}
+                                            </div>
+                                            <div className="flex-1 overflow-hidden">
+                                                <p className="text-slate-400 font-black text-xs uppercase tracking-widest mb-1">Ganhador(a)</p>
+                                                <p className="text-2xl sm:text-3xl font-black text-white uppercase italic tracking-tighter truncate">
+                                                    {reservations[num]?.name || '---'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="h-64 flex items-center justify-center border-2 border-dashed border-white/10 rounded-[3rem]">
+                                        <p className="text-white/30 font-black uppercase text-center px-10 leading-relaxed italic">
+                                            Selecione os números na tabela <br /> para gerar o resultado
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer Message */}
+                            <div className="mt-16 text-center w-full">
+                                <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent mx-auto mb-10"></div>
+                                <h3 className="text-2xl sm:text-3xl font-black text-yellow-400 uppercase italic tracking-tighter animate-pulse mb-4 text-center">
+                                    PARABÉNS AOS GANHADORES!
+                                </h3>
+                                <p className="text-white/40 font-bold text-sm tracking-widest uppercase">Obrigado a todos por participar</p>
+                            </div>
+                        </div>
+
+                        {/* Hint Overlay for Admin */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none rounded-[2.5rem]">
+                            <p className="text-white font-black text-xl uppercase tracking-tighter italic bg-black/60 px-6 py-3 rounded-full backdrop-blur-md">
+                                ÁREA DE CAPTURA ✨
+                            </p>
                         </div>
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );
