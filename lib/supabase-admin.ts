@@ -120,20 +120,50 @@ export async function resetRaffleNumbers(raffleId: string): Promise<number> {
 
 
 export async function createRaffle(raffle: Omit<Raffle, 'id' | 'created_at' | 'updated_at'>): Promise<Raffle | null> {
-    // 1. Get the last raffle code
-    const { data: lastRaffle } = await supabase
-        .from('raffles')
-        .select('code')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
+    // 1. Get the last raffle code from persistent settings
     let nextCode = '0001';
-    if (lastRaffle && lastRaffle.code) {
-        const lastCodeInt = parseInt(lastRaffle.code, 10);
-        if (!isNaN(lastCodeInt)) {
-            nextCode = (lastCodeInt + 1).toString().padStart(4, '0');
+
+    try {
+        const { data: setting } = await supabase
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'last_edition_number')
+            .single();
+
+        let lastCodeInt = 0;
+
+        if (setting && setting.value) {
+            lastCodeInt = parseInt(setting.value, 10);
+        } else {
+            // Fallback: check raffles table if setting is missing
+            const { data: lastRaffle } = await supabase
+                .from('raffles')
+                .select('code')
+                .order('code', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (lastRaffle && lastRaffle.code) {
+                lastCodeInt = parseInt(lastRaffle.code, 10);
+            }
         }
+
+        // Increment
+        const nextCodeInt = lastCodeInt + 1;
+        nextCode = nextCodeInt.toString().padStart(4, '0');
+
+        // Update persistent setting
+        await supabase
+            .from('system_settings')
+            .upsert({
+                key: 'last_edition_number',
+                value: nextCode,
+                updated_at: new Date().toISOString()
+            });
+
+    } catch (error) {
+        console.error('⚠️ Error managing persistent counter, using fallback logic:', error);
+        // Basic fallback already initialized as '0001'
     }
 
     // 2. Check if another raffle is already active
