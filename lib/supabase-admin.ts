@@ -21,6 +21,21 @@ export async function getActiveRaffle(): Promise<Raffle | null> {
     return data;
 }
 
+export async function getRaffleById(id: string): Promise<Raffle | null> {
+    const { data, error } = await supabase
+        .from('raffles')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        console.error('Error fetching raffle by id:', error);
+        return null;
+    }
+
+    return data;
+}
+
 export async function getPublicRaffles(): Promise<Raffle[]> {
     const { data, error } = await supabase
         .from('raffles')

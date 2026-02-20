@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getReservationsByRaffle, confirmManualPayment, reactivateReservation, deleteReservation, getActiveRaffle, createManualReservation } from '../../lib/supabase-admin';
+import { getReservationsByRaffle, confirmManualPayment, reactivateReservation, deleteReservation, getRaffleById, createManualReservation } from '../../lib/supabase-admin';
 import type { Reservation, Raffle } from '../../types/database';
 import ConfirmModal from '../ConfirmModal';
 import ManualReservationModal from './ManualReservationModal';
@@ -41,7 +41,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
         setIsLoading(true);
         const [reservations, raffle] = await Promise.all([
             getReservationsByRaffle(raffleId),
-            getActiveRaffle()
+            getRaffleById(raffleId)
         ]);
         setActiveRaffle(raffle);
 
@@ -112,7 +112,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
         if (!activeRaffle) return false;
 
         const result = await createManualReservation(
-            activeRaffle.id,
+            raffleId,
             data.name,
             data.phone,
             data.numbers,
