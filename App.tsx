@@ -285,7 +285,7 @@ const App: React.FC = () => {
         // Continuar mesmo se limpeza falhar
       }
 
-      // 2. Carregar TODOS os sorteios públicos (ativos e agendados)
+      // 2. Carregar APENAS sorteios públicos (ativos)
       const { getPublicRaffles } = await import('./lib/supabase-admin');
       const raffles = await getPublicRaffles();
       setPublicRaffles(raffles);
@@ -296,9 +296,8 @@ const App: React.FC = () => {
       // Mas cuidado para não mudar o raffle que o usuário está vendo se o usuário selecionou um específico.
 
       if (raffles.length > 0) {
-        // Encontrar a rifa principal (featured) - a que está ativa
-        // Encontrar a rifa principal (featured) - APENAS se estiver ativa
-        const activeOne = raffles.find(r => r.status === 'active') || null;
+        // Encontrar a rifa principal (featured)
+        const activeOne = raffles[0] || null; // Since list is only active, first is latest active
         setFeaturedRaffle(activeOne);
 
         if (activeOne) {

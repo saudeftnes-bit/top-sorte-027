@@ -237,8 +237,8 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
         </section>
       )}
 
-      {/* Outros Sorteios Disponíveis - Hidden if featured is finished/paused */}
-      {otherRaffles.length > 0 && (!featuredRaffle || featuredRaffle.status !== 'finished') && (
+      {/* Outros Sorteios Disponíveis - Shown only if there are other active raffles */}
+      {otherRaffles.length > 0 && (
         <section className="mt-8">
           <div className="flex flex-col items-center justify-center mb-6 px-2">
             <div className="inline-block relative">
