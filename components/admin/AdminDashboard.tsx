@@ -9,12 +9,13 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNavigate }) => {
-    const [analytics, setAnalytics] = useState<RaffleAnalytics>({
+    const [analytics, setAnalytics] = useState<RaffleAnalytics & { totalPossible: number }>({
         totalRevenue: 0,
         numbersSold: 0,
         numbersPending: 0,
-        numbersAvailable: 100,
+        numbersAvailable: raffle.total_numbers || 10000,
         totalBuyers: 0,
+        totalPossible: raffle.total_numbers || 10000
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -24,7 +25,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
         console.log('[AdminDashboard] Loading analytics...');
         setIsRefreshing(true);
         const data = await getRaffleAnalytics(raffleId);
-        setAnalytics(data);
+        setAnalytics({
+            ...data,
+            totalPossible: raffle.total_numbers || 10000
+        });
         setIsLoading(false);
         setIsRefreshing(false);
         console.log('[AdminDashboard] Analytics loaded:', data);
@@ -143,7 +147,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
                     </div>
                     <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Números Vendidos</p>
                     <p className="text-3xl font-black text-purple-600">{analytics.numbersSold}</p>
-                    <p className="text-xs text-slate-400 mt-1">de 100 números</p>
+                    <p className="text-xs text-slate-400 mt-1">de {analytics.totalPossible} números</p>
                 </div>
 
                 {/* Numbers Pending */}
@@ -183,12 +187,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
                     </div>
                     <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Progresso</p>
                     <p className="text-3xl font-black text-pink-600">
-                        {Math.round((analytics.numbersSold / 100) * 100)}%
+                        {Math.round((analytics.numbersSold / analytics.totalPossible) * 100)}%
                     </p>
                     <div className="w-full bg-pink-100 rounded-full h-2 mt-2">
                         <div
                             className="bg-pink-600 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${(analytics.numbersSold / 100) * 100}%` }}
+                            style={{ width: `${(analytics.numbersSold / analytics.totalPossible) * 100}%` }}
                         ></div>
                     </div>
                 </div>

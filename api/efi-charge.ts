@@ -140,26 +140,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.error('⚠️ [API Efi Charge] Erro ao salvar transação (não crítico):', e);
         }
 
-        // 4. Limpar reservas temporárias existentes para estes números antes de criar as definitivas
-        // Isso evita o erro de duplicidade UNIQUE(raffle_id, number)
+        // 3. Tentar salvar transação EFI
         try {
-            console.log('🧹 [API Efi Charge] Limpando reservas anteriores (pendentes/canceladas) para números:', numbers);
+            await supabase
+                .from('efi_transactions')
+                .insert({
+                    txid: pixCharge.txid,
+                    raffle_id: raffleId,
+                    amount: totalPrice,
+                    status: pixCharge.status,
+                    pix_copia_cola: pixCharge.pixCopiaCola,
+                    qr_code_url: pixCharge.qrCodeImage,
+                    buyer_name: buyer.name,
+                    buyer_email: buyer.email || '',
+                    buyer_phone: buyer.phone || '',
+                });
+        } catch (e: any) {
+            console.error('⚠️ [API Efi Charge] Erro ao salvar transação (não crítico):', e);
+            // We continue because even if transaction log fails, the reservation is more important
+        }
+
+        // 4. Limpar e Criar reservas (CRÍTICO)
+        // Deletamos as temporárias e inserimos as oficiais com o nome do comprador
+        try {
+            console.log('🧹 [API Efi Charge] Substituindo reservas temporárias por oficiais para:', numbers);
+
+            // Deletar qualquer rastro anterior desses números (pendentes ou cancelados)
             const { error: deleteError } = await supabase
                 .from('reservations')
                 .delete()
                 .eq('raffle_id', raffleId)
-                .in('number', numbers)
-                .or('status.eq.pending,status.eq.cancelled'); // Remove pendentes e canceladas
+                .in('number', numbers);
 
             if (deleteError) {
-                console.warn('⚠️ [API Efi Charge] Aviso ao deletar reservas antigas:', deleteError);
+                console.error('❌ [API Efi Charge] Erro ao limpar reservas antigas:', deleteError);
+                throw new Error('Falha ao preparar reserva no banco de dados.');
             }
-        } catch (e: any) {
-            console.error('⚠️ [API Efi Charge] Exceção ao deletar temporárias:', e);
-        }
 
-        // 5. Criar reservas com colunas básicas apenas
-        try {
             const reservationsData = numbers.map((number: string) => ({
                 raffle_id: raffleId,
                 number,
@@ -170,48 +187,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 payment_amount: price / numbers.length,
                 payment_method: 'efi',
                 efi_txid: pixCharge.txid,
-                expires_at: pixCharge.expiresAt, // Adicionado expires_at
+                expires_at: pixCharge.expiresAt,
             }));
 
-            const { data: reservations, error: reservationsError } = await supabase
+            const { data: inserted, error: insertError } = await supabase
                 .from('reservations')
                 .insert(reservationsData)
                 .select();
 
-            if (reservationsError) {
-                console.error('⚠️ [API Efi Charge] Erro ao criar reservas (tentando sem colunas EFI):', reservationsError);
-
-                // Fallback: tentar sem colunas EFI
-                const basicReservations = numbers.map((number: string) => ({
-                    raffle_id: raffleId,
-                    number,
-                    buyer_name: buyer.name,
-                    buyer_phone: buyer.phone || '',
-                    buyer_email: buyer.email || '',
-                    status: 'pending',
-                    payment_amount: totalPrice / numbers.length,
-                }));
-
-                const { data: fallbackReservations, error: fallbackError } = await supabase
-                    .from('reservations')
-                    .insert(basicReservations)
-                    .select();
-
-                if (fallbackError) {
-                    console.error('❌ [API Efi Charge] Erro no fallback de reservas:', fallbackError);
-                } else {
-                    reservationIds = fallbackReservations?.map(r => r.id) || [];
-                }
-            } else {
-                reservationIds = reservations?.map(r => r.id) || [];
+            if (insertError) {
+                console.error('❌ [API Efi Charge] Erro fatal ao inserir reservas oficiais:', insertError);
+                throw new Error(`Não foi possível registrar seu nome nos números: ${insertError.message}`);
             }
+
+            reservationIds = inserted?.map(r => r.id) || [];
+            console.log('✅ [API Efi Charge] Reservas finais criadas com sucesso:', reservationIds);
+
         } catch (e: any) {
-            console.error('❌ [API Efi Charge] Erro geral em reservas:', e);
+            console.error('❌ [API Efi Charge] Erro crítico no fluxo de persistência:', e);
+            return res.status(500).json({
+                error: 'Erro de persistência no banco de dados',
+                message: e.message || 'Não foi possível garantir sua reserva. Tente novamente.'
+            });
         }
 
-        console.log('✅ [API Efi Charge] Reservas criadas:', reservationIds);
-
-        // Retornar dados do PIX (SEMPRE retorna, mesmo se reservas falharem)
+        // Retornar dados do PIX (Só chega aqui se as reservas foram salvas!)
         return res.status(200).json({
             success: true,
             txid: pixCharge.txid,

@@ -15,6 +15,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
     const [filter, setFilter] = useState<'all' | 'pending' | 'paid'>('all');
     const [isLoading, setIsLoading] = useState(true);
     const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+    const [displayLimit, setDisplayLimit] = useState(50);
 
     // Modal state
     const [showConfirmPaymentModal, setShowConfirmPaymentModal] = useState(false);
@@ -153,10 +154,15 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
         });
 
         // Ordenar por data
-        return Object.values(groups).sort((a, b) =>
+        const sorted = Object.values(groups).sort((a, b) =>
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
-    }, [reservations, filter]);
+
+        return {
+            allGroups: sorted,
+            visibleGroups: sorted.slice(0, displayLimit)
+        };
+    }, [reservations, filter, displayLimit]);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -192,7 +198,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-black text-slate-900">💳 Gerenciamento de Pagamentos</h2>
-                    <p className="text-slate-500 font-medium mt-1">{groupedReservations.length} grupos de compras encontrados</p>
+                    <p className="text-slate-500 font-medium mt-1">{groupedReservations.allGroups.length} grupos de compras encontrados</p>
                 </div>
                 <button
                     onClick={onBack}
@@ -235,13 +241,13 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
 
             {/* Reservations List */}
             <div className="space-y-4">
-                {groupedReservations.length === 0 ? (
+                {groupedReservations.visibleGroups.length === 0 ? (
                     <div className="bg-white rounded-2xl p-12 text-center border-2 border-slate-100">
                         <p className="text-4xl mb-4">📭</p>
                         <p className="text-lg font-bold text-slate-400">Nenhuma reserva encontrada</p>
                     </div>
                 ) : (
-                    groupedReservations.map((group) => (
+                    groupedReservations.visibleGroups.map((group) => (
                         <div
                             key={group.id}
                             className="bg-white rounded-2xl p-6 shadow-lg border-2 border-slate-100 hover:border-purple-200 transition-all"
@@ -338,6 +344,21 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                     ))
                 )}
             </div>
+
+            {/* Load More Button */}
+            {groupedReservations.allGroups.length > groupedReservations.visibleGroups.length && (
+                <div className="flex justify-center pt-4">
+                    <button
+                        onClick={() => setDisplayLimit(prev => prev + 50)}
+                        className="bg-white hover:bg-slate-50 text-purple-600 border-2 border-purple-200 px-8 py-3 rounded-2xl font-black shadow-md transition-all active:scale-95 flex items-center gap-2"
+                    >
+                        <span>⬇️ Carregar mais pagamentos...</span>
+                        <span className="text-xs bg-purple-100 px-2 py-0.5 rounded-full">
+                            {groupedReservations.allGroups.length - groupedReservations.visibleGroups.length} restantes
+                        </span>
+                    </button>
+                </div>
+            )}
 
             {/* Modals */}
             <ConfirmModal

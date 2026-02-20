@@ -24,6 +24,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedBuyer, setExpandedBuyer] = useState<string | null>(null);
+    const [displayLimit, setDisplayLimit] = useState(50);
     const [activeRaffle, setActiveRaffle] = useState<Raffle | null>(null);
 
     // Modal states
@@ -128,12 +129,18 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
         }
     };
 
-    const filteredBuyers = buyers.filter((buyer) =>
-        buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        buyer.phone?.includes(searchTerm) ||
-        buyer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        buyer.numbers.some(num => num.includes(searchTerm))
-    );
+    const { allFilteredBuyers, visibleBuyers } = React.useMemo(() => {
+        const filtered = buyers.filter((buyer) =>
+            buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            buyer.phone?.includes(searchTerm) ||
+            buyer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            buyer.numbers.some(num => num.includes(searchTerm))
+        );
+        return {
+            allFilteredBuyers: filtered,
+            visibleBuyers: filtered.slice(0, displayLimit)
+        };
+    }, [buyers, searchTerm, displayLimit]);
 
     if (isLoading) {
         return (
@@ -203,7 +210,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
 
             {/* Buyers List */}
             <div className="space-y-4">
-                {filteredBuyers.length === 0 ? (
+                {visibleBuyers.length === 0 ? (
                     <div className="bg-white rounded-2xl p-12 text-center border-2 border-slate-100">
                         <p className="text-4xl mb-4">🔍</p>
                         <p className="text-lg font-bold text-slate-400">
@@ -211,7 +218,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                         </p>
                     </div>
                 ) : (
-                    filteredBuyers.map((buyer, index) => {
+                    visibleBuyers.map((buyer, index) => {
                         const key = buyer.phone || buyer.email || buyer.name;
                         return (
                             <div
@@ -364,6 +371,21 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                     })
                 )}
             </div>
+
+            {/* Load More Button */}
+            {allFilteredBuyers.length > visibleBuyers.length && (
+                <div className="flex justify-center pt-4">
+                    <button
+                        onClick={() => setDisplayLimit(prev => prev + 50)}
+                        className="bg-white hover:bg-slate-50 text-purple-600 border-2 border-purple-200 px-8 py-3 rounded-2xl font-black shadow-md transition-all active:scale-95 flex items-center gap-2"
+                    >
+                        <span>⬇️ Carregar mais compradores...</span>
+                        <span className="text-xs bg-purple-100 px-2 py-0.5 rounded-full">
+                            {allFilteredBuyers.length - visibleBuyers.length} restantes
+                        </span>
+                    </button>
+                </div>
+            )}
 
             <ConfirmModal
                 isOpen={showDeleteModal}
