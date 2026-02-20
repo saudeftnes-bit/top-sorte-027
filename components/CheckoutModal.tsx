@@ -26,12 +26,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
 
   // Theme logic
   const isBicho = raffle?.selection_mode === 'jogo_bicho';
-  const themeBg = isBicho ? 'bg-green-600' : 'bg-purple-600';
-  const themeText = isBicho ? 'text-green-600' : 'text-purple-600';
-  const themeDarkText = isBicho ? 'text-green-700' : 'text-purple-700';
-  const themeLightBg = isBicho ? 'bg-green-50' : 'bg-purple-50';
-  const themeLightBorder = isBicho ? 'border-green-100' : 'border-purple-100';
-  const themeFocusBorder = isBicho ? 'focus:border-green-600' : 'focus:border-purple-600';
+  const themeBg = isBicho ? 'bg-green-600' : 'bg-[#003B73]';
+  const themeText = isBicho ? 'text-green-600' : 'text-[#003B73]';
+  const themeDarkText = isBicho ? 'text-green-700' : 'text-[#003B73]';
+  const themeLightBg = isBicho ? 'bg-green-50' : 'bg-blue-50';
+  const themeLightBorder = isBicho ? 'border-green-100' : 'border-blue-100';
+  const themeFocusBorder = isBicho ? 'focus:border-green-600' : 'focus:border-blue-600';
 
   // Estados Efi
   const [efiTxid, setEfiTxid] = useState<string | null>(null);

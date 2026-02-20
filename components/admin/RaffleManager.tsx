@@ -506,8 +506,8 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
 
                     {/* Preview */}
                     {mainImageUrl && (
-                        <div className="mt-3 rounded-xl overflow-hidden border-2 border-slate-200 bg-slate-50 h-48 flex items-center justify-center">
-                            <img src={mainImageUrl} alt="Preview" className="max-w-full max-h-full object-contain" />
+                        <div className="mt-3 rounded-xl overflow-hidden border-2 border-slate-200 bg-slate-50 w-full aspect-video flex items-center justify-center">
+                            <img src={mainImageUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                     )}
                 </div>
@@ -609,8 +609,8 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
 
                         {/* Preview */}
                         {newWinnerPhotoUrl && (
-                            <div className="rounded-lg overflow-hidden border-2 border-purple-200 bg-slate-50 h-32 flex items-center justify-center">
-                                <img src={newWinnerPhotoUrl} alt="Preview" className="max-w-full max-h-full object-contain" />
+                            <div className="rounded-lg overflow-hidden border-2 border-purple-200 bg-slate-50 w-full aspect-video max-h-48 flex items-center justify-center">
+                                <img src={newWinnerPhotoUrl} alt="Preview" className="w-full h-full object-cover" />
                             </div>
                         )}
                     </div>
@@ -631,7 +631,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             <div key={photo.id} className="border-2 border-slate-200 rounded-xl overflow-hidden group hover:border-purple-300 transition-all">
                                 {(!photo.media_type || photo.media_type === 'photo') ? (
                                     <div className="w-full h-48 bg-slate-50 flex items-center justify-center">
-                                        <img src={photo.photo_url} alt={photo.name} className="max-w-full max-h-full object-contain" />
+                                        <img src={photo.photo_url} alt={photo.name} className="w-full h-full object-cover" />
                                     </div>
                                 ) : (
                                     <div className="w-full h-48 bg-slate-900 flex flex-col items-center justify-center text-white gap-2">

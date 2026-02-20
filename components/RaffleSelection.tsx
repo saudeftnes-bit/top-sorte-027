@@ -42,11 +42,11 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
     let spanClasses = "font-black ";
 
     const isBicho = selectionMode === 'jogo_bicho';
-    const accentColor = isBicho ? 'bg-green-600' : 'bg-purple-600';
-    const accentBorder = isBicho ? 'border-green-600' : 'border-purple-600';
-    const accentText = isBicho ? 'text-green-600' : 'text-purple-600';
-    const accentLightBg = isBicho ? 'bg-green-100' : 'bg-purple-100';
-    const accentLightText = isBicho ? 'text-green-700' : 'text-purple-700';
+    const accentColor = isBicho ? 'bg-green-600' : 'bg-[#003B73]';
+    const accentBorder = isBicho ? 'border-green-600' : 'border-[#003B73]';
+    const accentText = isBicho ? 'text-green-600' : 'text-[#003B73]';
+    const accentLightBg = isBicho ? 'bg-green-100' : 'bg-blue-100';
+    const accentLightText = isBicho ? 'text-green-700' : 'text-[#003B73]';
 
     if (isUserSelected) {
       buttonClasses += `bg-white ${accentBorder} shadow-lg z-10 animate-pop animate-selection `;
@@ -104,10 +104,10 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
 
         <div className={`text-center mb-6 transition-opacity ${isReadOnly ? 'mt-8 opacity-50' : ''}`}>
           <h2 className="text-2xl font-black text-[#003B73]">
-            {selectionMode === 'jogo_bicho' ? 'ESCOLHA SEU ANIMAL' : 'GRADE DE NÚMEROS'}
+            GRADE DE NÚMEROS
           </h2>
           {/* Padronização do Descritivo */}
-          <div className={`mt-2 inline-block px-4 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest border-2 ${selectionMode === 'jogo_bicho' ? 'border-green-200 bg-green-50 text-green-700' : 'border-purple-200 bg-purple-50 text-purple-700'}`}>
+          <div className={`mt-2 inline-block px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest border-2 shadow-sm ${selectionMode === 'jogo_bicho' ? 'border-green-400 bg-green-600 text-white' : 'border-blue-400 bg-[#003B73] text-white'}`}>
             {selectionMode === 'jogo_bicho' ? '🍀 Sorteio pelo Jogo do Bicho' : '🏛️ Sorteio pela Loteria Federal'}
           </div>
           <div className="flex flex-col items-center gap-1 mt-3">
@@ -131,35 +131,19 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Em Reserva</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-4 h-4 ${selectionMode === 'jogo_bicho' ? 'bg-green-600' : 'bg-purple-600'} rounded-lg shadow-sm`}></div>
+            <div className={`w-4 h-4 ${selectionMode === 'jogo_bicho' ? 'bg-green-600' : 'bg-[#003B73]'} rounded-lg shadow-sm`}></div>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reservado</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-4 h-4 border-2 ${selectionMode === 'jogo_bicho' ? 'border-green-600' : 'border-purple-600'} bg-white rounded-lg shadow-sm animate-selection`}></div>
+            <div className={`w-4 h-4 border-2 ${selectionMode === 'jogo_bicho' ? 'border-green-600' : 'border-[#003B73]'} bg-white rounded-lg shadow-sm animate-selection`}></div>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Selecionado</span>
           </div>
         </div>
 
-        {/* Content based on Mode */}
-        {selectionMode === 'jogo_bicho' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {BICHO_ANIMALS.map((animal) => (
-              <div key={animal.name} className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100">
-                <div className="flex items-center gap-3 mb-3 pb-2 border-b border-slate-200">
-                  <span className="text-2xl">{animal.emoji}</span>
-                  <span className="font-black text-[#003B73] uppercase tracking-tight">{animal.name}</span>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {animal.numbers.map(num => renderNumberButton(num, 'small'))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-            {numbers.map((num) => renderNumberButton(num))}
-          </div>
-        )}
+        {/* Standardized Grid Layout for both modes */}
+        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+          {numbers.map((num) => renderNumberButton(num))}
+        </div>
       </div>
     </div>
   );

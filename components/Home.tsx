@@ -163,23 +163,23 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
       {featuredRaffle ? (
         <section className="relative overflow-hidden bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4 flex flex-col">
           {/* Status Badge Above Image */}
-          <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm ${featuredRaffle.status === 'active' ? 'bg-green-500' :
+          <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm ${featuredRaffle.status === 'active' ? (isBicho ? 'bg-green-600' : 'bg-[#003B73]') :
             featuredRaffle.status === 'scheduled' ? 'bg-yellow-500' :
               'bg-red-500'
             }`}>
             {featuredRaffle.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 RIFA FINALIZADA (VISUALIZAÇÃO)'}
           </div>
 
-          <div className="bg-slate-50 flex items-center justify-center overflow-hidden h-64">
+          <div className="bg-slate-50 flex items-center justify-center overflow-hidden w-full aspect-video sm:aspect-[21/9]">
             <img
               src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
               alt="Prêmio do Sorteio"
-              className="max-w-full max-h-full object-contain transition-transform duration-500 hover:scale-105"
+              className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
             />
           </div>
 
           {/* Sorteio Info Label */}
-          <div className={`mt-4 mx-4 py-2 px-4 rounded-xl text-center font-black text-xs uppercase tracking-widest border-2 ${isBicho ? 'border-green-200 bg-green-50 text-green-700' : 'border-purple-200 bg-purple-50 text-purple-700'}`}>
+          <div className={`mt-4 mx-4 py-3 px-4 rounded-2xl text-center font-black text-sm uppercase tracking-widest border-2 shadow-sm ${isBicho ? 'border-green-400 bg-green-600 text-white' : 'border-blue-400 bg-[#003B73] text-white'}`}>
             {raffleTypeLabel}
           </div>
 
@@ -234,11 +234,11 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           <div className="grid grid-cols-1 gap-6">
             {otherRaffles.map((otherRaffle) => (
               <div key={otherRaffle.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col">
-                <div className="relative rounded-xl overflow-hidden aspect-video bg-slate-50 flex items-center justify-center">
+                <div className="relative overflow-hidden aspect-video bg-slate-50 flex items-center justify-center w-full">
                   <img
                     src={otherRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
                     alt={otherRaffle.title}
-                    className="max-w-full max-h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                   <div className={`absolute top-2 left-2 text-white font-bold px-2 py-1 rounded-lg text-[10px] uppercase ${otherRaffle.status === 'active' ? 'bg-green-500' : 'bg-slate-500'
                     }`}>
