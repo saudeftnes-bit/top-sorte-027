@@ -157,7 +157,7 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
                                                     'bg-red-100 text-red-700'
                                                 }`}>
                                                 {raffle.status === 'active' ? 'Ativa' :
-                                                    raffle.status === 'scheduled' ? 'Agendada' : 'Finalizada'}
+                                                    raffle.status === 'scheduled' ? 'Agendada' : 'Rifa Finalizada'}
                                             </span>
                                         </div>
                                         <h3 className="text-lg font-black text-slate-900 group-hover:text-purple-600 transition-colors">

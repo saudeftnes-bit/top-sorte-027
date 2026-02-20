@@ -21,7 +21,7 @@ interface CheckoutModalProps {
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPrice, raffleId, raffle, onClose, onConfirmPurchase, onSetPending, reservations }) => {
   const [step, setStep] = useState<'info' | 'payment'>('info');
-  const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '' });
   const [copied, setCopied] = useState(false);
 
   // Estados Efi
@@ -142,7 +142,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.phone || !formData.email || !raffleId) {
+    if (!formData.name || !formData.phone || !raffleId) {
       return;
     }
 
@@ -163,8 +163,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
           numbers: selectedNumbers,
           buyer: {
             name: formData.name,
-            email: formData.email,
             phone: formData.phone,
+            email: '', // Sending empty email as backend might expect the field
           },
           totalPrice,
           paymentTimeout: raffle?.payment_timeout || 15,
@@ -285,19 +285,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                     className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none focus:border-purple-600 transition-colors"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase mb-1 ml-1">Email</label>
-                  <input
-                    required
-                    type="email"
-                    value={formData.email}
-                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="seu@email.com"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none focus:border-purple-600 transition-colors"
-                  />
-                </div>
               </div>
-
               {chargeError && (
                 <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
                   <p className="text-red-700 font-bold text-sm text-center">{chargeError}</p>
@@ -415,7 +403,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
         onConfirm={modalConfig.onConfirm}
         onCancel={() => setShowModal(false)}
       />
-    </div>
+    </div >
   );
 };
 

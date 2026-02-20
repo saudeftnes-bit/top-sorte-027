@@ -158,7 +158,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           featuredRaffle?.status === 'scheduled' ? 'bg-yellow-500' :
             'bg-red-500'
           }`}>
-          {featuredRaffle?.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 SORTEIO ENCERRADO (VISUALIZAÇÃO)'}
+          {featuredRaffle?.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 RIFA FINALIZADA (VISUALIZAÇÃO)'}
         </div>
 
         <img
@@ -199,7 +199,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           <div className="flex items-center justify-between mb-4 px-2">
             <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
               <span className="text-2xl">📚</span>
-              EDIÇÕES ENCERRADAS
+              RIFAS FINALIZADAS
             </h3>
           </div>
 
@@ -214,7 +214,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
                   />
                   <div className={`absolute top-2 left-2 text-white font-bold px-2 py-1 rounded-lg text-[10px] uppercase ${otherRaffle.status === 'active' ? 'bg-green-500' : 'bg-slate-500'
                     }`}>
-                    {otherRaffle.status === 'active' ? 'ATIVO' : 'ENCERRADO'}
+                    {otherRaffle.status === 'active' ? 'ATIVO' : 'RIFA FINALIZADA'}
                   </div>
                   {otherRaffle.code && (
                     <div className="absolute bottom-2 right-2 bg-purple-600 text-white font-black px-2 py-1 rounded-lg text-[10px]">

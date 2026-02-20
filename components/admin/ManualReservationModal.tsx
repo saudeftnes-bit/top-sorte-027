@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface ManualReservationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (data: { name: string; phone: string; email: string; paymentAmount: number; numbers: string[]; status: 'paid' | 'pending' }) => Promise<boolean>;
+    onConfirm: (data: { name: string; phone: string; paymentAmount: number; numbers: string[]; status: 'paid' | 'pending' }) => Promise<boolean>;
 }
 
 // Phone mask: (xx) xxxxx-xxxx
@@ -21,7 +21,6 @@ type Step = 'form' | 'confirm' | 'success';
 const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen, onClose, onConfirm }) => {
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
-    const [email, setEmail] = useState('');
     const [paymentAmount, setPaymentAmount] = useState('');
     const [numbersInput, setNumbersInput] = useState('');
     const [reservationStatus, setReservationStatus] = useState<'paid' | 'pending'>('paid');
@@ -65,7 +64,7 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
         setErrorMsg('');
         const amount = parseFloat(paymentAmount) || 0;
         const success = await onConfirm({
-            name, phone, email,
+            name, phone,
             paymentAmount: amount,
             numbers: parsedNumbers,
             status: reservationStatus
@@ -83,7 +82,7 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
     const handleClose = () => {
         setName('');
         setPhone('');
-        setEmail('');
+        setPhone('');
         setPaymentAmount('');
         setNumbersInput('');
         setReservationStatus('paid');
@@ -132,8 +131,8 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
                                         type="button"
                                         onClick={() => setReservationStatus('paid')}
                                         className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm border-2 transition-all ${reservationStatus === 'paid'
-                                                ? 'bg-green-500 border-green-500 text-white shadow-md shadow-green-200'
-                                                : 'bg-white border-slate-200 text-slate-600 hover:border-green-300'
+                                            ? 'bg-green-500 border-green-500 text-white shadow-md shadow-green-200'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-green-300'
                                             }`}
                                     >
                                         <span>✅</span> Pago
@@ -142,8 +141,8 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
                                         type="button"
                                         onClick={() => setReservationStatus('pending')}
                                         className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm border-2 transition-all ${reservationStatus === 'pending'
-                                                ? 'bg-yellow-400 border-yellow-400 text-white shadow-md shadow-yellow-200'
-                                                : 'bg-white border-slate-200 text-slate-600 hover:border-yellow-300'
+                                            ? 'bg-yellow-400 border-yellow-400 text-white shadow-md shadow-yellow-200'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-yellow-300'
                                             }`}
                                     >
                                         <span>⏳</span> Pendente
@@ -191,17 +190,7 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
                                 />
                             </div>
 
-                            {/* Email */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">E-mail</label>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-bold text-slate-900 transition-colors"
-                                    placeholder="exemplo@email.com"
-                                />
-                            </div>
+
 
                             {/* Valor Pago — só aparece quando status = paid */}
                             {reservationStatus === 'paid' && (
@@ -279,16 +268,7 @@ const ManualReservationModal: React.FC<ManualReservationModalProps> = ({ isOpen,
                                         <p className="text-slate-900 font-black">{phone}</p>
                                     </div>
                                 </div>
-                                {/* Email */}
-                                {email && (
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xl">✉️</span>
-                                        <div>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase">E-mail</p>
-                                            <p className="text-slate-900 font-black">{email}</p>
-                                        </div>
-                                    </div>
-                                )}
+                                {/* Email removido */}
                                 {/* Status */}
                                 <div className="flex items-center gap-3">
                                     <span className="text-xl">{reservationStatus === 'paid' ? '✅' : '⏳'}</span>

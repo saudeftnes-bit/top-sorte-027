@@ -131,7 +131,8 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
     const filteredBuyers = buyers.filter((buyer) =>
         buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         buyer.phone?.includes(searchTerm) ||
-        buyer.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        buyer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        buyer.numbers.some(num => num.includes(searchTerm))
     );
 
     if (isLoading) {
@@ -172,7 +173,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por nome, telefone ou email..."
+                    placeholder="Buscar por nome, telefone, email ou número da cota..."
                     className="w-full px-5 py-4 pl-12 rounded-2xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
                 />
                 <svg className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
