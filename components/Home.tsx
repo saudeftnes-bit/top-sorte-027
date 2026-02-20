@@ -243,7 +243,9 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           <div className="flex flex-col items-center justify-center mb-6 px-2">
             <div className="inline-block relative">
               <h3 className="text-2xl font-black tracking-tighter uppercase italic py-2 px-6 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-sm select-none flex items-center gap-3">
-                <span>✅</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-[#22C55E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
                 RIFAS FINALIZADAS
               </h3>
               <div className="absolute -inset-1 bg-red-500 opacity-10 blur-xl animate-pulse rounded-full -z-10"></div>
