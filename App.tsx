@@ -494,17 +494,22 @@ const App: React.FC = () => {
         console.log(`✅ Número ${num} desselecionado completamente`);
       }
     } else {
-      // Selecionar: criar seleção temporária no Supabase
-      setSelectedNumbers(prev => [...prev, num]);
-
+      // Selecionar: criar seleção temporária no Supabase PRIMEIRO
       // Importar função dinamicamente para evitar problemas de build
       const { createTemporarySelection } = await import('./lib/selection-manager');
-      await createTemporarySelection(
+      const success = await createTemporarySelection(
         selectedRaffle.id,
         num,
         sessionId.current,
         selectedRaffle.selection_timeout || 30
       );
+
+      if (success) {
+        setSelectedNumbers(prev => [...prev, num]);
+      } else {
+        console.error(`❌ Falha ao selecionar número ${num}. Pode já estar ocupado.`);
+        // Opcional: mostrar um toast ou alerta discreto aqui
+      }
     }
   };
 

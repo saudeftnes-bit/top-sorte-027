@@ -161,20 +161,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // 4. Limpar e Criar reservas (CRÍTICO)
-        // Deletamos as temporárias e inserimos as oficiais com o nome do comprador
+        // Substituímos as temporárias por oficiais. NÃO usamos delete cego para evitar race conditions.
         try {
-            console.log('🧹 [API Efi Charge] Substituindo reservas temporárias por oficiais para:', numbers);
+            console.log('🧹 [API Efi Charge] Oficializando reservas para:', numbers);
 
-            // Deletar qualquer rastro anterior desses números (pendentes ou cancelados)
-            const { error: deleteError } = await supabase
+            // 1. Limpar apenas o que era deste mesmo comprador (pelo telefone ou nome da sessão original se disponível)
+            // Isso evita que a gente delete por engano a reserva de outra pessoa que ganhou no milissegundo.
+            const { error: cleanupError } = await supabase
                 .from('reservations')
                 .delete()
                 .eq('raffle_id', raffleId)
-                .in('number', numbers);
+                .in('number', numbers)
+                .eq('buyer_name', buyer.name); // Garante que só deleta o que ele acha que é dele
 
-            if (deleteError) {
-                console.error('❌ [API Efi Charge] Erro ao limpar reservas antigas:', deleteError);
-                throw new Error('Falha ao preparar reserva no banco de dados.');
+            if (cleanupError) {
+                console.warn('⚠️ [API Efi Charge] Aviso ao limpar temporárias (não crítico):', cleanupError);
             }
 
             const reservationsData = numbers.map((number: string) => ({
@@ -190,6 +191,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 expires_at: pixCharge.expiresAt,
             }));
 
+            // 2. Inserir reservas finais. O UNIQUE(raffle_id, number) vai barrar se alguém "roubou" o número nesse meio tempo.
             const { data: inserted, error: insertError } = await supabase
                 .from('reservations')
                 .insert(reservationsData)
@@ -197,7 +199,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             if (insertError) {
                 console.error('❌ [API Efi Charge] Erro fatal ao inserir reservas oficiais:', insertError);
-                throw new Error(`Não foi possível registrar seu nome nos números: ${insertError.message}`);
+                // Se der erro de duplicidade (P23505), é porque alguém pegou os números.
+                throw new Error('Um dos números escolhidos não está mais disponível. Por favor, escolha outros números.');
             }
 
             reservationIds = inserted?.map(r => r.id) || [];
