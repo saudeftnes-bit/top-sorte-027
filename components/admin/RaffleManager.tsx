@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import { WhatsAppIcon } from '../../App';
-import { getActiveRaffle, updateRaffle, createRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto, getAllRaffles, getRaffleAnalytics } from '../../lib/supabase-admin';
+import { getActiveRaffle, updateRaffle, createRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto, getAllRaffles, getRaffleAnalytics, resetRaffleNumbers } from '../../lib/supabase-admin';
 import { Raffle, WinnerPhoto } from '../../types/database';
 import { uploadImage, validateImageFile } from '../../lib/storage-helper';
 
@@ -26,6 +26,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
     const [successMessage, setSuccessMessage] = useState('');
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
 
     // Form state
     const [title, setTitle] = useState('');
@@ -317,6 +318,33 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
         } else {
             setErrorMessage('Erro ao remover foto. Tente novamente.');
             setShowErrorModal(true);
+        }
+    };
+
+    const handleResetRaffle = async () => {
+        if (!raffleId) return;
+
+        setIsSaving(true);
+        setShowResetConfirmModal(false);
+
+        try {
+            const count = await resetRaffleNumbers(raffleId);
+
+            if (count >= 0) {
+                setSuccessMessage(`Sorteio zerado com sucesso! ${count} registros foram removidos. 🧹`);
+                setShowSuccessModal(true);
+                onDataChanged?.();
+                await loadData();
+            } else {
+                setErrorMessage('Erro ao zerar sorteio. Verifique o banco de dados.');
+                setShowErrorModal(true);
+            }
+        } catch (error) {
+            console.error('Error resetting raffle:', error);
+            setErrorMessage('Ocorreu um erro inesperado ao zerar os números.');
+            setShowErrorModal(true);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -693,6 +721,45 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                 variant="danger"
                 onConfirm={() => setShowErrorModal(false)}
                 onCancel={() => setShowErrorModal(false)}
+            />
+
+            {/* Danger Zone */}
+            {!isCreating && (
+                <div className="mt-12 pt-8 border-t-2 border-red-100">
+                    <div className="bg-red-50 rounded-2xl p-6 border-2 border-red-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="text-2xl">⚠️</span>
+                            <div>
+                                <h3 className="text-lg font-black text-red-700">Zona de Perigo</h3>
+                                <p className="text-xs text-red-600 font-medium italic">Ações irreversíveis para este sorteio</p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-slate-700 mb-1">Zerar Todos os Números</p>
+                                <p className="text-xs text-slate-500 font-medium">Isso apagará TODAS as reservas (Pagas e Pendentes). Use apenas para reiniciar o concurso.</p>
+                            </div>
+                            <button
+                                onClick={() => setShowResetConfirmModal(true)}
+                                className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white font-black px-8 py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                🗑️ ZERAR TUDO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <ConfirmModal
+                isOpen={showResetConfirmModal}
+                title="⚠️ ZERAR TODO O SORTEIO?"
+                message={`Deseja REALMENTE apagar todos os números e pagamentos de "${title}"? Isso não pode ser desfeito.`}
+                confirmLabel="Sim, Zerar Agora"
+                cancelLabel="Não, Cancelar"
+                variant="danger"
+                onConfirm={handleResetRaffle}
+                onCancel={() => setShowResetConfirmModal(false)}
             />
         </div>
     );

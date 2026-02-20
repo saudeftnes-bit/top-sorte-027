@@ -177,12 +177,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
           },
           totalPrice,
           paymentTimeout: raffle?.payment_timeout || 15,
+          sessionId: sessionId.current,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao criar cobrança');
+        const detailMsg = errorData.message || errorData.details || '';
+        throw new Error(`${errorData.error}${detailMsg ? `: ${detailMsg}` : ''}`);
       }
 
       const data = await response.json();

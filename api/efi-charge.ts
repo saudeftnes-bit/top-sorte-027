@@ -43,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const { raffleId, numbers, buyer, totalPrice, paymentTimeout } = req.body;
+        const { raffleId, numbers, buyer, totalPrice, paymentTimeout, sessionId } = req.body;
 
         // Validação
         const price = parseFloat(totalPrice);
@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: 'Dados inválidos ou preço zerado. Verifique as configurações do sorteio.' });
         }
 
-        console.log('💳 [API Efi Charge] Criando cobrança PIX:', { raffleId, numbers, totalPrice, paymentTimeout });
+        console.log('💳 [API Efi Charge] Criando cobrança PIX:', { raffleId, numbers, totalPrice, paymentTimeout, sessionId });
 
         // Criar cobrança PIX na Efi
         const efipay = getEfiClient();
@@ -77,7 +77,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         // Adicionar devedor apenas se CPF ou CNPJ estiver disponível
-        // Em produção, a EFI exige cpf ou cnpj no devedor
         if (buyer.cpf) {
             body.devedor = {
                 cpf: buyer.cpf.replace(/\D/g, ''),
@@ -112,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         console.log('✅ [API Efi Charge] Cobrança criada:', pixCharge.txid);
 
-        // Importar Supabase - inline para evitar problemas de módulo
+        // Importar Supabase
         const { createClient } = await import('@supabase/supabase-js');
         const supabase = createClient(
             process.env.VITE_SUPABASE_URL || '',
@@ -121,9 +120,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         let reservationIds: string[] = [];
 
-        // 3. Tentar salvar transação EFI (não bloqueia se falhar)
+        // 3. Salvar transação EFI (Log de auditoria)
         try {
-            await supabase
+            const { error: txError } = await supabase
                 .from('efi_transactions')
                 .insert({
                     txid: pixCharge.txid,
@@ -136,47 +135,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     buyer_email: buyer.email || '',
                     buyer_phone: buyer.phone || '',
                 });
+            if (txError) console.warn('⚠️ [API Efi Charge] Erro ao salvar log de transação:', txError.message);
         } catch (e: any) {
-            console.error('⚠️ [API Efi Charge] Erro ao salvar transação (não crítico):', e);
+            console.error('⚠️ [API Efi Charge] Falha na tabela efi_transactions:', e.message);
         }
 
-        // 3. Tentar salvar transação EFI
+        // 4. Oficializar reservas (CRÍTICO - Usando UPSERT para atomicidade)
         try {
-            await supabase
-                .from('efi_transactions')
-                .insert({
-                    txid: pixCharge.txid,
-                    raffle_id: raffleId,
-                    amount: totalPrice,
-                    status: pixCharge.status,
-                    pix_copia_cola: pixCharge.pixCopiaCola,
-                    qr_code_url: pixCharge.qrCodeImage,
-                    buyer_name: buyer.name,
-                    buyer_email: buyer.email || '',
-                    buyer_phone: buyer.phone || '',
-                });
-        } catch (e: any) {
-            console.error('⚠️ [API Efi Charge] Erro ao salvar transação (não crítico):', e);
-            // We continue because even if transaction log fails, the reservation is more important
-        }
-
-        // 4. Limpar e Criar reservas (CRÍTICO)
-        // Substituímos as temporárias por oficiais. NÃO usamos delete cego para evitar race conditions.
-        try {
-            console.log('🧹 [API Efi Charge] Oficializando reservas para:', numbers);
-
-            // 1. Limpar apenas o que era deste mesmo comprador (pelo telefone ou nome da sessão original se disponível)
-            // Isso evita que a gente delete por engano a reserva de outra pessoa que ganhou no milissegundo.
-            const { error: cleanupError } = await supabase
-                .from('reservations')
-                .delete()
-                .eq('raffle_id', raffleId)
-                .in('number', numbers)
-                .eq('buyer_name', buyer.name); // Garante que só deleta o que ele acha que é dele
-
-            if (cleanupError) {
-                console.warn('⚠️ [API Efi Charge] Aviso ao limpar temporárias (não crítico):', cleanupError);
-            }
+            console.log(`🚀 [API Efi Charge] Oficializando reservas via UPSERT para: ${numbers.join(', ')}`);
 
             const reservationsData = numbers.map((number: string) => ({
                 raffle_id: raffleId,
@@ -189,28 +155,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 payment_method: 'efi',
                 efi_txid: pixCharge.txid,
                 expires_at: pixCharge.expiresAt,
+                updated_at: new Date().toISOString()
             }));
 
-            // 2. Inserir reservas finais. O UNIQUE(raffle_id, number) vai barrar se alguém "roubou" o número nesse meio tempo.
+            // Usamos UPSERT baseado na restrição UNIQUE(raffle_id, number)
+            // Isso substitui a reserva temporária (AMARELA) pela oficial (PENDENTE PIX)
+            // sem precisar de permissão de DELETE e de forma atômica.
             const { data: inserted, error: insertError } = await supabase
                 .from('reservations')
-                .insert(reservationsData)
+                .upsert(reservationsData, {
+                    onConflict: 'raffle_id,number',
+                    ignoreDuplicates: false // Queremos que ele SOBRESCREVA a temporária
+                })
                 .select();
 
             if (insertError) {
-                console.error('❌ [API Efi Charge] Erro fatal ao inserir reservas oficiais:', insertError);
-                // Se der erro de duplicidade (P23505), é porque alguém pegou os números.
-                throw new Error('Um dos números escolhidos não está mais disponível. Por favor, escolha outros números.');
+                console.error('❌ [API Efi Charge] Erro fatal no UPSERT:', insertError);
+
+                // Se o erro for que o número já está PAGO, o banco pode barrar se houver um trigger ou check.
+                // Mas aqui o upsert deve funcionar se a política permitir update.
+                throw new Error(`Erro no Banco de Dados: ${insertError.message} (Código: ${insertError.code})`);
             }
 
             reservationIds = inserted?.map(r => r.id) || [];
-            console.log('✅ [API Efi Charge] Reservas finais criadas com sucesso:', reservationIds);
+            console.log('✅ [API Efi Charge] Reservas oficializadas com sucesso!');
 
         } catch (e: any) {
-            console.error('❌ [API Efi Charge] Erro crítico no fluxo de persistência:', e);
+            console.error('❌ [API Efi Charge] Erro no fluxo de persistência:', e.message);
             return res.status(500).json({
                 error: 'Erro de persistência no banco de dados',
-                message: e.message || 'Não foi possível garantir sua reserva. Tente novamente.'
+                message: e.message || 'Houve um problema ao salvar sua reserva.',
+                details: e.toString()
             });
         }
 
