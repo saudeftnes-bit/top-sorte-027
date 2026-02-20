@@ -4,6 +4,7 @@ import Home from './components/Home';
 import RaffleSelection from './components/RaffleSelection';
 import CheckoutModal from './components/CheckoutModal';
 import FAQChatbot from './components/FAQChatbot';
+import { HistoricalRaffleView } from './components/HistoricalRaffleView';
 import AdminPanel from './components/admin/AdminPanel';
 import InstagramVideos from './components/InstagramVideos';
 import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations } from './lib/supabase-admin';
@@ -315,8 +316,8 @@ const App: React.FC = () => {
           const updatedSelected = raffles.find(r => r.id === selectedRaffle.id);
           if (updatedSelected) {
             setSelectedRaffle(updatedSelected);
-            // Só recarrega os números se estiver na visualização de seleção
-            if (view === 'selecting') {
+            // Só recarrega os números se estiver na visualização de seleção E NÃO FOR HISTÓRICO
+            if (view === 'selecting' && updatedSelected.status !== 'finished') {
               lastRequestedRaffleId.current = updatedSelected.id;
               loadDataForActiveRaffle(updatedSelected.id);
             }
@@ -381,6 +382,7 @@ const App: React.FC = () => {
       console.log('🧹 [Cleanup] Limpando seleções do sorteio anterior antes de trocar...');
       const { cleanupSessionSelections } = await import('./lib/selection-manager');
       await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
+      await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
     }
 
     // Reset total dos estados ANTES de carregar o novo (LIMPEZA SÍNCRONA)
@@ -392,6 +394,17 @@ const App: React.FC = () => {
 
     setSelectedRaffle(raffle);
     lastRequestedRaffleId.current = raffle.id;
+
+    // SE A RIFA ESTIVER ENCERRADA: Não carregamos dados no estado global
+    // O componente HistoricalRaffleView cuidará disso internamente
+    if (raffle.status === 'finished') {
+      console.log('🔒 [Isolation] Rifa encerrada selecionada. Modo histórico ativado.');
+      setView('selecting'); // A view 'selecting' agora vai renderizar o histórico se status=finished
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Se for ativa/agendada, carregamos normalmente
     loadDataForActiveRaffle(raffle.id);
     setView('selecting');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -632,6 +645,11 @@ const App: React.FC = () => {
           />
         ) : view === 'videos' ? (
           <InstagramVideos onBack={() => setView('home')} />
+        ) : selectedRaffle && selectedRaffle.status === 'finished' ? (
+          <HistoricalRaffleView
+            raffle={selectedRaffle}
+            onBack={() => setView('home')}
+          />
         ) : (
           <RaffleSelection
             selectedNumbers={selectedNumbers}
