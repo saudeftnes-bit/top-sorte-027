@@ -170,11 +170,11 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
             {featuredRaffle.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 RIFA FINALIZADA (VISUALIZAÇÃO)'}
           </div>
 
-          <div className="bg-slate-50 flex items-center justify-center overflow-hidden w-full aspect-video sm:aspect-[21/9]">
+          <div className="bg-slate-50 overflow-hidden w-full">
             <img
               src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
               alt="Prêmio do Sorteio"
-              className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+              className="w-full h-auto block transition-transform duration-700 hover:scale-105"
             />
           </div>
 
@@ -234,11 +234,11 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           <div className="grid grid-cols-1 gap-6">
             {otherRaffles.map((otherRaffle) => (
               <div key={otherRaffle.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col">
-                <div className="relative overflow-hidden aspect-video bg-slate-50 flex items-center justify-center w-full">
+                <div className="relative overflow-hidden bg-slate-50 w-full">
                   <img
                     src={otherRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
                     alt={otherRaffle.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto block"
                   />
                   <div className={`absolute top-2 left-2 text-white font-bold px-2 py-1 rounded-lg text-[10px] uppercase ${otherRaffle.status === 'active' ? 'bg-green-500' : 'bg-slate-500'
                     }`}>
