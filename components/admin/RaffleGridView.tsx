@@ -200,50 +200,94 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                     </div>
 
                     <div className="relative group">
-                        {/* THE ACTUAL PRINT AREA - New Visual Model */}
+                        {/* THE ACTUAL PRINT AREA - Final Robust Centering version */}
                         <div
                             ref={printRef}
-                            className="bg-[#001D3D] w-full max-w-[420px] mx-auto p-12 flex flex-col items-center text-center text-white font-sans overflow-hidden min-h-[750px] border-[10px] border-white/5"
+                            className="bg-[#001D3D] mx-auto p-12 text-center text-white"
                             style={{
-                                backgroundImage: 'radial-gradient(circle at top, #003566 0%, #001D3D 100%)',
-                                textAlign: 'center'
+                                width: '420px', // Fixed width for capture consistency
+                                minHeight: '750px',
+                                border: '12px solid rgba(255, 255, 255, 0.05)',
+                                display: 'block',
+                                textAlign: 'center',
+                                boxSizing: 'border-box'
                             }}
                         >
-                            {/* Logo / Brand Header - Robust Centering */}
-                            <div className="w-full flex justify-center mb-10">
-                                <div className="bg-yellow-400 text-[#001D3D] px-8 py-3 rounded-full font-black text-lg uppercase tracking-[0.2em] shadow-lg inline-block mx-auto">
+                            {/* Logo / Brand Header - Robust BLOCK centering */}
+                            <div style={{ marginBottom: '40px', display: 'block', width: '100%', textAlign: 'center' }}>
+                                <div style={{
+                                    backgroundColor: '#FFD60A',
+                                    color: '#001D3D',
+                                    padding: '12px 30px',
+                                    borderRadius: '50px',
+                                    fontWeight: '900',
+                                    fontSize: '18px',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.2em',
+                                    display: 'inline-block',
+                                    margin: '0 auto'
+                                }}>
                                     TOPSORTE_027
                                 </div>
                             </div>
 
-                            {/* Main Title */}
-                            <div className="w-full mb-14 px-4 text-center">
-                                <h2 className="text-slate-400 font-extrabold uppercase tracking-widest text-xs mb-3 block">Resultado Oficial</h2>
-                                <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase italic leading-tight text-white block">
+                            {/* Main Title - Block level centering */}
+                            <div style={{ marginBottom: '60px', width: '100%', textAlign: 'center' }}>
+                                <h2 style={{ color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '12px', marginBottom: '15px' }}>
+                                    Resultado Oficial
+                                </h2>
+                                <h1 style={{ color: '#ffffff', fontWeight: '900', fontSize: '32px', textTransform: 'uppercase', letterSpacing: '-0.02em', fontStyle: 'italic', lineHeight: '1.1' }}>
                                     Vencedores do <br />
-                                    <span className="text-yellow-400">Concurso #{raffle.code || '000'}</span>
+                                    <span style={{ color: '#FFD60A' }}>Concurso #{raffle.code || '000'}</span>
                                 </h1>
                             </div>
 
-                            {/* Winners List Area - Centered items */}
-                            <div className="w-full flex-1 space-y-6">
+                            {/* Winners List Area - Centered cards with flex only inside to keep numbers aligned */}
+                            <div style={{ width: '100%', marginBottom: '40px' }}>
                                 {winnerNumbers.length > 0 ? (
                                     winnerNumbers.sort((a, b) => parseInt(a) - parseInt(b)).map((num) => (
-                                        <div key={num} className="flex items-center gap-5 bg-white/10 border border-white/10 p-6 rounded-[2rem] backdrop-blur-md mx-auto max-w-[340px] text-left">
-                                            <div className="w-14 h-14 min-w-[3.5rem] bg-yellow-400 text-[#001D3D] rounded-2xl flex items-center justify-center font-black text-2xl shadow-xl">
+                                        <div key={num} style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                            padding: '24px',
+                                            borderRadius: '35px',
+                                            marginBottom: '20px',
+                                            marginLeft: 'auto',
+                                            marginRight: 'auto',
+                                            maxWidth: '340px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '20px',
+                                            textAlign: 'left'
+                                        }}>
+                                            <div style={{
+                                                width: '56px',
+                                                height: '56px',
+                                                minWidth: '56px',
+                                                backgroundColor: '#FFD60A',
+                                                color: '#001D3D',
+                                                borderRadius: '16px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontWeight: '900',
+                                                fontSize: '24px'
+                                            }}>
                                                 {num}
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-0.5">Ganhador(a)</p>
-                                                <p className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tighter break-words leading-tight">
+                                            <div style={{ flex: '1', minWidth: '0' }}>
+                                                <p style={{ color: '#94a3b8', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>
+                                                    Ganhador(a)
+                                                </p>
+                                                <p style={{ color: '#ffffff', fontWeight: '900', fontSize: '24px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1' }}>
                                                     {reservations[num]?.name || '---'}
                                                 </p>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="h-64 flex items-center justify-center border-2 border-dashed border-white/10 rounded-[2.5rem] mx-auto w-full max-w-[340px]">
-                                        <p className="text-white/30 font-black uppercase text-center px-10 leading-relaxed italic">
+                                    <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(255, 255, 255, 0.1)', borderRadius: '40px', margin: '0 auto', maxWidth: '340px' }}>
+                                        <p style={{ color: 'rgba(255, 255, 255, 0.2)', fontWeight: '900', textTransform: 'uppercase', textAlign: 'center', padding: '0 40px', fontStyle: 'italic' }}>
                                             Selecione os números na tabela <br /> para gerar o resultado
                                         </p>
                                     </div>
@@ -251,12 +295,14 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                             </div>
 
                             {/* Footer Message */}
-                            <div className="mt-14 text-center w-full">
-                                <div className="h-[2px] w-1/4 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent mx-auto mb-10"></div>
-                                <h3 className="text-2xl sm:text-3xl font-black text-yellow-400 uppercase italic tracking-tighter animate-pulse mb-3">
+                            <div style={{ width: '100%', textAlign: 'center', marginTop: 'auto', paddingTop: '40px' }}>
+                                <div style={{ height: '2px', width: '60px', backgroundColor: 'rgba(255, 214, 10, 0.3)', margin: '0 auto 30px' }}></div>
+                                <h3 style={{ color: '#FFD60A', fontWeight: '900', fontSize: '28px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', marginBottom: '10px' }}>
                                     PARABÉNS AOS GANHADORES!
                                 </h3>
-                                <p className="text-white/40 font-bold text-xs tracking-widest uppercase block">Obrigado a todos por participar</p>
+                                <p style={{ color: 'rgba(255, 255, 255, 0.3)', fontWeight: '800', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                    Obrigado a todos por participar
+                                </p>
                             </div>
                         </div>
 
