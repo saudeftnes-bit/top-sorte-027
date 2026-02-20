@@ -152,46 +152,59 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
   return (
     <div className="flex flex-col gap-8 p-4 max-w-2xl mx-auto">
       {/* Featured Raffle Card */}
-      <section className="relative overflow-hidden bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4 flex flex-col">
-        {/* Status Badge Above Image */}
-        <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm ${featuredRaffle?.status === 'active' ? 'bg-green-500' :
-          featuredRaffle?.status === 'scheduled' ? 'bg-yellow-500' :
-            'bg-red-500'
-          }`}>
-          {featuredRaffle?.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 RIFA FINALIZADA (VISUALIZAÇÃO)'}
-        </div>
-
-        <img
-          src={featuredRaffle?.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
-          alt="Prêmio do Sorteio"
-          className="w-full h-56 object-cover"
-        />
-        <div className="p-6">
-          <h2 className="text-2xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">
-            {featuredRaffle?.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
-          </h2>
-          {featuredRaffle?.code && (
-            <div className="text-center mb-2">
-              <span className="bg-purple-100 text-purple-700 text-xs font-black px-3 py-1 rounded-full">
-                EDIÇÃO #{featuredRaffle.code}
-              </span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-center gap-2 mb-6 text-slate-500 font-bold text-sm">
-            <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-            Apenas R$ {featuredRaffle?.price_per_number?.toFixed(2).replace('.', ',') || '13,00'} por número
+      {/* Featured Raffle Card or Empty State */}
+      {featuredRaffle ? (
+        <section className="relative overflow-hidden bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4 flex flex-col">
+          {/* Status Badge Above Image */}
+          <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm ${featuredRaffle.status === 'active' ? 'bg-green-500' :
+            featuredRaffle.status === 'scheduled' ? 'bg-yellow-500' :
+              'bg-red-500'
+            }`}>
+            {featuredRaffle.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 RIFA FINALIZADA (VISUALIZAÇÃO)'}
           </div>
-          {/* Botão de CTA ou aviso de grade preenchida */}
-          <button
-            onClick={onStart}
-            className={`w-full ${featuredRaffle?.status === 'active' ? 'bg-purple-600 hover:bg-purple-700 animate-pulse' : 'bg-slate-600 hover:bg-slate-700'
-              } text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg`}
-          >
-            {featuredRaffle?.status === 'active' ? '🎯 ESCOLHER MEUS NÚMEROS' : '👀 VER RESULTADOS'}
-          </button>
-        </div>
-      </section>
+
+          <img
+            src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+            alt="Prêmio do Sorteio"
+            className="w-full h-56 object-cover"
+          />
+          <div className="p-6">
+            <h2 className="text-2xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">
+              {featuredRaffle.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
+            </h2>
+            {featuredRaffle.code && (
+              <div className="text-center mb-2">
+                <span className="bg-purple-100 text-purple-700 text-xs font-black px-3 py-1 rounded-full">
+                  EDIÇÃO #{featuredRaffle.code}
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-center gap-2 mb-6 text-slate-500 font-bold text-sm">
+              <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+              Apenas R$ {featuredRaffle.price_per_number?.toFixed(2).replace('.', ',') || '13,00'} por número
+            </div>
+            {/* Botão de CTA ou aviso de grade preenchida */}
+            <button
+              onClick={onStart}
+              className={`w-full ${featuredRaffle.status === 'active' ? 'bg-purple-600 hover:bg-purple-700 animate-pulse' : 'bg-slate-600 hover:bg-slate-700'
+                } text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg`}
+            >
+              {featuredRaffle.status === 'active' ? '🎯 ESCOLHER MEUS NÚMEROS' : '👀 VER RESULTADOS'}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4 p-12 text-center">
+          <div className="text-6xl mb-6">⏳</div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2">
+            Aguarde, novas rifas em breve.
+          </h2>
+          <p className="text-slate-500 font-medium">
+            Estamos preparando novidades incríveis para você. Fique ligado!
+          </p>
+        </section>
+      )}
 
       {/* Outros Sorteios Disponíveis */}
       {otherRaffles.length > 0 && (

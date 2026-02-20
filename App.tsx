@@ -297,22 +297,32 @@ const App: React.FC = () => {
 
       if (raffles.length > 0) {
         // Encontrar a rifa principal (featured) - a que está ativa
-        const activeOne = raffles.find(r => r.status === 'active') || raffles[0];
+        // Encontrar a rifa principal (featured) - APENAS se estiver ativa
+        const activeOne = raffles.find(r => r.status === 'active') || null;
         setFeaturedRaffle(activeOne);
 
-        // Carregar estatísticas exclusivas da rifa principal (Home)
-        const activeOneReservations = await getReservationsByRaffle(activeOne.id);
-        const paid = activeOneReservations.filter(r => r.status === 'paid').length;
-        const pending = activeOneReservations.filter(r => r.status === 'pending').length;
-        setFeaturedStats({ paid, pending });
+        if (activeOne) {
+          // Carregar estatísticas exclusivas da rifa principal (Home)
+          const activeOneReservations = await getReservationsByRaffle(activeOne.id);
+          const paid = activeOneReservations.filter(r => r.status === 'paid').length;
+          const pending = activeOneReservations.filter(r => r.status === 'pending').length;
+          setFeaturedStats({ paid, pending });
 
-        // Se o usuário ainda não escolheu uma para ver, a selecionada inicial é a featured
-        if (!selectedRaffle) {
-          setSelectedRaffle(activeOne);
-          lastRequestedRaffleId.current = activeOne.id;
-          loadDataForActiveRaffle(activeOne.id);
+          // Se o usuário ainda não escolheu uma para ver, a selecionada inicial é a featured
+          if (!selectedRaffle) {
+            setSelectedRaffle(activeOne);
+            lastRequestedRaffleId.current = activeOne.id;
+            loadDataForActiveRaffle(activeOne.id);
+          }
         } else {
-          // Atualizar dados da que já estava selecionada se ela ainda existir na lista
+          // Se não houver rifa ativa (mesmo que haja finalizadas), limpar featuredStats
+          setFeaturedStats({ paid: 0, pending: 0 });
+          // Não limpamos selectedRaffle aqui para permitir navegação nas finalizadas se o usuário já estiver nelas
+        }
+        // Atualizar dados da que já estava selecionada se ela ainda existir na lista
+        // Este bloco deve ser executado independentemente de haver um activeOne ou não,
+        // para atualizar o selectedRaffle se o usuário já tinha um selecionado.
+        if (selectedRaffle) { // Check if selectedRaffle exists before trying to update it
           const updatedSelected = raffles.find(r => r.id === selectedRaffle.id);
           if (updatedSelected) {
             setSelectedRaffle(updatedSelected);
@@ -323,6 +333,14 @@ const App: React.FC = () => {
             }
           }
         }
+      } else {
+        // Nenhuma rifa encontrada - Limpar tudo
+        setFeaturedRaffle(null);
+        setSelectedRaffle(null);
+        setReservations({});
+        setDbReservations([]);
+        setFeaturedStats({ paid: 0, pending: 0 });
+        console.log('🧹 [Cleanup] Nenhuma rifa encontrada. Estado limpo.');
       }
 
     } catch (error) {
