@@ -11,7 +11,7 @@ interface RaffleGridViewProps {
 const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
     const [reservations, setReservations] = useState<Record<string, { status: string; name: string }>>({});
     const [isLoading, setIsLoading] = useState(true);
-    const [winnerNumber, setWinnerNumber] = useState<string | null>(null);
+    const [winnerNumbers, setWinnerNumbers] = useState<string[]>([]);
     const [isCapturing, setIsCapturing] = useState(false);
     const gridRef = useRef<HTMLDivElement>(null);
 
@@ -38,11 +38,11 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
     };
 
     const handleNumberClick = (num: string) => {
-        if (winnerNumber === num) {
-            setWinnerNumber(null);
-        } else {
-            setWinnerNumber(num);
-        }
+        setWinnerNumbers(prev =>
+            prev.includes(num)
+                ? prev.filter(n => n !== num)
+                : [...prev, num]
+        );
     };
 
     const downloadScreenshot = async () => {
@@ -62,7 +62,8 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             const image = canvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.href = image;
-            link.download = `grade-rifa-${raffle.code || 'export'}-vencedor-${winnerNumber || 'nenhum'}.png`;
+            const winnersText = winnerNumbers.length > 0 ? `vencedores-${winnerNumbers.join('-')}` : 'nenhum-vencedor';
+            link.download = `grade-rifa-${raffle.code || 'export'}-${winnersText}.png`;
             link.click();
         } catch (error) {
             console.error('Error capturing screenshot:', error);
@@ -147,7 +148,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2 max-w-5xl mx-auto">
                     {numbers.map((num) => {
                         const reservation = reservations[num];
-                        const isWinner = winnerNumber === num;
+                        const isWinner = winnerNumbers.includes(num);
                         const isPaid = reservation?.status === 'paid';
                         const isPending = reservation?.status === 'pending';
 
