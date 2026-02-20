@@ -50,20 +50,32 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
         setIsCapturing(true);
         // Small delay to ensure UI updates before capture
-        await new Promise(resolve => setTimeout(resolve, 150));
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         try {
             const canvas = await html2canvas(printRef.current, {
                 useCORS: true,
-                scale: 3, // Very high quality for sharing
-                backgroundColor: '#ffffff',
+                scale: 3, // High quality
+                backgroundColor: '#001D3D',
+                width: 420, // Strict width
+                height: printRef.current.offsetHeight,
+                logging: false,
+                onclone: (clonedDoc) => {
+                    // Ensure the cloned element for capture is visible and perfectly centered
+                    const el = clonedDoc.getElementById('print-area-capture');
+                    if (el) {
+                        el.style.display = 'block';
+                        el.style.margin = '0';
+                        el.style.padding = '48px';
+                    }
+                }
             });
 
             const image = canvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.href = image;
-            const winnersText = winnerNumbers.length > 0 ? `vencedores-${winnerNumbers.join('-')}` : 'resultado';
-            link.download = `ganhadores-${raffle.code || 'top-sorte'}-${winnersText}.png`;
+            const winnersText = winnerNumbers.length > 0 ? `vencedores` : 'resultado';
+            link.download = `ganhadores-top-sorte-${winnersText}.png`;
             link.click();
         } catch (error) {
             console.error('Error capturing screenshot:', error);
@@ -199,33 +211,35 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                         <h3 className="text-2xl font-black text-slate-900">Prévia do Print (Mobile)</h3>
                     </div>
 
-                    <div className="relative group">
+                    <div className="relative">
                         {/* THE ACTUAL PRINT AREA - Final Robust Centering version */}
                         <div
+                            id="print-area-capture"
                             ref={printRef}
-                            className="bg-[#001D3D] mx-auto p-12 text-center text-white"
+                            className="bg-[#001D3D] mx-auto p-12 text-white"
                             style={{
-                                width: '420px', // Fixed width for capture consistency
-                                minHeight: '750px',
+                                width: '420px',
+                                minHeight: '800px',
                                 border: '12px solid rgba(255, 255, 255, 0.05)',
                                 display: 'block',
-                                textAlign: 'center',
-                                boxSizing: 'border-box'
+                                boxSizing: 'border-box',
+                                position: 'relative'
                             }}
                         >
-                            {/* Logo / Brand Header - Robust BLOCK centering */}
-                            <div style={{ marginBottom: '40px', display: 'block', width: '100%', textAlign: 'center' }}>
+                            {/* Logo / Brand Header - Robust Centering */}
+                            <div style={{ marginBottom: '40px', width: '100%', display: 'flex', justifyContent: 'center' }}>
                                 <div style={{
                                     backgroundColor: '#FFD60A',
                                     color: '#001D3D',
-                                    padding: '12px 30px',
+                                    padding: '12px 0',
+                                    width: '260px',
                                     borderRadius: '50px',
                                     fontWeight: '900',
                                     fontSize: '18px',
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.2em',
-                                    display: 'inline-block',
-                                    margin: '0 auto'
+                                    textAlign: 'center',
+                                    boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
                                 }}>
                                     TOPSORTE_027
                                 </div>
@@ -236,13 +250,13 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                 <h2 style={{ color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '12px', marginBottom: '15px' }}>
                                     Resultado Oficial
                                 </h2>
-                                <h1 style={{ color: '#ffffff', fontWeight: '900', fontSize: '32px', textTransform: 'uppercase', letterSpacing: '-0.02em', fontStyle: 'italic', lineHeight: '1.1' }}>
+                                <h1 style={{ color: '#ffffff', fontWeight: '900', fontSize: '36px', textTransform: 'uppercase', letterSpacing: '-0.02em', fontStyle: 'italic', lineHeight: '1.1' }}>
                                     Vencedores do <br />
                                     <span style={{ color: '#FFD60A' }}>Concurso #{raffle.code || '000'}</span>
                                 </h1>
                             </div>
 
-                            {/* Winners List Area - Centered cards with flex only inside to keep numbers aligned */}
+                            {/* Winners List Area */}
                             <div style={{ width: '100%', marginBottom: '40px' }}>
                                 {winnerNumbers.length > 0 ? (
                                     winnerNumbers.sort((a, b) => parseInt(a) - parseInt(b)).map((num) => (
@@ -254,11 +268,12 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                             marginBottom: '20px',
                                             marginLeft: 'auto',
                                             marginRight: 'auto',
-                                            maxWidth: '340px',
+                                            width: '320px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '20px',
-                                            textAlign: 'left'
+                                            textAlign: 'left',
+                                            boxSizing: 'border-box'
                                         }}>
                                             <div style={{
                                                 width: '56px',
@@ -286,7 +301,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                         </div>
                                     ))
                                 ) : (
-                                    <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(255, 255, 255, 0.1)', borderRadius: '40px', margin: '0 auto', maxWidth: '340px' }}>
+                                    <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(255, 255, 255, 0.1)', borderRadius: '40px', margin: '0 auto', width: '320px' }}>
                                         <p style={{ color: 'rgba(255, 255, 255, 0.2)', fontWeight: '900', textTransform: 'uppercase', textAlign: 'center', padding: '0 40px', fontStyle: 'italic' }}>
                                             Selecione os números na tabela <br /> para gerar o resultado
                                         </p>
@@ -294,8 +309,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                 )}
                             </div>
 
-                            {/* Footer Message */}
-                            <div style={{ width: '100%', textAlign: 'center', marginTop: 'auto', paddingTop: '40px' }}>
+                            <div style={{ width: '100%', textAlign: 'center', marginTop: 'auto', paddingBottom: '20px' }}>
                                 <div style={{ height: '2px', width: '60px', backgroundColor: 'rgba(255, 214, 10, 0.3)', margin: '0 auto 30px' }}></div>
                                 <h3 style={{ color: '#FFD60A', fontWeight: '900', fontSize: '28px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', marginBottom: '10px' }}>
                                     PARABÉNS AOS GANHADORES!
@@ -304,13 +318,6 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                     Obrigado a todos por participar
                                 </p>
                             </div>
-                        </div>
-
-                        {/* Hint Overlay for Admin */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none rounded-[2.5rem]">
-                            <p className="text-white font-black text-xl uppercase tracking-tighter italic bg-black/60 px-6 py-3 rounded-full backdrop-blur-md">
-                                ÁREA DE CAPTURA ✨
-                            </p>
                         </div>
                     </div>
                 </div>
