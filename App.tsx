@@ -684,6 +684,14 @@ const App: React.FC = () => {
             raffleCode={selectedRaffle?.code}
           />
         )}
+        <footer className="py-8 px-4 text-center border-t border-slate-100 flex flex-col items-center gap-2">
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+            Top Sorte 027 © 2026 - Todos os direitos reservados
+          </p>
+          <p className="text-slate-300 text-[8px] font-mono">
+            BUILD_VER: 2026-02-20_15:15
+          </p>
+        </footer>
       </main>
 
       {

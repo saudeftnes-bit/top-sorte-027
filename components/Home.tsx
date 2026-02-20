@@ -184,6 +184,17 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           </div>
 
           <div className="p-6">
+            {featuredRaffle.status === 'finished' && (
+              <div className="mb-6 text-center">
+                <div className="inline-block relative">
+                  <h2 className="text-3xl md:text-5xl font-black tracking-tighter uppercase italic py-2 px-6 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-sm select-none">
+                    Rifa Encerrada
+                  </h2>
+                  <div className="absolute -inset-1 bg-red-500 opacity-20 blur-xl animate-pulse rounded-full -z-10"></div>
+                </div>
+              </div>
+            )}
+
             <h2 className="text-2xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">
               {featuredRaffle.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
             </h2>
