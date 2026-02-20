@@ -434,12 +434,14 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             onChange={(e) => setStatus(e.target.value as any)}
                             className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none font-black transition-all ${status === 'active' ? 'border-green-500 bg-green-50 text-green-700' :
                                 status === 'scheduled' ? 'border-yellow-500 bg-yellow-50 text-yellow-700' :
-                                    'border-red-500 bg-red-50 text-red-700'
+                                    status === 'paused' ? 'border-red-500 bg-red-50 text-red-700' :
+                                        'border-purple-500 bg-purple-50 text-purple-700'
                                 }`}
                         >
                             <option value="active">🟢 SORTEIO ATIVO</option>
                             <option value="scheduled">🟡 AGUARDANDO PUBLICAÇÃO</option>
-                            <option value="finished">🔴 SORTEIO PAUSADO</option>
+                            <option value="paused">🔴 PAUSAR SORTEIO (ESCONDIDO)</option>
+                            <option value="finished">🏁 FINALIZAR SORTEIO (MOSTRAR RESULTADO)</option>
                         </select>
                     </div>
                 </div>

@@ -296,8 +296,8 @@ const App: React.FC = () => {
       // Mas cuidado para não mudar o raffle que o usuário está vendo se o usuário selecionou um específico.
 
       if (raffles.length > 0) {
-        // Encontrar a rifa principal (featured)
-        const activeOne = raffles[0] || null; // Since list is only active, first is latest active
+        // Encontrar a rifa principal (featured) - agora verificando explicitamente o status
+        const activeOne = raffles.find(r => r.status === 'active') || null;
         setFeaturedRaffle(activeOne);
 
         if (activeOne) {

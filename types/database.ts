@@ -12,7 +12,7 @@ export interface Raffle {
     selection_mode?: 'loteria' | 'jogo_bicho';
     selection_timeout?: number;
     payment_timeout?: number;
-    status: 'active' | 'finished' | 'scheduled';
+    status: 'active' | 'finished' | 'scheduled' | 'paused';
     draw_date?: string;
     created_at: string;
     updated_at: string;

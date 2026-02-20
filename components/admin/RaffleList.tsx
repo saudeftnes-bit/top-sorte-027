@@ -45,7 +45,7 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
 
     const toggleStatus = async (raffle: Raffle, e: React.MouseEvent) => {
         e.stopPropagation();
-        const nextStatus = raffle.status === 'active' ? 'finished' : 'active';
+        const nextStatus = raffle.status === 'active' ? 'paused' : 'active';
 
         // REGRA 1: Não permitir ativar se já houver outra ativa
         if (nextStatus === 'active') {
@@ -154,10 +154,12 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
                                             </span>
                                             <span className={`text-xs font-bold px-2 py-1 rounded-md uppercase ${raffle.status === 'active' ? 'bg-green-100 text-green-700' :
                                                 raffle.status === 'scheduled' ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-red-100 text-red-700'
+                                                    raffle.status === 'paused' ? 'bg-red-100 text-red-700' :
+                                                        'bg-purple-100 text-purple-700'
                                                 }`}>
                                                 {raffle.status === 'active' ? 'Ativa' :
-                                                    raffle.status === 'scheduled' ? 'Agendada' : 'Rifa Finalizada'}
+                                                    raffle.status === 'scheduled' ? 'Agendada' :
+                                                        raffle.status === 'paused' ? 'Pausada' : 'Finalizada'}
                                             </span>
                                         </div>
                                         <h3 className="text-lg font-black text-slate-900 group-hover:text-purple-600 transition-colors">
