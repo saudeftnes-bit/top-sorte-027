@@ -13,6 +13,13 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, raffles = [], activeReservationsCount }) => {
+  // Theme logic
+  const isBicho = featuredRaffle?.selection_mode === 'jogo_bicho';
+  const themeAccentColor = isBicho ? 'bg-green-600' : 'bg-purple-600';
+  const themeHoverAccentColor = isBicho ? 'hover:bg-green-700' : 'hover:bg-purple-700';
+  const themeBadgeColor = isBicho ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700';
+  const raffleTypeLabel = isBicho ? 'Sorteio pelo Jogo do Bicho' : 'Sorteio pela Loteria Federal';
+
   // Slideshow state
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -163,18 +170,26 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
             {featuredRaffle.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 RIFA FINALIZADA (VISUALIZAÇÃO)'}
           </div>
 
-          <img
-            src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
-            alt="Prêmio do Sorteio"
-            className="w-full h-56 object-cover"
-          />
+          <div className="bg-slate-50 flex items-center justify-center overflow-hidden h-64">
+            <img
+              src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+              alt="Prêmio do Sorteio"
+              className="max-w-full max-h-full object-contain transition-transform duration-500 hover:scale-105"
+            />
+          </div>
+
+          {/* Sorteio Info Label */}
+          <div className={`mt-4 mx-4 py-2 px-4 rounded-xl text-center font-black text-xs uppercase tracking-widest border-2 ${isBicho ? 'border-green-200 bg-green-50 text-green-700' : 'border-purple-200 bg-purple-50 text-purple-700'}`}>
+            {raffleTypeLabel}
+          </div>
+
           <div className="p-6">
             <h2 className="text-2xl font-black text-[#003B73] mb-2 text-center uppercase tracking-tight">
               {featuredRaffle.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
             </h2>
             {featuredRaffle.code && (
               <div className="text-center mb-2">
-                <span className="bg-purple-100 text-purple-700 text-xs font-black px-3 py-1 rounded-full">
+                <span className={`${themeBadgeColor} text-xs font-black px-3 py-1 rounded-full`}>
                   EDIÇÃO #{featuredRaffle.code}
                 </span>
               </div>
@@ -187,7 +202,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
             {/* Botão de CTA ou aviso de grade preenchida */}
             <button
               onClick={onStart}
-              className={`w-full ${featuredRaffle.status === 'active' ? 'bg-purple-600 hover:bg-purple-700 animate-pulse' : 'bg-slate-600 hover:bg-slate-700'
+              className={`w-full ${featuredRaffle.status === 'active' ? `${themeAccentColor} ${themeHoverAccentColor} animate-pulse` : 'bg-slate-600 hover:bg-slate-700'
                 } text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg`}
             >
               {featuredRaffle.status === 'active' ? '🎯 ESCOLHER MEUS NÚMEROS' : '👀 VER RESULTADOS'}
@@ -219,18 +234,18 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           <div className="grid grid-cols-1 gap-6">
             {otherRaffles.map((otherRaffle) => (
               <div key={otherRaffle.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col">
-                <div className="relative rounded-xl overflow-hidden aspect-video">
+                <div className="relative rounded-xl overflow-hidden aspect-video bg-slate-50 flex items-center justify-center">
                   <img
                     src={otherRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
                     alt={otherRaffle.title}
-                    className="w-full h-56 object-cover"
+                    className="max-w-full max-h-full object-contain"
                   />
                   <div className={`absolute top-2 left-2 text-white font-bold px-2 py-1 rounded-lg text-[10px] uppercase ${otherRaffle.status === 'active' ? 'bg-green-500' : 'bg-slate-500'
                     }`}>
                     {otherRaffle.status === 'active' ? 'ATIVO' : 'RIFA FINALIZADA'}
                   </div>
                   {otherRaffle.code && (
-                    <div className="absolute bottom-2 right-2 bg-purple-600 text-white font-black px-2 py-1 rounded-lg text-[10px]">
+                    <div className={`absolute bottom-2 right-2 ${otherRaffle.selection_mode === 'jogo_bicho' ? 'bg-green-600' : 'bg-purple-600'} text-white font-black px-2 py-1 rounded-lg text-[10px]`}>
                       #{otherRaffle.code}
                     </div>
                   )}
@@ -340,11 +355,13 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
                   }`}
               >
                 {/* Foto do Ganhador */}
-                <img
-                  src={photo.photo_url}
-                  alt={photo.name}
-                  className="w-full h-full object-cover"
-                />
+                <div className="w-full h-full flex items-center justify-center bg-slate-900/50">
+                  <img
+                    src={photo.photo_url}
+                    alt={photo.name}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
 
                 {/* Info do ganhador */}

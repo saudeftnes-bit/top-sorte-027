@@ -24,6 +24,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const [formData, setFormData] = useState({ name: '', phone: '' });
   const [copied, setCopied] = useState(false);
 
+  // Theme logic
+  const isBicho = raffle?.selection_mode === 'jogo_bicho';
+  const themeBg = isBicho ? 'bg-green-600' : 'bg-purple-600';
+  const themeText = isBicho ? 'text-green-600' : 'text-purple-600';
+  const themeDarkText = isBicho ? 'text-green-700' : 'text-purple-700';
+  const themeLightBg = isBicho ? 'bg-green-50' : 'bg-purple-50';
+  const themeLightBorder = isBicho ? 'border-green-100' : 'border-purple-100';
+  const themeFocusBorder = isBicho ? 'focus:border-green-600' : 'focus:border-purple-600';
+
   // Estados Efi
   const [efiTxid, setEfiTxid] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -234,7 +243,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
       <div className="w-full max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-full duration-300 checkout-modal" style={{ maxHeight: '90vh' }}>
-        <div className="p-6 text-center border-b border-slate-100 flex justify-between items-center bg-purple-600 text-white">
+        <div className={`p-6 text-center border-b border-slate-100 flex justify-between items-center ${themeBg} text-white`}>
           <div className="w-10"></div>
           <h3 className="text-xl font-black uppercase tracking-tight">Reservar Meus Números</h3>
           <button onClick={async () => {
@@ -255,7 +264,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                 <p className="text-slate-400 font-bold mb-2 uppercase text-[10px] tracking-widest">Resumo da sua sorte</p>
                 <div className="flex flex-wrap justify-center gap-2 mb-4">
                   {selectedNumbers.map(n => (
-                    <span key={n} className="bg-purple-50 text-purple-700 border border-purple-100 font-black px-3 py-1 rounded-lg text-sm">{n}</span>
+                    <span key={n} className={`${themeLightBg} ${themeText} border ${themeLightBorder} font-black px-3 py-1 rounded-lg text-sm`}>{n}</span>
                   ))}
                 </div>
                 <p className="text-3xl font-black text-[#003B73]">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
@@ -270,7 +279,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Nome Completo"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none focus:border-purple-600 transition-colors"
+                    className={`w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none ${themeFocusBorder} transition-colors`}
                   />
                 </div>
                 <div>
@@ -282,7 +291,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                     onChange={e => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                     placeholder="(27) 99999-9999"
                     maxLength={15}
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none focus:border-purple-600 transition-colors"
+                    className={`w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none ${themeFocusBorder} transition-colors`}
                   />
                 </div>
               </div>
@@ -295,7 +304,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               <button
                 type="submit"
                 disabled={isCreatingCharge}
-                className="w-full bg-purple-600 text-white font-black py-5 rounded-2xl shadow-xl transition-transform active:scale-95 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full ${themeBg} text-white font-black py-5 rounded-2xl shadow-xl transition-transform active:scale-95 text-lg disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isCreatingCharge ? 'PROCESSANDO...' : 'PROSSEGUIR PARA PAGAMENTO'}
               </button>
@@ -347,8 +356,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               {/* QR Code PIX */}
               {qrCode && !efiStatus?.isPaid && (
                 <div className="space-y-4">
-                  <p className="text-center text-sm font-black text-purple-700 uppercase tracking-widest">📱 Escaneie o QR Code</p>
-                  <div className="bg-white p-6 rounded-2xl border-2 border-purple-200 flex justify-center">
+                  <p className={`text-center text-sm font-black ${themeDarkText} uppercase tracking-widest`}>📱 Escaneie o QR Code</p>
+                  <div className={`bg-white p-6 rounded-2xl border-2 ${themeLightBorder.replace('100', '200')} flex justify-center`}>
                     <img src={qrCode} alt="QR Code PIX" className="w-64 h-64" />
                   </div>
                 </div>
@@ -381,7 +390,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               {/* Valor */}
               <div className="p-6 border-2 border-dashed border-slate-200 rounded-[2rem] space-y-4">
                 <p className="text-center text-sm font-bold text-slate-500 leading-relaxed px-2">
-                  Valor: <span className="text-purple-700 font-black">R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  Valor: <span className={`${themeDarkText} font-black`}>R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </p>
                 <p className="text-center text-xs text-slate-400">
                   O pagamento será confirmado automaticamente após o processamento PIX.

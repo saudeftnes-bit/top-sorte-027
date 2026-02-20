@@ -41,14 +41,21 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
     let buttonClasses = "transition-all transform active:scale-95 rounded-xl border-2 flex flex-col items-center justify-center ";
     let spanClasses = "font-black ";
 
+    const isBicho = selectionMode === 'jogo_bicho';
+    const accentColor = isBicho ? 'bg-green-600' : 'bg-purple-600';
+    const accentBorder = isBicho ? 'border-green-600' : 'border-purple-600';
+    const accentText = isBicho ? 'text-green-600' : 'text-purple-600';
+    const accentLightBg = isBicho ? 'bg-green-100' : 'bg-purple-100';
+    const accentLightText = isBicho ? 'text-green-700' : 'text-purple-700';
+
     if (isUserSelected) {
-      buttonClasses += "bg-white border-purple-600 shadow-lg z-10 animate-pop animate-selection ";
-      spanClasses += "text-purple-600 ";
+      buttonClasses += `bg-white ${accentBorder} shadow-lg z-10 animate-pop animate-selection `;
+      spanClasses += `${accentText} `;
     } else if (isOtherPending) {
       buttonClasses += "bg-yellow-400 border-yellow-400 shadow-md cursor-not-allowed animate-pulse-yellow z-10 ";
       spanClasses += "text-white ";
     } else if (isPaid) {
-      buttonClasses += "bg-purple-600 border-purple-600 shadow-md opacity-90 cursor-not-allowed ";
+      buttonClasses += `${accentColor} ${accentBorder} shadow-md opacity-90 cursor-not-allowed `;
       spanClasses += "text-white ";
     } else {
       buttonClasses += "bg-green-500 border-green-500 shadow-md hover:bg-green-600 hover:border-green-600 hover:scale-110 hover:shadow-xl hover:z-20 ";
@@ -99,12 +106,18 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
           <h2 className="text-2xl font-black text-[#003B73]">
             {selectionMode === 'jogo_bicho' ? 'ESCOLHA SEU ANIMAL' : 'GRADE DE NÚMEROS'}
           </h2>
-          {raffleCode && (
-            <div className="inline-block bg-purple-100 text-purple-700 text-xs font-black px-3 py-1 rounded-full mt-2 mb-1">
-              EDIÇÃO #{raffleCode}
-            </div>
-          )}
-          {!isReadOnly && <p className="text-slate-500 text-sm font-medium italic mt-1">Selecione os números em verde</p>}
+          {/* Padronização do Descritivo */}
+          <div className={`mt-2 inline-block px-4 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest border-2 ${selectionMode === 'jogo_bicho' ? 'border-green-200 bg-green-50 text-green-700' : 'border-purple-200 bg-purple-50 text-purple-700'}`}>
+            {selectionMode === 'jogo_bicho' ? '🍀 Sorteio pelo Jogo do Bicho' : '🏛️ Sorteio pela Loteria Federal'}
+          </div>
+          <div className="flex flex-col items-center gap-1 mt-3">
+            {raffleCode && (
+              <span className={`${selectionMode === 'jogo_bicho' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'} text-[10px] font-black px-2.5 py-0.5 rounded-full`}>
+                EDIÇÃO #{raffleCode}
+              </span>
+            )}
+            {!isReadOnly && <p className="text-slate-500 text-[11px] font-bold italic">Selecione os números em verde</p>}
+          </div>
         </div>
 
         {/* Legend */}
@@ -118,11 +131,11 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Em Reserva</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-purple-600 rounded-lg shadow-sm"></div>
+            <div className={`w-4 h-4 ${selectionMode === 'jogo_bicho' ? 'bg-green-600' : 'bg-purple-600'} rounded-lg shadow-sm`}></div>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reservado</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-purple-600 bg-white rounded-lg shadow-sm animate-selection"></div>
+            <div className={`w-4 h-4 border-2 ${selectionMode === 'jogo_bicho' ? 'border-green-600' : 'border-purple-600'} bg-white rounded-lg shadow-sm animate-selection`}></div>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Selecionado</span>
           </div>
         </div>
