@@ -5,7 +5,7 @@ import type { RaffleAnalytics, Raffle } from '../../types/database';
 interface AdminDashboardProps {
     raffleId: string;
     raffle: Raffle;
-    onNavigate: (section: 'raffle' | 'payments' | 'users') => void;
+    onNavigate: (section: 'raffle' | 'payments' | 'users' | 'grid') => void;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNavigate }) => {
@@ -241,6 +241,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
                         <div className="text-left">
                             <p className="text-lg font-black text-slate-900">Usuários</p>
                             <p className="text-xs text-slate-500 font-medium">Lista de compradores</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button
+                    onClick={() => onNavigate('grid')}
+                    className="bg-white hover:bg-orange-50 border-2 border-orange-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group md:col-span-1"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-orange-100 group-hover:bg-orange-200 rounded-xl flex items-center justify-center transition-colors">
+                            <span className="text-3xl">📸</span>
+                        </div>
+                        <div className="text-left">
+                            <p className="text-lg font-black text-slate-900">Grade e Print</p>
+                            <p className="text-xs text-slate-500 font-medium">Marcar vencedor e baixar print</p>
                         </div>
                     </div>
                 </button>

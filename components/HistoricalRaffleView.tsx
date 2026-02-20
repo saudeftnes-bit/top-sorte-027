@@ -76,16 +76,33 @@ export const HistoricalRaffleView: React.FC<HistoricalRaffleViewProps> = ({ raff
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                 </div>
             ) : (
-                <RaffleSelection
-                    selectedNumbers={[]}
-                    onToggleNumber={() => { }} // No-op
-                    reservations={localReservations}
-                    totalNumbers={raffle.total_numbers}
-                    selectionMode={raffle.selection_mode}
-                    isReadOnly={true}
-                    raffleCode={raffle.code}
-                // sessionId is not needed for history view
-                />
+                <div className="max-w-4xl mx-auto px-4">
+                    {/* Centered Finished Title with Animation */}
+                    <div className="mb-8 text-center space-y-2">
+                        <div className="inline-block relative">
+                            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic py-2 px-6 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-sm select-none">
+                                Rifa Encerrada
+                            </h2>
+                            <div className="absolute -inset-1 bg-red-500 opacity-20 blur-xl animate-pulse rounded-full -z-10"></div>
+                        </div>
+                        <p className="text-slate-500 font-bold text-sm tracking-widest uppercase">
+                            Esta edição foi finalizada e os números foram revelados
+                        </p>
+                    </div>
+
+                    <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 p-2 sm:p-6">
+                        <RaffleSelection
+                            selectedNumbers={[]}
+                            onToggleNumber={() => { }} // No-op
+                            reservations={localReservations}
+                            totalNumbers={raffle.total_numbers}
+                            selectionMode={raffle.selection_mode}
+                            isReadOnly={true}
+                            raffleCode={raffle.code}
+                        // sessionId is not needed for history view
+                        />
+                    </div>
+                </div>
             )}
         </div>
     );

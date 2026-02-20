@@ -130,12 +130,32 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
     };
 
     const { allFilteredBuyers, visibleBuyers } = React.useMemo(() => {
-        const filtered = buyers.filter((buyer) =>
-            buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            buyer.phone?.includes(searchTerm) ||
-            buyer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            buyer.numbers.some(num => num.includes(searchTerm))
-        );
+        const searchLower = searchTerm.toLowerCase().trim();
+
+        if (!searchLower) {
+            return {
+                allFilteredBuyers: buyers,
+                visibleBuyers: buyers.slice(0, displayLimit)
+            };
+        }
+
+        const filtered = buyers.filter((buyer) => {
+            // Check direct contact fields
+            const matchesContact =
+                buyer.name.toLowerCase().includes(searchLower) ||
+                buyer.phone?.includes(searchLower) ||
+                buyer.email?.toLowerCase().includes(searchLower);
+
+            // Check specific numbers
+            // We only match if the number EXACTLY starts with or equals the search term 
+            // to avoid returning "10" for "1" if there are thousands of numbers.
+            const matchesNumbers = buyer.numbers.some(num =>
+                num === searchLower || num.startsWith(searchLower)
+            );
+
+            return matchesContact || matchesNumbers;
+        });
+
         return {
             allFilteredBuyers: filtered,
             visibleBuyers: filtered.slice(0, displayLimit)
