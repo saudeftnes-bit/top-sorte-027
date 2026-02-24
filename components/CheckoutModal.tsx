@@ -16,12 +16,19 @@ interface CheckoutModalProps {
   onClose: () => void;
   onConfirmPurchase: (name: string, numbers: string[]) => void;
   onSetPending: (name: string, numbers: string[]) => void;
+  onBuyMore?: () => void;
   reservations?: import('../App').ReservationMap;
 }
 
-const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPrice, raffleId, raffle, onClose, onConfirmPurchase, onSetPending, reservations }) => {
+const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPrice, raffleId, raffle, onClose, onConfirmPurchase, onSetPending, onBuyMore, reservations }) => {
   const [step, setStep] = useState<'info' | 'payment'>('info');
-  const [formData, setFormData] = useState({ name: '', phone: '' });
+
+  // Feature 1: Pre-fill from localStorage (phone-based identification)
+  const [formData, setFormData] = useState(() => ({
+    name: localStorage.getItem('buyer_name') || '',
+    phone: localStorage.getItem('buyer_phone') || '',
+  }));
+
   const [copied, setCopied] = useState(false);
 
   // Theme logic
@@ -48,7 +55,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const successFired = useRef(false);
 
   // Monitorar confirmação via banco de dados (Global State)
-  // Isso funciona como um fallback caso o polling da EFI demore ou falhe
   useEffect(() => {
     if (step === 'payment' && reservations && selectedNumbers.length > 0) {
       const allPaid = selectedNumbers.every(num => reservations[num]?.status === 'paid');
@@ -65,8 +71,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const [modalConfig, setModalConfig] = useState({
     title: '',
     message: '',
-    type: 'info' as 'info' | 'warning' | 'error' | 'success',
-    onConfirm: () => { }
+    variant: 'info' as 'info' | 'warning' | 'danger',
+    confirmLabel: 'OK',
+    cancelLabel: undefined as string | undefined,
+    onConfirm: () => { },
+    onCancel: undefined as (() => void) | undefined,
   });
 
   // Session ID para identificar este usuário
@@ -86,7 +95,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
   };
 
-  // Função para centralizar o sucesso
+  // Feature 3: Post-payment UX flow
   const handleSuccess = () => {
     if (successFired.current) return;
     successFired.current = true;
@@ -97,15 +106,41 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     // Atualizar UI
     onConfirmPurchase(formData.name, selectedNumbers);
 
-    // Mostrar modal de sucesso
+    // Modal 1: "Deseja comprar mais?"
     setModalConfig({
-      title: 'Pagamento Confirmado! 🎉',
-      message: `✅ Seu pagamento foi confirmado com sucesso!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\nBoa sorte! Você já está concorrendo!`,
-      type: 'success',
+      title: 'Compra Realizada! 🎉',
+      message: `✅ Pagamento confirmado com sucesso!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\nDeseja adquirir mais números para aumentar suas chances de ganhar?`,
+      variant: 'info',
+      confirmLabel: 'Sim, quero mais! 🔥',
+      cancelLabel: 'Não, obrigado',
       onConfirm: () => {
         setShowModal(false);
-        onClose();
-      }
+        // Volta para a grade sem fechar a rifa
+        if (onBuyMore) {
+          onBuyMore();
+        } else {
+          onClose();
+        }
+      },
+      onCancel: () => {
+        setShowModal(false);
+        // Modal 2: Boa sorte!
+        setTimeout(() => {
+          setModalConfig({
+            title: 'Boa Sorte! 🍀',
+            message: `🌟 Você está na disputa!\n\n"A sorte favorece os corajosos — e você acabou de provar isso!"\n\nFique ligado no nosso Instagram @topsorte_027 para acompanhar o resultado. Torce que o seu número sai! 🏆✨`,
+            variant: 'info',
+            confirmLabel: '🙏 Valeu, até a próxima!',
+            cancelLabel: undefined,
+            onConfirm: () => {
+              setShowModal(false);
+              onClose();
+            },
+            onCancel: undefined,
+          });
+          setShowModal(true);
+        }, 300);
+      },
     });
     setShowModal(true);
   };
@@ -128,11 +163,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
         setModalConfig({
           title: 'Tempo Expirado',
           message: '⏰ Tempo expirado! Seus números foram liberados. Por favor, reserve novamente.',
-          type: 'warning',
+          variant: 'warning',
+          confirmLabel: 'OK',
+          cancelLabel: undefined,
           onConfirm: () => {
             setShowModal(false);
             onClose();
-          }
+          },
+          onCancel: undefined,
         });
         setShowModal(true);
       };
@@ -154,6 +192,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     if (!formData.name || !formData.phone || !raffleId) {
       return;
     }
+
+    // Feature 1: Save buyer identity to localStorage
+    localStorage.setItem('buyer_name', formData.name);
+    localStorage.setItem('buyer_phone', formData.phone);
 
     setIsCreatingCharge(true);
     setChargeError(null);
@@ -205,7 +247,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
       setModalConfig({
         title: 'Números Confirmados',
         message: `Seus números foram reservados com sucesso!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\n⏰ Complete o pagamento PIX para garantir sua participação!`,
-        type: 'success',
+        variant: 'info',
+        confirmLabel: 'OK',
+        cancelLabel: undefined,
         onConfirm: () => {
           setShowModal(false);
           setStep('payment');
@@ -217,7 +261,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               modal.scrollTop = 0;
             }
           }, 100);
-        }
+        },
+        onCancel: undefined,
       });
       setShowModal(true);
 
@@ -227,8 +272,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
       setModalConfig({
         title: 'Erro',
         message: error.message || 'Erro ao processar pagamento. Tente novamente.',
-        type: 'error',
-        onConfirm: () => setShowModal(false)
+        variant: 'danger',
+        confirmLabel: 'OK',
+        cancelLabel: undefined,
+        onConfirm: () => setShowModal(false),
+        onCancel: undefined,
       });
       setShowModal(true);
     } finally {
@@ -285,7 +333,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase mb-1 ml-1">Seu WhatsApp</label>
+                  <label className="block text-xs font-black text-slate-400 uppercase mb-1 ml-1">
+                    Seu WhatsApp
+                    {localStorage.getItem('buyer_phone') && (
+                      <span className="ml-2 text-green-600 normal-case font-bold">✓ identificado</span>
+                    )}
+                  </label>
                   <input
                     required
                     type="tel"
@@ -295,6 +348,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                     maxLength={15}
                     className={`w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none ${themeFocusBorder} transition-colors`}
                   />
+                  <p className="text-[10px] text-slate-400 font-bold mt-1 ml-1">Seu WhatsApp é usado como identificação nas próximas compras.</p>
                 </div>
               </div>
               {chargeError && (
@@ -408,11 +462,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
         isOpen={showModal}
         title={modalConfig.title}
         message={modalConfig.message}
-        type={modalConfig.type}
-        confirmText="OK"
-        cancelText="Fechar"
+        variant={modalConfig.variant}
+        confirmLabel={modalConfig.confirmLabel}
+        cancelLabel={modalConfig.cancelLabel}
         onConfirm={modalConfig.onConfirm}
-        onCancel={() => setShowModal(false)}
+        onCancel={modalConfig.onCancel || (() => setShowModal(false))}
       />
     </div >
   );

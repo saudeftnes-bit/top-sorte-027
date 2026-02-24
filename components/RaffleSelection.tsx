@@ -95,7 +95,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
   };
 
   return (
-    <div className="p-4 max-w-2xl mx-auto pb-32">
+    <div className="p-4 max-w-2xl mx-auto pb-32 w-full overflow-x-hidden">
       <div className="bg-white rounded-[2.5rem] p-6 shadow-xl mb-6 border border-slate-100 relative overflow-hidden">
         {isReadOnly && (
           <div className="absolute top-0 left-0 right-0 bg-amber-400 text-amber-900 text-center text-xs font-black py-2 uppercase tracking-wider z-20 shadow-sm animate-pulse">

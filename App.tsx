@@ -40,6 +40,10 @@ const App: React.FC = () => {
   const [selectionStartTime, setSelectionStartTime] = useState<number | null>(null);
   const [selectionTimeRemaining, setSelectionTimeRemaining] = useState<number | null>(null);
 
+  // Feature 2: Purchase limit per payment
+  const MAX_SELECTION = 10;
+  const [showLimitToast, setShowLimitToast] = useState(false);
+
   // FAQ Chatbot state
   const [isFAQOpen, setIsFAQOpen] = useState(false);
 
@@ -494,6 +498,13 @@ const App: React.FC = () => {
         console.log(`✅ Número ${num} desselecionado completamente`);
       }
     } else {
+      // Feature 2: Limit selection to MAX_SELECTION numbers per payment
+      if (selectedNumbers.length >= MAX_SELECTION) {
+        setShowLimitToast(true);
+        setTimeout(() => setShowLimitToast(false), 3000);
+        return;
+      }
+
       // Selecionar: criar seleção temporária no Supabase PRIMEIRO
       // Importar função dinamicamente para evitar problemas de build
       const { createTemporarySelection } = await import('./lib/selection-manager');
@@ -511,6 +522,16 @@ const App: React.FC = () => {
         // Opcional: mostrar um toast ou alerta discreto aqui
       }
     }
+  };
+
+  // Feature 3: onBuyMore - return to grid without resetting raffle
+  const handleBuyMore = async () => {
+    if (selectedRaffle) {
+      await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
+    }
+    setSelectedNumbers([]);
+    setIsCheckoutOpen(false);
+    setView('selecting');
   };
 
   const handleParticipate = () => {
@@ -587,7 +608,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20 overflow-x-hidden">
       <header className="sticky top-0 z-40 bg-white shadow-sm px-4 h-16 flex items-center justify-between border-b border-slate-100">
         <div
           className="flex items-center gap-2 cursor-pointer"
@@ -700,35 +721,46 @@ const App: React.FC = () => {
 
       {
         selectedNumbers.length > 0 && view === 'selecting' && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full">
-            <div className="max-w-md mx-auto flex items-center justify-between">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-500 uppercase">{selectedNumbers.length} Números selecionados</span>
-                  {selectionTimeRemaining && (
-                    <span className={`text-xs font-bold ${selectionTimeRemaining < 60 ? 'text-red-600 animate-pulse' : 'text-orange-600'
-                      }`}>
-                      ⏱️ {Math.floor(selectionTimeRemaining / 60)}:{String(selectionTimeRemaining % 60).padStart(2, '0')}
-                    </span>
-                  )}
-                </div>
-                <span className="text-xl font-black text-[#003B73]">
-                  Total: R$ {(selectedNumbers.length * PRICE_PER_NUMBER).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full">
+            {/* Feature 2: Limit toast notification */}
+            {showLimitToast && (
+              <div className="bg-orange-500 text-white text-center text-xs font-black py-2 px-4 animate-in slide-in-from-top-2">
+                🚫 Limite de {MAX_SELECTION} números por compra atingido!
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleClearAll}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-4 py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase"
-                >
-                  Limpar
-                </button>
-                <button
-                  onClick={() => setIsCheckoutOpen(true)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-transform active:scale-95 animate-button-pulse"
-                >
-                  RESERVAR AGORA
-                </button>
+            )}
+            <div className="p-4">
+              <div className="max-w-md mx-auto flex items-center justify-between">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    {/* Feature 2: X/10 counter */}
+                    <span className={`text-xs font-black uppercase ${selectedNumbers.length >= MAX_SELECTION ? 'text-orange-600' : 'text-slate-500'}`}>
+                      {selectedNumbers.length}/{MAX_SELECTION} selecionados
+                    </span>
+                    {selectionTimeRemaining && (
+                      <span className={`text-xs font-bold ${selectionTimeRemaining < 60 ? 'text-red-600 animate-pulse' : 'text-orange-600'
+                        }`}>
+                        ⏱️ {Math.floor(selectionTimeRemaining / 60)}:{String(selectionTimeRemaining % 60).padStart(2, '0')}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xl font-black text-[#003B73]">
+                    Total: R$ {(selectedNumbers.length * PRICE_PER_NUMBER).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleClearAll}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-4 py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase"
+                  >
+                    Limpar
+                  </button>
+                  <button
+                    onClick={() => setIsCheckoutOpen(true)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-transform active:scale-95 animate-button-pulse"
+                  >
+                    RESERVAR AGORA
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -769,6 +801,7 @@ const App: React.FC = () => {
             }}
             onConfirmPurchase={confirmPurchase}
             onSetPending={setPending}
+            onBuyMore={handleBuyMore}
           />
         )
       }
