@@ -28,8 +28,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     name: localStorage.getItem('buyer_name') || '',
     phone: localStorage.getItem('buyer_phone') || '',
   }));
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const [copied, setCopied] = useState(false);
+
+  // Valida nome completo: mínimo 2 palavras, cada uma com pelo menos 2 letras
+  const validateFullName = (name: string): string | null => {
+    const parts = name.trim().split(/\s+/).filter(p => p.length >= 2);
+    if (parts.length < 2) return 'Informe seu nome e sobrenome completos.';
+    return null;
+  };
 
   // Theme logic
   const isBicho = raffle?.selection_mode === 'jogo_bicho';
@@ -189,6 +197,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Valida nome completo (nome + sobrenome obrigatório)
+    const nameValidation = validateFullName(formData.name);
+    if (nameValidation) {
+      setNameError(nameValidation);
+      return;
+    }
+    setNameError(null);
+
     if (!formData.name || !formData.phone || !raffleId) {
       return;
     }
@@ -322,15 +338,24 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase mb-1 ml-1">Quem está concorrendo?</label>
+                  <label className="block text-xs font-black text-slate-400 uppercase mb-1 ml-1">Nome e Sobrenome</label>
                   <input
                     required
                     type="text"
                     value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Nome Completo"
-                    className={`w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none ${themeFocusBorder} transition-colors`}
+                    onChange={e => {
+                      setFormData({ ...formData, name: e.target.value });
+                      if (nameError) setNameError(validateFullName(e.target.value));
+                    }}
+                    placeholder="Ex: João Silva"
+                    className={`w-full bg-slate-50 border-2 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none transition-colors ${nameError ? 'border-red-400 focus:border-red-500' : `border-slate-100 ${themeFocusBorder}`
+                      }`}
                   />
+                  {nameError ? (
+                    <p className="text-red-500 text-xs font-bold mt-1 ml-1">⚠️ {nameError}</p>
+                  ) : (
+                    <p className="text-slate-400 text-[10px] font-bold mt-1 ml-1">Digite seu nome e sobrenome — apelidos não são aceitos.</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase mb-1 ml-1">
