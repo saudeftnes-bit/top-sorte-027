@@ -5,6 +5,7 @@ import { useReservationTimer } from '../hooks/useReservationTimer';
 import { useEfiPayment } from '../hooks/useEfiPayment';
 import { getOrCreateSessionId, cleanupSessionSelections } from '../lib/selection-manager';
 import ConfirmModal from './ConfirmModal';
+import PaymentReceipt from './PaymentReceipt';
 
 import { Raffle } from '../types/database';
 
@@ -466,6 +467,26 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                     </div>
                   </div>
                 </>
+              )}
+
+              {/* Comprovante de Pagamento - aparece após confirmação */}
+              {efiStatus?.isPaid && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 px-1">
+                    <span className="text-lg">🧾</span>
+                    <p className="text-sm font-black text-slate-700 uppercase tracking-wide">Seu Comprovante</p>
+                  </div>
+                  <PaymentReceipt
+                    buyerName={formData.name}
+                    buyerPhone={formData.phone}
+                    numbers={selectedNumbers}
+                    totalPrice={finalPrice}
+                    txid={efiTxid || undefined}
+                    raffleCode={raffle?.code || undefined}
+                    raffleName={raffle?.title || 'Top Sorte'}
+                    paymentDate={new Date()}
+                  />
+                </div>
               )}
 
               {/* Valor */}

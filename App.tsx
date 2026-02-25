@@ -9,6 +9,7 @@ import AdminPanel from './components/admin/AdminPanel';
 import InstagramVideos from './components/InstagramVideos';
 import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations } from './lib/supabase-admin';
 import { getOrCreateSessionId, cleanupSessionSelections } from './lib/selection-manager';
+import { useDarkMode } from './contexts/DarkModeContext';
 import type { Raffle, Reservation } from './types/database';
 
 export type NumberStatus = 'available' | 'pending' | 'paid';
@@ -17,6 +18,7 @@ export type ReservationMap = Record<string, { name: string; status: NumberStatus
 export type RaffleState = 'home' | 'selecting' | 'admin' | 'videos';
 
 const App: React.FC = () => {
+  const { isDark, toggle: toggleDark } = useDarkMode();
   const [view, setView] = useState<RaffleState>('home');
   const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -608,8 +610,8 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20 overflow-x-hidden">
-      <header className="sticky top-0 z-40 bg-white shadow-sm px-4 h-16 flex items-center justify-between border-b border-slate-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-950 font-sans text-slate-900 dark:text-slate-100 pb-20 overflow-x-hidden transition-colors duration-300">
+      <header className="sticky top-0 z-40 bg-white dark:bg-gray-900 shadow-sm dark:shadow-gray-800 px-4 h-16 flex items-center justify-between border-b border-slate-100 dark:border-gray-800 transition-colors duration-300">
         <div
           className="flex items-center gap-2 cursor-pointer"
           onClick={handleLogoClick}
@@ -649,6 +651,23 @@ const App: React.FC = () => {
             <span className="hidden sm:inline">Atendente Virtual</span>
           </button>
 
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggleDark}
+            className="w-9 h-9 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-all"
+            title={isDark ? 'Modo Claro' : 'Modo Escuro'}
+            aria-label="Alternar modo escuro"
+          >
+            {isDark ? (
+              <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-slate-500" fill="currentColor" viewBox="0 0 24 24">
+                <path fillRule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clipRule="evenodd" />
+              </svg>
+            )}
+          </button>
 
           {/* Admin Button - Só aparece com o código secreto (5 cliques no logo) */}
           {showAdminButton && view !== 'admin' && (
