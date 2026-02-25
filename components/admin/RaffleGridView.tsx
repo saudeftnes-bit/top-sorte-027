@@ -96,23 +96,32 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
         if (!printRef.current) return;
 
         setIsCapturing(true);
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Give time for any DOM updates to settle
+        await new Promise(resolve => setTimeout(resolve, 400));
 
         try {
-            const canvas = await html2canvas(printRef.current, {
+            const el = printRef.current;
+            const elWidth = el.offsetWidth;
+            const elHeight = el.offsetHeight;
+
+            const canvas = await html2canvas(el, {
                 useCORS: true,
+                allowTaint: true,
                 scale: 3,
                 backgroundColor: '#001D3D',
-                width: 420,
-                height: printRef.current.offsetHeight,
+                width: elWidth,
+                height: elHeight,
+                windowWidth: elWidth,
+                windowHeight: elHeight,
+                scrollX: 0,
+                scrollY: 0,
                 logging: false,
-                onclone: (clonedDoc) => {
-                    const el = clonedDoc.getElementById('print-area-capture');
-                    if (el) {
-                        el.style.display = 'block';
-                        el.style.margin = '0';
-                        el.style.padding = '48px';
-                    }
+                onclone: (_clonedDoc, clonedEl) => {
+                    // Reset any transform/translate offsets on the cloned element
+                    clonedEl.style.margin = '0';
+                    clonedEl.style.left = '0';
+                    clonedEl.style.top = '0';
+                    clonedEl.style.position = 'static';
                 }
             });
 
@@ -315,12 +324,12 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                             }}
                         >
                             {/* Logo / Brand Header */}
-                            <div style={{ marginBottom: '40px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                            <div style={{ marginBottom: '40px', width: '100%', textAlign: 'center' }}>
                                 <div style={{
+                                    display: 'inline-block',
                                     backgroundColor: '#FFD60A',
                                     color: '#001D3D',
-                                    padding: '12px 0',
-                                    width: '260px',
+                                    padding: '12px 36px',
                                     borderRadius: '50px',
                                     fontWeight: '900',
                                     fontSize: '18px',
@@ -361,32 +370,28 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                 marginLeft: 'auto',
                                                 marginRight: 'auto',
                                                 width: '320px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '16px',
-                                                textAlign: 'left',
-                                                boxSizing: 'border-box'
+                                                display: 'block',
+                                                boxSizing: 'border-box',
+                                                overflow: 'hidden',
                                             }}>
-                                                {/* Prize number badge */}
+                                                {/* Prize number badge — float left, text on right */}
                                                 <div style={{
+                                                    float: 'left',
                                                     width: '60px',
                                                     height: '60px',
-                                                    minWidth: '60px',
                                                     backgroundColor: printColors.bg,
                                                     color: printColors.text,
                                                     borderRadius: '18px',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
                                                     fontWeight: '900',
                                                     fontSize: '22px',
-                                                    lineHeight: '1'
+                                                    lineHeight: '60px',
+                                                    textAlign: 'center',
+                                                    marginRight: '16px',
                                                 }}>
                                                     {winner.number}
                                                 </div>
                                                 {/* Name & prize label */}
-                                                <div style={{ flex: '1', minWidth: '0' }}>
+                                                <div style={{ overflow: 'hidden' }}>
                                                     <div style={{
                                                         display: 'inline-block',
                                                         backgroundColor: printColors.labelBg,
@@ -401,10 +406,11 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                     }}>
                                                         {prizeInfo.icon} {prizeInfo.label}
                                                     </div>
-                                                    <p style={{ color: '#ffffff', fontWeight: '900', fontSize: '22px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1', margin: 0 }}>
+                                                    <p style={{ color: '#ffffff', fontWeight: '900', fontSize: '20px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.1', margin: 0 }}>
                                                         {displayName}
                                                     </p>
                                                 </div>
+                                                <div style={{ clear: 'both' }} />
                                             </div>
                                         );
                                     })
