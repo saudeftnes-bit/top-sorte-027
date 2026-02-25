@@ -353,7 +353,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                 </h1>
                             </div>
 
-                            {/* Feature 4: Winners List with prize positions */}
+                            {/* Feature 4: Winners List with prize positions — TABLE layout for html2canvas */}
                             <div style={{ width: '100%', marginBottom: '40px' }}>
                                 {sortedWinners.length > 0 ? (
                                     sortedWinners.map((winner) => {
@@ -362,63 +362,106 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                         const displayName = winner.customName || reservations[winner.number]?.name || '---';
                                         return (
                                             <div key={winner.number} style={{
+                                                display: 'block',
                                                 backgroundColor: 'rgba(255, 255, 255, 0.06)',
                                                 border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                padding: '20px 24px',
                                                 borderRadius: '35px',
                                                 marginBottom: '20px',
                                                 marginLeft: 'auto',
                                                 marginRight: 'auto',
-                                                width: '320px',
-                                                display: 'block',
+                                                width: '340px',
                                                 boxSizing: 'border-box',
-                                                overflow: 'hidden',
+                                                padding: '18px 20px',
                                             }}>
-                                                {/* Prize number badge — float left, text on right */}
-                                                <div style={{
-                                                    float: 'left',
-                                                    width: '60px',
-                                                    height: '60px',
-                                                    backgroundColor: printColors.bg,
-                                                    color: printColors.text,
-                                                    borderRadius: '18px',
-                                                    fontWeight: '900',
-                                                    fontSize: '22px',
-                                                    lineHeight: '60px',
-                                                    textAlign: 'center',
-                                                    marginRight: '16px',
+                                                {/* TABLE layout: badge | content */}
+                                                <table style={{
+                                                    width: '100%',
+                                                    borderCollapse: 'collapse',
+                                                    tableLayout: 'fixed',
                                                 }}>
-                                                    {winner.number}
-                                                </div>
-                                                {/* Name & prize label */}
-                                                <div style={{ overflow: 'hidden' }}>
-                                                    <div style={{
-                                                        display: 'inline-block',
-                                                        backgroundColor: printColors.labelBg,
-                                                        color: printColors.labelText,
-                                                        fontWeight: '900',
-                                                        fontSize: '9px',
-                                                        textTransform: 'uppercase',
-                                                        letterSpacing: '0.12em',
-                                                        padding: '3px 10px',
-                                                        borderRadius: '50px',
-                                                        marginBottom: '6px'
-                                                    }}>
-                                                        {prizeInfo.icon} {prizeInfo.label}
-                                                    </div>
-                                                    <p style={{ color: '#ffffff', fontWeight: '900', fontSize: '20px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.1', margin: 0 }}>
-                                                        {displayName}
-                                                    </p>
-                                                </div>
-                                                <div style={{ clear: 'both' }} />
+                                                    <tbody>
+                                                        <tr>
+                                                            {/* Number badge cell */}
+                                                            <td style={{
+                                                                width: '70px',
+                                                                verticalAlign: 'middle',
+                                                                textAlign: 'center',
+                                                                paddingRight: '14px',
+                                                            }}>
+                                                                <div style={{
+                                                                    width: '64px',
+                                                                    height: '64px',
+                                                                    backgroundColor: printColors.bg,
+                                                                    color: printColors.text,
+                                                                    borderRadius: '18px',
+                                                                    fontWeight: '900',
+                                                                    fontSize: '26px',
+                                                                    lineHeight: '64px',
+                                                                    textAlign: 'center',
+                                                                    display: 'block',
+                                                                }}>
+                                                                    {winner.number}
+                                                                </div>
+                                                            </td>
+                                                            {/* Content cell: badge + name */}
+                                                            <td style={{
+                                                                verticalAlign: 'middle',
+                                                                textAlign: 'left',
+                                                            }}>
+                                                                {/* Prize label pill */}
+                                                                <div style={{
+                                                                    display: 'inline-block',
+                                                                    backgroundColor: printColors.labelBg,
+                                                                    color: printColors.labelText,
+                                                                    fontWeight: '900',
+                                                                    fontSize: '12px',
+                                                                    textTransform: 'uppercase',
+                                                                    letterSpacing: '0.1em',
+                                                                    padding: '4px 12px',
+                                                                    borderRadius: '50px',
+                                                                    marginBottom: '8px',
+                                                                }}>
+                                                                    {prizeInfo.icon} {prizeInfo.label}
+                                                                </div>
+                                                                {/* Name */}
+                                                                <div style={{
+                                                                    color: '#ffffff',
+                                                                    fontWeight: '900',
+                                                                    fontSize: '24px',
+                                                                    textTransform: 'uppercase',
+                                                                    fontStyle: 'italic',
+                                                                    letterSpacing: '-0.03em',
+                                                                    lineHeight: '1.1',
+                                                                    wordBreak: 'break-word',
+                                                                }}>
+                                                                    {displayName}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         );
                                     })
                                 ) : (
-                                    <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(255, 255, 255, 0.1)', borderRadius: '40px', margin: '0 auto', width: '320px' }}>
-                                        <p style={{ color: 'rgba(255, 255, 255, 0.2)', fontWeight: '900', textTransform: 'uppercase', textAlign: 'center', padding: '0 40px', fontStyle: 'italic' }}>
-                                            Selecione os números na tabela <br /> para gerar o resultado
-                                        </p>
+                                    <div style={{
+                                        width: '320px',
+                                        height: '200px',
+                                        margin: '0 auto',
+                                        border: '2px dashed rgba(255, 255, 255, 0.1)',
+                                        borderRadius: '40px',
+                                        display: 'table',
+                                    }}>
+                                        <div style={{
+                                            display: 'table-cell',
+                                            verticalAlign: 'middle',
+                                            textAlign: 'center',
+                                            padding: '0 40px',
+                                        }}>
+                                            <p style={{ color: 'rgba(255, 255, 255, 0.2)', fontWeight: '900', textTransform: 'uppercase', fontStyle: 'italic', margin: 0 }}>
+                                                Selecione os números na tabela <br /> para gerar o resultado
+                                            </p>
+                                        </div>
                                     </div>
                                 )}
                             </div>
