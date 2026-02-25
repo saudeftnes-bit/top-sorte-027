@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import html2canvas from 'html2canvas';
 import { getReservationsByRaffle } from '../../lib/supabase-admin';
 import type { Raffle, Reservation } from '../../types/database';
 
@@ -92,48 +91,178 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
         setWinners(prev => prev.map(w => w.number === number ? { ...w, customName: name } : w));
     };
 
-    const downloadScreenshot = async () => {
-        if (!printRef.current) return;
+    // Helper: draw a rounded rectangle
+    const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+    };
 
+    const downloadScreenshot = async () => {
         setIsCapturing(true);
-        // Give time for any DOM updates to settle
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise(r => setTimeout(r, 100));
 
         try {
-            const el = printRef.current;
-            const elWidth = el.offsetWidth;
-            const elHeight = el.offsetHeight;
+            const DPR = 3;           // High resolution
+            const W = 420;           // Logical width
+            const PAD = 48;          // Side padding
+            const CARD_W = W - PAD * 2;  // 324px
+            const CARD_H = 110;
+            const CARD_GAP = 20;
+            const HEADER_H = 280;
+            const FOOTER_H = 120;
+            const totalH = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + FOOTER_H + PAD;
 
-            const canvas = await html2canvas(el, {
-                useCORS: true,
-                allowTaint: true,
-                scale: 3,
-                backgroundColor: '#001D3D',
-                width: elWidth,
-                height: elHeight,
-                windowWidth: elWidth,
-                windowHeight: elHeight,
-                scrollX: 0,
-                scrollY: 0,
-                logging: false,
-                onclone: (_clonedDoc, clonedEl) => {
-                    // Reset any transform/translate offsets on the cloned element
-                    clonedEl.style.margin = '0';
-                    clonedEl.style.left = '0';
-                    clonedEl.style.top = '0';
-                    clonedEl.style.position = 'static';
+            const canvas = document.createElement('canvas');
+            canvas.width = W * DPR;
+            canvas.height = totalH * DPR;
+            const ctx = canvas.getContext('2d')!;
+            ctx.scale(DPR, DPR);
+
+            // ── Background ────────────────────────────────────────
+            ctx.fillStyle = '#001D3D';
+            ctx.fillRect(0, 0, W, totalH);
+
+            // helper: centred text
+            const centredText = (text: string, y: number, font: string, color: string) => {
+                ctx.font = font;
+                ctx.fillStyle = color;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, W / 2, y);
+            };
+
+            // ── TOPSORTE pill ─────────────────────────────────────
+            const pillLabel = 'TOPSORTE_027';
+            ctx.font = 'bold 18px Montserrat, Arial';
+            const pillW = ctx.measureText(pillLabel).width + 64;
+            const pillH = 46;
+            const pillX = (W - pillW) / 2;
+            const pillY = 40;
+            ctx.fillStyle = '#FFD60A';
+            roundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+            ctx.fill();
+            ctx.font = '900 18px Montserrat, Arial';
+            ctx.fillStyle = '#001D3D';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(pillLabel, W / 2, pillY + pillH / 2);
+
+            // ── "Resultado Oficial" subtitle ──────────────────────
+            centredText('RESULTADO OFICIAL', 118, '700 13px Montserrat, Arial', '#94a3b8');
+
+            // ── Main Title ────────────────────────────────────────
+            ctx.font = '900 38px Montserrat, Arial';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('VENCEDORES DO', W / 2, 165);
+
+            ctx.font = '900 38px Montserrat, Arial';
+            ctx.fillStyle = '#FFD60A';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`CONCURSO #${raffle.code || '000'}`, W / 2, 215);
+
+            // ── Winner Cards ──────────────────────────────────────
+            const BADGE_SIZE = 80;
+            const BADGE_RADIUS = 20;
+
+            sortedWinners.forEach((winner, i) => {
+                const pc = getPrintColors(winner.position);
+                const pi = getPrizeInfo(winner.position);
+                const displayName = winner.customName || reservations[winner.number]?.name || '---';
+
+                const cardY = HEADER_H + i * (CARD_H + CARD_GAP);
+                const cardX = PAD;
+
+                // Card background
+                ctx.fillStyle = 'rgba(255,255,255,0.07)';
+                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 28);
+                ctx.fill();
+
+                // Card border
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.lineWidth = 1;
+                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 28);
+                ctx.stroke();
+
+                // Number badge (left side)
+                const badgeX = cardX + 20;
+                const badgeY = cardY + (CARD_H - BADGE_SIZE) / 2;
+                ctx.fillStyle = pc.bg;
+                roundRect(ctx, badgeX, badgeY, BADGE_SIZE, BADGE_SIZE, BADGE_RADIUS);
+                ctx.fill();
+
+                // Number text (centred in badge)
+                ctx.font = '900 30px Montserrat, Arial';
+                ctx.fillStyle = pc.text;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(winner.number, badgeX + BADGE_SIZE / 2, badgeY + BADGE_SIZE / 2);
+
+                // Prize label pill (right side, top)
+                const labelText = `${pi.icon} ${pi.label.toUpperCase()}`;
+                ctx.font = '700 14px Montserrat, Arial';
+                const labelW = ctx.measureText(labelText).width + 28;
+                const labelH = 28;
+                const labelX = badgeX + BADGE_SIZE + 18;
+                const labelY = cardY + 22;
+                ctx.fillStyle = pc.labelBg;
+                roundRect(ctx, labelX, labelY, labelW, labelH, labelH / 2);
+                ctx.fill();
+
+                ctx.font = '700 13px Montserrat, Arial';
+                ctx.fillStyle = pc.labelText;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(labelText, labelX + 14, labelY + labelH / 2);
+
+                // Winner name (right side, below badge)
+                const nameY = labelY + labelH + 14;
+                ctx.font = '900 italic 26px Montserrat, Arial';
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                // Truncate if too long
+                const maxNameW = CARD_W - BADGE_SIZE - 56;
+                let nameDisplay = displayName.toUpperCase();
+                while (ctx.measureText(nameDisplay).width > maxNameW && nameDisplay.length > 3) {
+                    nameDisplay = nameDisplay.slice(0, -1);
                 }
+                if (nameDisplay !== displayName.toUpperCase()) nameDisplay += '…';
+                ctx.fillText(nameDisplay, labelX, nameY);
             });
 
-            const image = canvas.toDataURL('image/png');
+            // ── Divider ───────────────────────────────────────────
+            const divY = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + 24;
+            ctx.strokeStyle = 'rgba(255,214,10,0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo((W - 60) / 2, divY);
+            ctx.lineTo((W + 60) / 2, divY);
+            ctx.stroke();
+
+            // ── Footer ────────────────────────────────────────────
+            centredText('PARABÉNS AOS GANHADORES!', divY + 40, '900 italic 28px Montserrat, Arial', '#FFD60A');
+            centredText('OBRIGADO A TODOS POR PARTICIPAR', divY + 80, '700 12px Montserrat, Arial', 'rgba(255,255,255,0.3)');
+
+            // ── Download ──────────────────────────────────────────
             const link = document.createElement('a');
-            link.href = image;
-            const winnersText = winners.length > 0 ? `vencedores` : 'resultado';
-            link.download = `ganhadores-top-sorte-${winnersText}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.download = `ganhadores-top-sorte-${raffle.code || 'resultado'}.png`;
             link.click();
         } catch (error) {
-            console.error('Error capturing screenshot:', error);
-            alert('Erro ao capturar o print. Tente novamente.');
+            console.error('Erro ao gerar imagem:', error);
+            alert('Erro ao gerar o print. Tente novamente.');
         } finally {
             setIsCapturing(false);
         }
