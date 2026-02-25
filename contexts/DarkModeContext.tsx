@@ -12,10 +12,13 @@ const DarkModeContext = createContext<DarkModeContextType>({
 
 export const DarkModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isDark, setIsDark] = useState<boolean>(() => {
-        const stored = localStorage.getItem('darkMode');
-        if (stored !== null) return stored === 'true';
-        // Prefer OS setting as default
-        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        try {
+            const stored = localStorage.getItem('darkMode');
+            if (stored !== null) return stored === 'true';
+            return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+        } catch {
+            return false;
+        }
     });
 
     useEffect(() => {
