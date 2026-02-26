@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import { WhatsAppIcon } from '../../App';
-import { getActiveRaffle, updateRaffle, createRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto, getAllRaffles, getRaffleAnalytics, resetRaffleNumbers } from '../../lib/supabase-admin';
+import { getActiveRaffle, getRaffleById, updateRaffle, createRaffle, getWinnerPhotos, addWinnerPhoto, deleteWinnerPhoto, getAllRaffles, getRaffleAnalytics, resetRaffleNumbers } from '../../lib/supabase-admin';
 import { Raffle, WinnerPhoto } from '../../types/database';
 import { uploadImage, validateImageFile } from '../../lib/storage-helper';
 
@@ -79,31 +79,17 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
             return;
         }
 
-        const raffleData = await getActiveRaffle(); // This might need to fetch SPECIFIC raffle by ID in future
-        // For now, getActiveRaffle returns the singular active one, but we passed raffleId.
-        // We really should have getRaffleById.
-        // But since we selected it in AdminPanel, we can rely on AdminPanel passing the right data or
-        // we should implement getRaffleById. 
-        // Let's assume for now we use the passed raffleId to fetch.
-        // Since getActiveRaffle returns *the* active one, it might be wrong if we are editing a scheduled one.
-        // Let's implement getRaffleById in supabase-admin later or now.
-        // Actually, for this iteration, let's fix this properly.
+        const raffleData = await getRaffleById(raffleId);
 
-        // TEMPORARY FIX: We will rely on getActiveRaffle ONLY if we don't have a specific fetcher, 
-        // BUT `RaffleList` allows editing ANY raffle. 
-        // We need `getRaffleById(id)`. 
-        // I will add it to supabase-admin in next step if needed, but for now let's assume `raffleId` management.
-
-        // ... proceeding with existing logic but wrapped
-        if (raffleData && raffleData.id === raffleId) {
+        if (raffleData) {
             setRaffle(raffleData);
-            setTitle(raffleData.title);
-            setDescription(raffleData.description);
-            setPricePerNumber(raffleData.price_per_number.toString());
-            setMainImageUrl(raffleData.main_image_url);
+            setTitle(raffleData.title || '');
+            setDescription(raffleData.description || '');
+            setPricePerNumber(raffleData.price_per_number?.toString() || '');
+            setMainImageUrl(raffleData.main_image_url || '');
             setTotalNumbers((raffleData.total_numbers || 100).toString());
             setSelectionMode(raffleData.selection_mode || 'loteria');
-            setStatus(raffleData.status);
+            setStatus(raffleData.status || 'scheduled');
             setSelectionTimeout((raffleData.selection_timeout || 5).toString());
             setPaymentTimeout((raffleData.payment_timeout || 15).toString());
         } else {
