@@ -2,9 +2,6 @@
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
     "framework": null,
-    "alias": [
-        "topsorte027.vercel.app"
-    ],
     "rewrites": [
         {
             "source": "/api/efi-webhook/pix",
@@ -13,6 +10,10 @@
         {
             "source": "/api/(.*)",
             "destination": "/api/$1"
+        },
+        {
+            "source": "/((?!api/).*)",
+            "destination": "/index.html"
         }
     ]
 }
