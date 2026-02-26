@@ -239,10 +239,13 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                     ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
                 }
 
-                while (ctx.measureText(nameDisplay).width > maxNameW && nameDisplay.length > 3) {
-                    nameDisplay = nameDisplay.slice(0, -1);
+                // Only truncate if we hit the minimum font size and it STILL doesn't fit
+                if (fontSize <= 11) {
+                    while (ctx.measureText(nameDisplay).width > maxNameW && nameDisplay.length > 3) {
+                        nameDisplay = nameDisplay.slice(0, -1);
+                    }
+                    if (nameDisplay !== displayName.toUpperCase()) nameDisplay += '…';
                 }
-                if (nameDisplay !== displayName.toUpperCase()) nameDisplay += '…';
 
                 ctx.fillStyle = '#ffffff';
                 ctx.textAlign = 'left';
