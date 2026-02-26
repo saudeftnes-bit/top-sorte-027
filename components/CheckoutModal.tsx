@@ -435,21 +435,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                 </div>
               )}
 
-              {/* QR Code PIX */}
-              {qrCode && !efiStatus?.isPaid && (
-                <div className="space-y-4">
-                  <p className={`text-center text-sm font-black ${themeDarkText} uppercase tracking-widest`}>📱 Escaneie o QR Code</p>
-                  <div className={`bg-white p-6 rounded-2xl border-2 ${themeLightBorder.replace('100', '200')} flex justify-center`}>
-                    <img src={qrCode} alt="QR Code PIX" className="w-64 h-64" />
-                  </div>
-                </div>
-              )}
-
-              {/* PIX Copia e Cola */}
+              {/* PIX Copia e Cola (Visualização Única) */}
               {pixCopiaCola && !efiStatus?.isPaid && (
                 <>
-                  <div className="text-center text-xs text-slate-400 font-medium">
-                    <p>-- OU --</p>
+                  <div className="space-y-3">
+                    <p className={`text-center text-sm font-black ${themeDarkText} uppercase tracking-widest`}>
+                      ⏳ Quase lá! Seu número está reservado.
+                    </p>
+                    <p className="text-center text-xs text-slate-500 font-medium px-4 mb-2">
+                      Copie o código abaixo e pague no aplicativo do seu banco para garantir o seu bilhete da sorte antes que o tempo acabe.
+                    </p>
                   </div>
 
                   <div className="space-y-4">
