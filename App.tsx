@@ -44,7 +44,7 @@ const App: React.FC = () => {
   const [selectionTimeRemaining, setSelectionTimeRemaining] = useState<number | null>(null);
 
   // Feature 2: Purchase limit per payment
-  const MAX_SELECTION = 100;
+  const MAX_SELECTION = 10;
   const [showLimitToast, setShowLimitToast] = useState(false);
 
   // FAQ Chatbot state

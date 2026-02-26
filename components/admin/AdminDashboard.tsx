@@ -13,9 +13,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
         totalRevenue: 0,
         numbersSold: 0,
         numbersPending: 0,
-        numbersAvailable: raffle.total_numbers || 10000,
+        numbersAvailable: raffle.total_numbers || 100,
         totalBuyers: 0,
-        totalPossible: raffle.total_numbers || 10000
+        totalPossible: raffle.total_numbers || 100
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -27,7 +27,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
         const data = await getRaffleAnalytics(raffleId);
         setAnalytics({
             ...data,
-            totalPossible: raffle.total_numbers || 10000
+            totalPossible: raffle.total_numbers || 100
         });
         setIsLoading(false);
         setIsRefreshing(false);

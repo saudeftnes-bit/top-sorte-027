@@ -33,7 +33,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
     const [description, setDescription] = useState('');
     const [pricePerNumber, setPricePerNumber] = useState('');
     const [mainImageUrl, setMainImageUrl] = useState('');
-    const [totalNumbers, setTotalNumbers] = useState('10000');
+    const [totalNumbers, setTotalNumbers] = useState('100');
     const [selectionMode, setSelectionMode] = useState<'loteria' | 'jogo_bicho'>('loteria');
     const [status, setStatus] = useState<'active' | 'finished' | 'scheduled'>('active');
     const [selectionTimeout, setSelectionTimeout] = useState('5');
@@ -92,7 +92,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
             setDescription(raffleData.description);
             setPricePerNumber(raffleData.price_per_number.toString());
             setMainImageUrl(raffleData.main_image_url);
-            setTotalNumbers((raffleData.total_numbers || 10000).toString());
+            setTotalNumbers((raffleData.total_numbers || 100).toString());
             setSelectionMode(raffleData.selection_mode || 'loteria');
             setStatus(raffleData.status);
             setSelectionTimeout((raffleData.selection_timeout || 5).toString());
@@ -550,7 +550,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             value={totalNumbers}
                             onChange={(e) => setTotalNumbers(e.target.value)}
                             className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
-                            placeholder="10000"
+                            placeholder="100"
                             min="1"
                         />
                         <p className="mt-1 text-xs text-slate-500">Ex: 100, 1000, 10000</p>

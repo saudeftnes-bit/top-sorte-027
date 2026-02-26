@@ -57,15 +57,6 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
             }
         }
 
-        // REGRA 2: Não permitir encerrar manualmente se não estiver 100%
-        if (nextStatus === 'finished') {
-            const analytics = await getRaffleAnalytics(raffle.id);
-            if (analytics.numbersSold < (raffle.total_numbers || 10000)) {
-                alert(`Não é possível encerrar manualmente. Esta rifa ainda possui números disponíveis (${analytics.numbersSold}/${raffle.total_numbers || 10000}).`);
-                return;
-            }
-        }
-
         await updateRaffle(raffle.id, { status: nextStatus });
         await loadRaffles();
     };
