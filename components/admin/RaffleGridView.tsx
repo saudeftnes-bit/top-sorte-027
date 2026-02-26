@@ -228,17 +228,25 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
                 // Winner name (right side, below badge)
                 const nameY = labelY + labelH + 14;
-                ctx.font = '900 italic 26px Montserrat, Arial';
-                ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                // Truncate if too long
+                // Adjust font size dynamically to avoid truncating last names
                 const maxNameW = CARD_W - BADGE_SIZE - 56;
+                let fontSize = 26;
+                ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
                 let nameDisplay = displayName.toUpperCase();
+
+                while (ctx.measureText(nameDisplay).width > maxNameW && fontSize > 11) {
+                    fontSize -= 1;
+                    ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
+                }
+
                 while (ctx.measureText(nameDisplay).width > maxNameW && nameDisplay.length > 3) {
                     nameDisplay = nameDisplay.slice(0, -1);
                 }
                 if (nameDisplay !== displayName.toUpperCase()) nameDisplay += '…';
+
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
                 ctx.fillText(nameDisplay, labelX, nameY);
             });
 
