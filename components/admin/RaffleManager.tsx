@@ -66,6 +66,15 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                 created_at: '',
                 updated_at: ''
             } as any);
+            setTitle('');
+            setDescription('');
+            setPricePerNumber('');
+            setMainImageUrl('');
+            setTotalNumbers('100');
+            setSelectionMode('loteria');
+            setStatus('scheduled');
+            setSelectionTimeout('5');
+            setPaymentTimeout('15');
             setIsLoading(false);
             return;
         }
@@ -109,6 +118,15 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                 created_at: '',
                 updated_at: ''
             } as any);
+            setTitle('');
+            setDescription('');
+            setPricePerNumber('');
+            setMainImageUrl('');
+            setTotalNumbers('100');
+            setSelectionMode('loteria');
+            setStatus('scheduled');
+            setSelectionTimeout('5');
+            setPaymentTimeout('15');
         }
 
         const photosData = await getWinnerPhotos();
