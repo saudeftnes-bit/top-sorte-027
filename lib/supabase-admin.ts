@@ -376,7 +376,7 @@ export async function getRaffleAnalytics(raffleId: string): Promise<RaffleAnalyt
     const reservations = await getReservationsByRaffle(raffleId);
 
     const raffleData = await supabase.from('raffles').select('total_numbers').eq('id', raffleId).single();
-    const totalPossible = raffleData.data?.total_numbers || 10000;
+    const totalPossible = raffleData.data?.total_numbers || 100;
 
     const paidReservations = reservations.filter(r => r.status === 'paid');
     const pendingReservations = reservations.filter(r => r.status === 'pending');
