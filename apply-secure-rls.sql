@@ -30,5 +30,5 @@ CREATE POLICY "raffles_delete_policy" ON raffles FOR DELETE USING (true);
 -- Passo 3: Reaplicar Políticas de Segurança Intransponíveis para Compras
 -- Usa nomes simples e técnicos para evitar que o navegador "entenda" como frase pra traduzir
 CREATE POLICY "reservations_read_all" ON reservations FOR SELECT USING (true);
-CREATE POLICY "reservations_insert_pending" ON reservations FOR INSERT WITH CHECK (status = 'pending');
+CREATE POLICY "reservations_insert_pending" ON reservations FOR INSERT WITH CHECK (status = 'pending' OR status IS NULL);
 CREATE POLICY "reservations_delete_pending" ON reservations FOR DELETE USING (status = 'pending');
