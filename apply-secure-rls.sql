@@ -1,45 +1,34 @@
 -- =========================================================================
--- SCRIPT DE LIMPEZA DE POLÍTICAS "TRADUZIDAS" E REPASSE DA SEGURANÇA
+-- SCRIPT "SLEDGEHAMMER" DE LIMPEZA GERAL DE POLÍTICAS DE RLS
 -- =========================================================================
 
--- O navegador provavelmente traduziu a página do Supabase quando você 
--- criou as tabelas lá atrás, salvando os nomes das regras em português. 
--- Nosso script anterior só deletava os nomes em inglês, gerando conflito (duas regras com o mesmo peso).
+-- O arquivo zera COMPLETAMENTE qualquer política existente nas tabelas
+-- ignorando os nomes variados que o Chrome criou.
 
--- 1. DELETANDO AS REGRAS EM PORTUGUÊS (Tabela Raffles)
-DROP POLICY IF EXISTS "Qualquer um pode ler rifa" ON raffles;
-DROP POLICY IF EXISTS "Qualquer um pode ler rifas" ON raffles;
-DROP POLICY IF EXISTS "Qualquer um pode inserir rifas" ON raffles;
-DROP POLICY IF EXISTS "Qualquer um pode atualizar rifas" ON raffles;
-DROP POLICY IF EXISTS "Qualquer um pode deletar rifas" ON raffles;
+-- Passo 1: Limpar as políticas das duas principais tabelas na marra!
+DO $$
+DECLARE
+    pol record;
+BEGIN
+    FOR pol IN
+        SELECT policyname, tablename
+        FROM pg_policies
+        WHERE tablename IN ('raffles', 'reservations')
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON %I', pol.policyname, pol.tablename);
+    END LOOP;
+END
+$$;
 
--- 2. DELETANDO AS REGRAS EM PORTUGUÊS (Tabela Reservations)
-DROP POLICY IF EXISTS "Qualquer um pode ler todas as reservas" ON reservations;
-DROP POLICY IF EXISTS "Qualquer um pode inserir reservas" ON reservations;
-DROP POLICY IF EXISTS "Qualquer um pode atualizar reservas" ON reservations;
-DROP POLICY IF EXISTS "Qualquer um pode deletar reservas" ON reservations;
+-- Passo 2: Reaplicar Políticas do Admin (Abertas para INSERT/UPDATE local na tela dele)
+CREATE POLICY "raffles_read_policy" ON raffles FOR SELECT USING (true);
+CREATE POLICY "raffles_insert_policy" ON raffles FOR INSERT WITH CHECK (true);
+CREATE POLICY "raffles_update_policy" ON raffles FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "raffles_delete_policy" ON raffles FOR DELETE USING (true);
 
--- 3. REAPLICANDO O SCRIPT CORRETO
--- Garantir que a tabela `raffles` funcione para o Admin local
-DROP POLICY IF EXISTS "Anyone can read raffles" ON raffles;
-DROP POLICY IF EXISTS "Anyone can insert raffles" ON raffles;
-DROP POLICY IF EXISTS "Anyone can update raffles" ON raffles;
-DROP POLICY IF EXISTS "Anyone can delete raffles" ON raffles;
 
-CREATE POLICY "Anyone can read raffles" ON raffles FOR SELECT USING (true);
-CREATE POLICY "Anyone can insert raffles" ON raffles FOR INSERT WITH CHECK (true);
-CREATE POLICY "Anyone can update raffles" ON raffles FOR UPDATE USING (true) WITH CHECK (true);
-CREATE POLICY "Anyone can delete raffles" ON raffles FOR DELETE USING (true);
-
--- 4. Garantir que a tabela `reservations` fique TRAVADA contra invasores
-DROP POLICY IF EXISTS "Anyone can read all reservations" ON reservations;
-DROP POLICY IF EXISTS "Anyone can insert reservations" ON reservations;
-DROP POLICY IF EXISTS "Anyone can update reservations" ON reservations;
-DROP POLICY IF EXISTS "Anyone can delete reservations" ON reservations;
-
-CREATE POLICY "Anyone can read all reservations" ON reservations FOR SELECT USING (true);
-CREATE POLICY "Anyone can insert reservations" ON reservations FOR INSERT WITH CHECK (status = 'pending');
-CREATE POLICY "Anyone can delete their pending reservations" ON reservations FOR DELETE USING (status = 'pending');
-
--- Lembrete: Nós intencionalmente NÃO criamos uma regra de UPDATE para `reservations`.
--- Assim, o banco bloqueia qualquer atualização vinda de um usuário "espertinho" tentando forçar o paid na mão.
+-- Passo 3: Reaplicar Políticas de Segurança Intransponíveis para Compras
+-- Usa nomes simples e técnicos para evitar que o navegador "entenda" como frase pra traduzir
+CREATE POLICY "reservations_read_all" ON reservations FOR SELECT USING (true);
+CREATE POLICY "reservations_insert_pending" ON reservations FOR INSERT WITH CHECK (status = 'pending');
+CREATE POLICY "reservations_delete_pending" ON reservations FOR DELETE USING (status = 'pending');
