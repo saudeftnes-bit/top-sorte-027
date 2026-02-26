@@ -449,8 +449,8 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                         <h3 className="text-2xl font-black text-slate-900">Prévia do Print (Mobile)</h3>
                     </div>
 
-                    <div className="relative w-full overflow-x-auto pb-4">
-                        <div className="min-w-[420px] mx-auto origin-top sm:transform-none transform scale-[0.85] sm:scale-100">
+                    <div className="relative w-full overflow-hidden pb-4 flex justify-center">
+                        <div className="min-w-[420px] origin-top sm:transform-none transform scale-[0.80] sm:scale-100">
                             <div
                                 id="print-area-capture"
                                 ref={printRef}
