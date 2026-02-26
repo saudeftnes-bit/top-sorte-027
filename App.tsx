@@ -7,8 +7,9 @@ import FAQChatbot from './components/FAQChatbot';
 import { HistoricalRaffleView } from './components/HistoricalRaffleView';
 import AdminPanel from './components/admin/AdminPanel';
 import InstagramVideos from './components/InstagramVideos';
-import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations } from './lib/supabase-admin';
-import { getOrCreateSessionId, cleanupSessionSelections } from './lib/selection-manager';
+import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations, getPublicRaffles } from './lib/supabase-admin';
+import { getOrCreateSessionId, cleanupSessionSelections, createTemporarySelection, removeTemporarySelection } from './lib/selection-manager';
+import { cleanupExpiredReservations } from './lib/cleanup';
 import { useDarkMode } from './contexts/DarkModeContext';
 import type { Raffle, Reservation } from './types/database';
 
@@ -174,7 +175,6 @@ const App: React.FC = () => {
     console.log('🧹 [Cleanup] Agendando limpeza periódica a cada 60s');
     const interval = setInterval(async () => {
       try {
-        const { cleanupExpiredReservations } = await import('./lib/cleanup');
         const count = await cleanupExpiredReservations();
         if (count > 0) {
           console.log(`🧹 [Cleanup] Limpeza periódica liberou ${count} número(s)`);
@@ -284,7 +284,6 @@ const App: React.FC = () => {
 
       // 1. Limpar reservas expiradas ANTES de carregar dados
       try {
-        const { cleanupExpiredReservations } = await import('./lib/cleanup');
         await cleanupExpiredReservations();
       } catch (cleanupError) {
         console.warn('⚠️ [Data] Erro ao limpar reservas expiradas:', cleanupError);
@@ -292,7 +291,6 @@ const App: React.FC = () => {
       }
 
       // 2. Carregar APENAS sorteios públicos (ativos)
-      const { getPublicRaffles } = await import('./lib/supabase-admin');
       const raffles = await getPublicRaffles();
       setPublicRaffles(raffles);
 
@@ -403,7 +401,6 @@ const App: React.FC = () => {
     // Se já havia outro sorteio e tínhamos seleções, limpamos no banco primeiro
     if (selectedRaffle && selectedRaffle.id !== raffle.id && selectedNumbers.length > 0) {
       console.log('🧹 [Cleanup] Limpando seleções do sorteio anterior antes de trocar...');
-      const { cleanupSessionSelections } = await import('./lib/selection-manager');
       await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
       await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
     }
@@ -439,7 +436,6 @@ const App: React.FC = () => {
     console.log('🧹 [Clear] Limpando todas as seleções...');
 
     // 1. Limpar do banco primeiro
-    const { cleanupSessionSelections } = await import('./lib/selection-manager');
     await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
 
     // 2. Aguardar processamento do realtime
@@ -482,7 +478,6 @@ const App: React.FC = () => {
       // Desselecionar: PRIMEIRO remover do banco, DEPOIS limpar estado local
 
       // 1. Remover do banco primeiro
-      const { removeTemporarySelection } = await import('./lib/selection-manager');
       const removed = await removeTemporarySelection(selectedRaffle.id, num, sessionId.current);
 
       if (removed) {
@@ -508,8 +503,6 @@ const App: React.FC = () => {
       }
 
       // Selecionar: criar seleção temporária no Supabase PRIMEIRO
-      // Importar função dinamicamente para evitar problemas de build
-      const { createTemporarySelection } = await import('./lib/selection-manager');
       const success = await createTemporarySelection(
         selectedRaffle.id,
         num,
@@ -797,7 +790,6 @@ const App: React.FC = () => {
             onClose={async () => {
               if (selectedNumbers.length > 0 && selectedRaffle) {
                 // 1. Limpar do banco
-                const { cleanupSessionSelections } = await import('./lib/selection-manager');
                 await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
 
                 // 2. Aguardar processamento
