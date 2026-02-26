@@ -260,7 +260,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.stroke();
 
             // ── Footer ────────────────────────────────────────────
-            centredText('PARABÉNS AOS GANHADORES!', divY + 40, '900 italic 28px Montserrat, Arial', '#FFD60A');
+            centredText('PARABÉNS AOS GANHADORES!', divY + 40, '900 italic 22px Montserrat, Arial', '#FFD60A');
             centredText('OBRIGADO A TODOS POR PARTICIPAR', divY + 80, '700 12px Montserrat, Arial', 'rgba(255,255,255,0.3)');
 
             // ── Download ──────────────────────────────────────────
@@ -605,7 +605,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
                             <div style={{ width: '100%', textAlign: 'center', marginTop: 'auto', paddingBottom: '20px' }}>
                                 <div style={{ height: '2px', width: '60px', backgroundColor: 'rgba(255, 214, 10, 0.3)', margin: '0 auto 30px' }}></div>
-                                <h3 style={{ color: '#FFD60A', fontWeight: '900', fontSize: '28px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', marginBottom: '10px' }}>
+                                <h3 style={{ color: '#FFD60A', fontWeight: '900', fontSize: '22px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', marginBottom: '10px' }}>
                                     PARABÉNS AOS GANHADORES!
                                 </h3>
                                 <p style={{ color: 'rgba(255, 255, 255, 0.3)', fontWeight: '800', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
