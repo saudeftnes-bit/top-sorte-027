@@ -136,6 +136,13 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
             return;
         }
 
+        const total = parseInt(totalNumbers);
+        if (isNaN(total) || total <= 0 || total > 100) {
+            setErrorMessage('A quantidade total de números deve ser no máximo 100.');
+            setShowErrorModal(true);
+            return;
+        }
+
         setIsSaving(true);
 
         // REGRA 1: Não permitir ativar se já houver outra ativa
@@ -552,8 +559,9 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
                             placeholder="100"
                             min="1"
+                            max="100"
                         />
-                        <p className="mt-1 text-xs text-slate-500">Ex: 100, 1000, 10000</p>
+                        <p className="mt-1 text-xs text-slate-500">Ex: 50, 100 (Máximo 100)</p>
                     </div>
 
                     <div>
