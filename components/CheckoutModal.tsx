@@ -241,12 +241,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        const detailMsg = errorData.message || errorData.details || '';
-        throw new Error(`${errorData.error}${detailMsg ? `: ${detailMsg}` : ''}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          throw new Error("Erro de conexão com a API. (Lembre-se: 'npm run dev' não processa a pasta /api, você precisa usar a Vercel ou testar em produção).");
+        }
+        const detailMsg = errorData?.message || errorData?.details || '';
+        throw new Error(`${errorData?.error || 'Erro desconhecido'}${detailMsg ? `: ${detailMsg}` : ''}`);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error("Erro inesperado no servidor. O servidor retornou uma resposta vazia ou em formato HTML. Se estiver rodando localmente, garanta compatibilidade da Vercel.");
+      }
 
       console.log('✅ [Checkout] Cobrança criada:', data.txid);
 
@@ -287,7 +297,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
       console.error('❌ [Checkout] Erro:', error);
       setChargeError(error.message || 'Erro ao processar pagamento');
       setModalConfig({
-        title: 'Erro',
+        title: 'Aviso Importante',
         message: error.message || 'Erro ao processar pagamento. Tente novamente.',
         variant: 'danger',
         confirmLabel: 'OK',
