@@ -10,6 +10,7 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
     const [reservations, setReservations] = useState<Reservation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'paid' | 'pending'>('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const loadCache = () => {
@@ -40,8 +41,21 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
     };
 
     const filteredReservations = reservations.filter(res => {
-        if (filter === 'all') return true;
-        return res.status === filter;
+        // Status filter
+        if (filter !== 'all' && res.status !== filter) return false;
+
+        // Text search filter
+        if (searchQuery.trim().length > 0) {
+            const lowerQuery = searchQuery.toLowerCase().trim();
+            const nameMatch = res.buyer_name?.toLowerCase().includes(lowerQuery) || false;
+            const phoneMatch = res.buyer_phone?.includes(lowerQuery) || false;
+            const emailMatch = res.buyer_email?.toLowerCase().includes(lowerQuery) || false;
+            const numberMatch = res.number?.includes(lowerQuery) || false;
+
+            return nameMatch || phoneMatch || emailMatch || numberMatch;
+        }
+
+        return true;
     });
 
     if (isLoading) {
@@ -91,6 +105,24 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
                 >
                     Pendentes ({reservations.filter(r => r.status === 'pending').length})
                 </button>
+            </div>
+
+            {/* Search Box */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Buscar por nome, telefone ou número..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-slate-50 text-slate-900"
+                    />
+                </div>
             </div>
 
             {/* List */}
