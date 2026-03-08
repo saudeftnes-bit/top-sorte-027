@@ -112,46 +112,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     stopPolling();
     setExpiresAt(null);
 
-    // Atualizar UI
+    // Atualizar UI state
     onConfirmPurchase(formData.name, selectedNumbers);
 
-    // Modal 1: "Deseja comprar mais?"
-    setModalConfig({
-      title: 'Compra Realizada! 🎉',
-      message: `✅ Pagamento confirmado com sucesso!\n\n🎯 Números: ${selectedNumbers.join(', ')}\n\nDeseja adquirir mais números para aumentar suas chances de ganhar?`,
-      variant: 'info',
-      confirmLabel: 'Sim, quero mais! 🔥',
-      cancelLabel: 'Não, obrigado',
-      onConfirm: () => {
-        setShowModal(false);
-        // Volta para a grade sem fechar a rifa
-        if (onBuyMore) {
-          onBuyMore();
-        } else {
-          onClose();
-        }
-      },
-      onCancel: () => {
-        setShowModal(false);
-        // Modal 2: Boa sorte!
-        setTimeout(() => {
-          setModalConfig({
-            title: 'Boa Sorte! 🍀',
-            message: `🌟 Você está na disputa!\n\n"A sorte favorece os corajosos — e você acabou de provar isso!"\n\nFique ligado no nosso Instagram @topsorte_027 para acompanhar o resultado. Torce que o seu número sai! 🏆✨`,
-            variant: 'info',
-            confirmLabel: '🙏 Valeu, até a próxima!',
-            cancelLabel: undefined,
-            onConfirm: () => {
-              setShowModal(false);
-              onClose();
-            },
-            onCancel: undefined,
-          });
-          setShowModal(true);
-        }, 300);
-      },
-    });
-    setShowModal(true);
+    // Rola para o final para mostrar o comprovante
+    setTimeout(() => {
+      const modal = document.querySelector('.checkout-modal');
+      if (modal) {
+        modal.scrollTop = modal.scrollHeight;
+      }
+    }, 150);
   };
 
   // Handle payment confirmation via Efi
@@ -485,6 +455,24 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                     raffleName={raffle?.title || 'Top Sorte'}
                     paymentDate={new Date()}
                   />
+
+                  <div className="flex flex-col gap-3 mt-4">
+                    {onBuyMore && (
+                      <button
+                        onClick={onBuyMore}
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-4 rounded-2xl transition-colors text-sm uppercase"
+                      >
+                        Comprar +, Chances + 🔥
+                      </button>
+                    )}
+
+                    <button
+                      onClick={onClose}
+                      className={`w-full ${themeBg} text-white font-black py-4 rounded-2xl shadow-xl transition-transform active:scale-95 text-sm uppercase`}
+                    >
+                      Concluir e Voltar
+                    </button>
+                  </div>
                 </div>
               )}
 
