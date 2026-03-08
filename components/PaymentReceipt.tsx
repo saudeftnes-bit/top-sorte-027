@@ -104,13 +104,10 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
                     <div style={{ textAlign: 'center', marginBottom: '24px', borderBottom: '3px solid #001D3D', paddingBottom: '20px' }}>
                         <div style={{
                             display: 'inline-block',
-                            backgroundColor: '#001D3D',
-                            color: '#FFD60A',
+                            color: '#001D3D',
                             fontWeight: '900',
                             fontSize: '22px',
                             letterSpacing: '0.15em',
-                            padding: '10px 28px',
-                            borderRadius: '8px',
                             marginBottom: '12px',
                             textTransform: 'uppercase',
                         }}>
@@ -153,12 +150,9 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
                             {numbers.map(n => (
                                 <span key={n} style={{
                                     display: 'inline-block',
-                                    backgroundColor: '#001D3D',
-                                    color: '#FFD60A',
+                                    color: '#001D3D',
                                     fontWeight: '900',
-                                    fontSize: '15px',
-                                    padding: '5px 10px',
-                                    borderRadius: '6px',
+                                    fontSize: '16px',
                                     letterSpacing: '0.05em',
                                     fontFamily: "'Courier New', monospace",
                                 }}>
@@ -174,9 +168,9 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
                     <div style={{ marginBottom: '20px' }}>
                         <SectionTitle>Valores</SectionTitle>
                         <Row label={`${numbers.length} número(s) × R$ ${pricePerNumber.toFixed(2)}`} value="" />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', backgroundColor: '#001D3D', borderRadius: '8px', padding: '10px 14px' }}>
-                            <span style={{ color: '#FFD60A', fontWeight: '900', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>TOTAL PAGO</span>
-                            <span style={{ color: '#FFD60A', fontWeight: '900', fontSize: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                            <span style={{ color: '#001D3D', fontWeight: '900', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>TOTAL PAGO</span>
+                            <span style={{ color: '#001D3D', fontWeight: '900', fontSize: '20px' }}>
                                 R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </span>
                         </div>
@@ -205,9 +199,6 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
                         </p>
                         <div style={{
                             display: 'inline-block',
-                            border: '2px solid #001D3D',
-                            borderRadius: '6px',
-                            padding: '4px 14px',
                             fontSize: '11px',
                             fontWeight: '900',
                             color: '#001D3D',
