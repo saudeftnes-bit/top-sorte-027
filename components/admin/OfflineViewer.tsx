@@ -50,7 +50,18 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
             const nameMatch = res.buyer_name?.toLowerCase().includes(lowerQuery) || false;
             const phoneMatch = res.buyer_phone?.includes(lowerQuery) || false;
             const emailMatch = res.buyer_email?.toLowerCase().includes(lowerQuery) || false;
-            const numberMatch = res.number?.includes(lowerQuery) || false;
+
+            // Melhoria na busca por números:
+            // Dividir a string de números (ex: "12, 45") e buscar exatamente o número digitado
+            let numberMatch = false;
+            if (res.number) {
+                const numbersArray = res.number.toString().split(',').map(n => n.trim().toLowerCase());
+                if (numbersArray.includes(lowerQuery)) {
+                    numberMatch = true; // Busca exata (digitou "1", acha apenas o "1" e não o "10")
+                } else if (res.number.toLowerCase().includes(lowerQuery) && lowerQuery.includes(',')) {
+                    numberMatch = true; // Caso a pessoa digite "1, 2" buscar na string inteira
+                }
+            }
 
             return nameMatch || phoneMatch || emailMatch || numberMatch;
         }
