@@ -29,6 +29,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
             ...data,
             totalPossible: raffle.total_numbers || 100
         });
+
+        // --- NOVO: Atualização Silenciosa do Backup Offline ---
+        // Toda vez que o dashboard atualizar (a cada 30s), nós também puxamos a lista
+        // mais recente de clientes e salvamos no cache, garantindo que se o limite da cota 
+        // estourar no minuto seguinte, o "Modo Offline" estará 100% atualizado.
+        try {
+            const { getReservationsByRaffle } = await import('../../lib/supabase-admin');
+            await getReservationsByRaffle(raffleId); // A própria função `getReservationsByRaffle` já se encarrega de salvar no `localStorage` por debaixo dos panos
+        } catch (e) {
+            console.error('[AdminDashboard] Erro na atualização silenciosa do cache', e);
+        }
+
         setIsLoading(false);
         setIsRefreshing(false);
         console.log('[AdminDashboard] Analytics loaded:', data);
