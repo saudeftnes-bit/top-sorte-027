@@ -113,10 +113,10 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
                         }}>
                             TOPSORTE_027
                         </div>
-                        <p style={{ fontSize: '11px', color: '#666', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        <p style={{ fontSize: '11px', color: '#444', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                             Comprovante de Participação
                         </p>
-                        <p style={{ fontSize: '10px', color: '#999', margin: 0 }}>
+                        <p style={{ fontSize: '10px', color: '#666', margin: 0 }}>
                             Este documento comprova a reserva dos números abaixo
                         </p>
                     </div>
@@ -191,10 +191,10 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
 
                     {/* Footer */}
                     <div style={{ textAlign: 'center', marginTop: '8px' }}>
-                        <p style={{ fontSize: '10px', color: '#999', marginBottom: '6px' }}>
+                        <p style={{ fontSize: '10px', color: '#666', margin: '0 0 6px' }}>
                             Guarde este comprovante. Em caso de dúvidas,
                         </p>
-                        <p style={{ fontSize: '10px', color: '#999', marginBottom: '12px' }}>
+                        <p style={{ fontSize: '10px', color: '#666', margin: '0 0 12px' }}>
                             entre em contato via Instagram @topsorte_027
                         </p>
                         <div style={{
@@ -207,7 +207,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
                         }}>
                             Boa Sorte! 🍀
                         </div>
-                        <p style={{ fontSize: '9px', color: '#ccc', marginTop: '16px' }}>
+                        <p style={{ fontSize: '9px', color: '#888', marginTop: '16px' }}>
                             {formattedDate} {formattedTime} · Prot. {protocol}
                         </p>
                     </div>
@@ -221,7 +221,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
 
 const Row: React.FC<{ label: string; value: string }> = ({ label, value }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '5px', gap: '8px' }}>
-        <span style={{ color: '#666', whiteSpace: 'nowrap' }}>{label}</span>
+        <span style={{ color: '#444', whiteSpace: 'nowrap' }}>{label}</span>
         <span style={{ fontWeight: '700', textAlign: 'right', wordBreak: 'break-all' }}>{value}</span>
     </div>
 );
