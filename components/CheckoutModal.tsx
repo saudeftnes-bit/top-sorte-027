@@ -301,12 +301,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     }
   };
 
-  const handleWhatsApp = () => {
-    const phone = "27992429263"; // Número do admin
-    const text = encodeURIComponent(`Olá! Acabei de realizar o PIX para os números ${selectedNumbers.join(', ')}. Meu nome é ${formData.name}.`);
-    window.open(`https://wa.me/55${phone}?text=${text}`, '_blank');
-  };
-
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
       <div className="w-full max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-full duration-300 checkout-modal" style={{ maxHeight: '90vh' }}>
@@ -481,14 +475,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                     raffleName={raffle?.title || 'Top Sorte'}
                     paymentDate={new Date()}
                   />
-
-                  <button
-                    onClick={handleWhatsApp}
-                    className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider mt-4"
-                  >
-                    <WhatsAppIcon className="w-5 h-5 fill-current" />
-                    <span>Avisar no WhatsApp</span>
-                  </button>
                 </div>
               )}
 
