@@ -11,6 +11,7 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'paid' | 'pending'>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchType, setSearchType] = useState<'all' | 'number'>('all');
 
     useEffect(() => {
         const loadCache = () => {
@@ -47,9 +48,6 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
         // Text search filter
         if (searchQuery.trim().length > 0) {
             const lowerQuery = searchQuery.toLowerCase().trim();
-            const nameMatch = res.buyer_name?.toLowerCase().includes(lowerQuery) || false;
-            const phoneMatch = res.buyer_phone?.includes(lowerQuery) || false;
-            const emailMatch = res.buyer_email?.toLowerCase().includes(lowerQuery) || false;
 
             // Melhoria na busca por números:
             // Dividir a string de números (ex: "12, 45") e buscar exatamente o número digitado
@@ -62,6 +60,14 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
                     numberMatch = true; // Caso a pessoa digite "1, 2" buscar na string inteira
                 }
             }
+
+            if (searchType === 'number') {
+                return numberMatch; // Restringe a busca EXCLUSIVAMENTE ao campo de números de bilhete
+            }
+
+            const nameMatch = res.buyer_name?.toLowerCase().includes(lowerQuery) || false;
+            const phoneMatch = res.buyer_phone?.includes(lowerQuery) || false;
+            const emailMatch = res.buyer_email?.toLowerCase().includes(lowerQuery) || false;
 
             return nameMatch || phoneMatch || emailMatch || numberMatch;
         }
@@ -120,19 +126,29 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
 
             {/* Search Box */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+                <div className="flex flex-col md:flex-row gap-3">
+                    <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder={searchType === 'number' ? "Digite apenas o número do bilhete..." : "Buscar por nome, telefone ou número..."}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-slate-50 text-slate-900"
+                        />
                     </div>
-                    <input
-                        type="text"
-                        placeholder="Buscar por nome, telefone ou número..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-slate-50 text-slate-900"
-                    />
+                    <select
+                        value={searchType}
+                        onChange={(e) => setSearchType(e.target.value as 'all' | 'number')}
+                        className="p-3 border border-slate-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-slate-50 text-slate-900 font-medium outline-none md:w-auto w-full"
+                    >
+                        <option value="all">🔍 Buscar em tudo</option>
+                        <option value="number">🔢 Apenas Nº da Rifa</option>
+                    </select>
                 </div>
             </div>
 
