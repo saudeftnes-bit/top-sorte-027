@@ -57,11 +57,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const [isCreatingCharge, setIsCreatingCharge] = useState(false);
   const [chargeError, setChargeError] = useState<string | null>(null);
   const [finalPrice, setFinalPrice] = useState<number>(totalPrice);
+  const [isPaymentConfirmed, setIsPaymentConfirmed] = useState<boolean>(false);
 
   // Polling de status Efi
   const { status: efiStatus, stopPolling } = useEfiPayment(efiTxid, step === 'payment');
   const timer = useReservationTimer(expiresAt);
   const successFired = useRef(false);
+
+  const isPaid = isPaymentConfirmed || efiStatus?.isPaid;
 
   // Monitorar confirmação via banco de dados (Global State)
   useEffect(() => {
@@ -111,6 +114,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
 
     stopPolling();
     setExpiresAt(null);
+    setIsPaymentConfirmed(true);
 
     // Atualizar UI state
     onConfirmPurchase(formData.name, selectedNumbers);
@@ -396,21 +400,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               )}
 
               {/* Status do Pagamento */}
-              {efiStatus && (
-                <div className={`text-center p-6 rounded-[2rem] border-2 ${efiStatus.isPaid ? 'bg-green-50 border-green-300' : 'bg-blue-50 border-blue-300'
+              {(isPaid || efiStatus) && (
+                <div className={`text-center p-6 rounded-[2rem] border-2 ${isPaid ? 'bg-green-50 border-green-300' : 'bg-blue-50 border-blue-300'
                   }`}>
-                  <p className={`font-black text-lg mb-1 ${efiStatus.isPaid ? 'text-green-700' : 'text-blue-700'
+                  <p className={`font-black text-lg mb-1 ${isPaid ? 'text-green-700' : 'text-blue-700'
                     }`}>
-                    {efiStatus.isPaid ? '✅ Pagamento Confirmado!' : '🔄 Aguardando Pagamento...'}
+                    {isPaid ? '✅ Pagamento Confirmado!' : '🔄 Aguardando Pagamento...'}
                   </p>
                   <p className="text-xs font-medium text-slate-600">
-                    {efiStatus.isPaid ? 'Você já está concorrendo!' : 'Realize o PIX abaixo'}
+                    {isPaid ? 'Você já está concorrendo!' : 'Realize o PIX abaixo'}
                   </p>
                 </div>
               )}
 
               {/* PIX Copia e Cola (Visualização Única) */}
-              {pixCopiaCola && !efiStatus?.isPaid && (
+              {pixCopiaCola && !isPaid && (
                 <>
                   <div className="space-y-3">
                     <p className={`text-center text-sm font-black ${themeDarkText} uppercase tracking-widest`}>
@@ -439,7 +443,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               )}
 
               {/* Comprovante de Pagamento - aparece após confirmação */}
-              {efiStatus?.isPaid && (
+              {isPaid && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 px-1 justify-center bg-emerald-50 py-3 rounded-2xl border border-emerald-100">
                     <span className="text-xl">✨</span>
