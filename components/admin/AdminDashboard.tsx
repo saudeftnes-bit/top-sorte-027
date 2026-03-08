@@ -59,6 +59,52 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
         };
     }, [loadAnalytics]);
 
+    const handleExportCSV = async () => {
+        try {
+            setIsRefreshing(true);
+            const { getReservationsByRaffle } = await import('../../lib/supabase-admin');
+            const reservations = await getReservationsByRaffle(raffleId);
+
+            if (!reservations || reservations.length === 0) {
+                alert('Não há dados para exportar.');
+                setIsRefreshing(false);
+                return;
+            }
+
+            // CSV Header
+            let csvContent = "Nome do Comprador,Telefone,Email,Numeros,Status,Valor Pago,Data da Reserva\n";
+
+            // CSV Rows
+            reservations.forEach(r => {
+                const name = `"${r.buyer_name || ''}"`;
+                const phone = `"${r.buyer_phone || ''}"`;
+                const email = `"${r.buyer_email || ''}"`;
+                const numbers = `"${r.number || ''}"`; // Supondo que 'number' venha agrupado ou que seja 1 por linha
+                const status = `"${r.status || ''}"`;
+                const value = r.payment_amount ? `"${r.payment_amount.toString().replace('.', ',')}"` : '0';
+                const date = `"${new Date(r.created_at).toLocaleDateString('pt-BR')}"`;
+
+                csvContent += `${name},${phone},${email},${numbers},${status},${value},${date}\n`;
+            });
+
+            // Create and download Blob
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `compradores_rifa_${raffle.code || raffleId}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setIsRefreshing(false);
+        } catch (error) {
+            console.error("Erro ao exportar CSV:", error);
+            alert("Ocorreu um erro ao gerar o arquivo. Tente novamente.");
+            setIsRefreshing(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -247,7 +293,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
 
                 <button
                     onClick={() => onNavigate('grid')}
-                    className="bg-white hover:bg-orange-50 border-2 border-orange-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group md:col-span-1"
+                    className="bg-white hover:bg-orange-50 border-2 border-orange-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group"
                 >
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-orange-100 group-hover:bg-orange-200 rounded-xl flex items-center justify-center transition-colors">
@@ -256,6 +302,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
                         <div className="text-left">
                             <p className="text-lg font-black text-slate-900">Grade e Print</p>
                             <p className="text-xs text-slate-500 font-medium">Marcar vencedor e baixar print</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button
+                    onClick={handleExportCSV}
+                    disabled={isRefreshing}
+                    className="bg-white hover:bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group md:col-span-2 lg:col-span-1"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-colors ${isRefreshing ? 'bg-slate-100 animate-pulse' : 'bg-emerald-100 group-hover:bg-emerald-200'
+                            }`}>
+                            <span className="text-3xl">{isRefreshing ? '⏳' : '📥'}</span>
+                        </div>
+                        <div className="text-left">
+                            <p className="text-lg font-black text-slate-900">Salvar Backup (Excel)</p>
+                            <p className="text-xs text-slate-500 font-medium">Baixar lista de clientes (CSV)</p>
                         </div>
                     </div>
                 </button>

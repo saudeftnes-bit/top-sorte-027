@@ -30,7 +30,24 @@ export async function getRaffleById(id: string): Promise<Raffle | null> {
 
     if (error) {
         console.error('Error fetching raffle by id:', error);
+        // Offline fallback
+        try {
+            const cached = localStorage.getItem(`admin_cache_raffle_${id}`);
+            if (cached) {
+                console.log(`🔄 [Offline Cache] Usando cópia salva localmente para a rifa ${id}.`);
+                return JSON.parse(cached);
+            }
+        } catch (e) {
+            console.error('Falha ao ler cache local', e);
+        }
         return null;
+    }
+
+    // Save to cache on success
+    try {
+        if (data) localStorage.setItem(`admin_cache_raffle_${id}`, JSON.stringify(data));
+    } catch (e) {
+        // Ignore
     }
 
     return data;
@@ -59,7 +76,26 @@ export async function getAllRaffles(): Promise<Raffle[]> {
 
     if (error) {
         console.error('Error fetching all raffles:', error);
+
+        // Offline fallback
+        try {
+            const cached = localStorage.getItem('admin_cache_all_raffles');
+            if (cached) {
+                console.log('🔄 [Offline Cache] Usando cópia salva localmente (todas as rifas).');
+                return JSON.parse(cached);
+            }
+        } catch (e) {
+            console.error('Falha ao ler cache local', e);
+        }
+
         return [];
+    }
+
+    // Save to cache on success
+    try {
+        if (data) localStorage.setItem('admin_cache_all_raffles', JSON.stringify(data));
+    } catch (e) {
+        // Ignore quota/capacity errors on localStorage
     }
 
     return data || [];
@@ -221,7 +257,26 @@ export async function getReservationsByRaffle(raffleId: string): Promise<Reserva
 
     if (error) {
         console.error('Error fetching reservations:', error);
+
+        // Offline fallback
+        try {
+            const cached = localStorage.getItem(`admin_cache_reservations_${raffleId}`);
+            if (cached) {
+                console.log(`🔄 [Offline Cache] Usando cópia salva localmente das reservas (Rifa ${raffleId}).`);
+                return JSON.parse(cached);
+            }
+        } catch (e) {
+            console.error('Falha ao ler cache local', e);
+        }
+
         return [];
+    }
+
+    // Save to cache on success
+    try {
+        if (data) localStorage.setItem(`admin_cache_reservations_${raffleId}`, JSON.stringify(data));
+    } catch (e) {
+        // Ignore
     }
 
     return data || [];
