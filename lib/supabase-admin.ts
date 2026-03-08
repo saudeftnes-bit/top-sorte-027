@@ -62,7 +62,7 @@ export async function getPublicRaffles(): Promise<Raffle[]> {
 
     if (error) {
         console.error('Error fetching public raffles:', error);
-        return [];
+        throw error; // Throw error to trigger connection failure mode in App.tsx
     }
 
     return data || [];
@@ -547,5 +547,47 @@ export async function createManualReservation(
     } catch (error: any) {
         console.error('❌ [Admin] Erro ao criar reserva manual:', error);
         return { success: false, message: `Erro ao criar reserva: ${error.message || 'Erro desconhecido'}` };
+    }
+}
+
+// ==================== SYSTEM SETTINGS ====================
+
+export async function checkMaintenanceMode(): Promise<{ isMaintenance: boolean; message: string }> {
+    try {
+        const { data, error } = await supabase
+            .from('system_settings')
+            .select('key, value')
+            .in('key', ['maintenance_mode', 'maintenance_message']);
+
+        if (error) throw error;
+
+        const mode = data?.find(s => s.key === 'maintenance_mode')?.value === 'true';
+        const msg = data?.find(s => s.key === 'maintenance_message')?.value || 'O sistema está em manutenção ou instável no momento. Por favor, recarregue a página em alguns instantes.';
+
+        return { isMaintenance: mode, message: msg };
+    } catch (error) {
+        console.error('⚠️ Detactada falha de conexão ou quota:', error);
+        // Queda/Quota limite: automaticamente mostrar aviso de manutenção em vez de tela branca/vazia
+        return {
+            isMaintenance: true,
+            message: 'O servidor sofreu uma limitação de quota ou instabilidade provisória. Por favor, aguarde alguns instantes enquanto nossa equipe normaliza o sistema!'
+        };
+    }
+}
+
+export async function setMaintenanceMode(isMaintenance: boolean, message: string = 'O sistema está em manutenção ou instável no momento. Por favor, recarregue a página em alguns instantes.'): Promise<boolean> {
+    try {
+        const { error } = await supabase
+            .from('system_settings')
+            .upsert([
+                { key: 'maintenance_mode', value: isMaintenance ? 'true' : 'false', updated_at: new Date().toISOString() },
+                { key: 'maintenance_message', value: message, updated_at: new Date().toISOString() }
+            ]);
+
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error('Erro ao salvar estado de manutenção', error);
+        return false;
     }
 }

@@ -10,9 +10,10 @@ interface HomeProps {
   featuredRaffle: Raffle | null;
   raffles?: Raffle[];
   activeReservationsCount: number;
+  maintenanceState?: { isMaintenance: boolean; message: string };
 }
 
-const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, raffles = [], activeReservationsCount }) => {
+const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, raffles = [], activeReservationsCount, maintenanceState }) => {
   // Theme logic
   const isBicho = featuredRaffle?.selection_mode === 'jogo_bicho';
   const themeAccentColor = isBicho ? 'bg-green-600' : 'bg-purple-600';
@@ -158,9 +159,37 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
 
   return (
     <div className="flex flex-col gap-8 p-4 max-w-2xl mx-auto">
-      {/* Featured Raffle Card */}
-      {/* Featured Raffle Card or Empty State */}
-      {featuredRaffle ? (
+      {/* Featured Raffle Card or Maintenance State */}
+      {maintenanceState?.isMaintenance ? (
+        <section className="bg-red-50 rounded-[2.5rem] shadow-xl border-2 border-red-200 mt-4 p-8 md:p-12 text-center animate-in fade-in duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-red-100 opacity-50 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-red-100 opacity-50 pointer-events-none"></div>
+
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-red-200 z-10 relative">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black text-red-700 mb-4 tracking-tight uppercase relative z-10">
+            Atenção: Sistema Instável
+          </h2>
+          <div className="bg-white/60 p-4 rounded-2xl mb-6 relative z-10 backdrop-blur-sm border border-red-100">
+            <p className="text-base text-red-900 font-bold max-w-lg mx-auto leading-relaxed whitespace-pre-line">
+              {maintenanceState.message}
+            </p>
+          </div>
+          <p className="text-sm text-red-600 font-medium mb-8 relative z-10">
+            Não se preocupe, seus dados e compras recentes estão seguros. Tente recarregar a tela em alguns instantes.
+          </p>
+          <div className="relative z-10">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-red-600 hover:bg-red-700 text-white font-black py-4 px-10 rounded-2xl shadow-lg shadow-red-600/20 transition-transform active:scale-95 text-lg w-full sm:w-auto flex items-center justify-center gap-2 mx-auto"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              Atualizar Página
+            </button>
+          </div>
+        </section>
+      ) : featuredRaffle ? (
         <section className="relative overflow-hidden bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4 flex flex-col">
           {/* Status Badge Above Image */}
           <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm relative overflow-hidden ${featuredRaffle.status === 'active' ? (isBicho ? 'bg-green-600' : 'bg-[#003B73]') :

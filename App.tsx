@@ -7,7 +7,7 @@ import FAQChatbot from './components/FAQChatbot';
 import { HistoricalRaffleView } from './components/HistoricalRaffleView';
 import AdminPanel from './components/admin/AdminPanel';
 import InstagramVideos from './components/InstagramVideos';
-import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations, getPublicRaffles } from './lib/supabase-admin';
+import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations, getPublicRaffles, checkMaintenanceMode } from './lib/supabase-admin';
 import { getOrCreateSessionId, cleanupSessionSelections, createTemporarySelection, removeTemporarySelection } from './lib/selection-manager';
 import { cleanupExpiredReservations } from './lib/cleanup';
 import { useDarkMode } from './contexts/DarkModeContext';
@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [selectedRaffle, setSelectedRaffle] = useState<Raffle | null>(null); // The raffle currently being viewed in grid
   const [publicRaffles, setPublicRaffles] = useState<Raffle[]>([]);
   const [dbReservations, setDbReservations] = useState<Reservation[]>([]);
+  const [maintenanceState, setMaintenanceState] = useState({ isMaintenance: false, message: '' });
 
   // Estado centralizado com status reais
   const [reservations, setReservations] = useState<ReservationMap>({});
@@ -281,6 +282,15 @@ const App: React.FC = () => {
   const loadRaffleData = async () => {
     try {
       console.log('📊 [Data] Loading raffle data...');
+
+      // 0. Checar Manutenção ou Queda de Conexão antes de tudo
+      const maint = await checkMaintenanceMode();
+      if (maint.isMaintenance) {
+        setMaintenanceState(maint);
+        return; // Para a execução, forçando a tela a mostrar o aviso de erro
+      } else {
+        setMaintenanceState({ isMaintenance: false, message: '' });
+      }
 
       // 1. Limpar reservas expiradas ANTES de carregar dados
       try {
@@ -697,6 +707,7 @@ const App: React.FC = () => {
             featuredRaffle={featuredRaffle}
             raffles={publicRaffles}
             activeReservationsCount={featuredStats.paid + featuredStats.pending}
+            maintenanceState={maintenanceState}
           />
         ) : view === 'videos' ? (
           <InstagramVideos onBack={() => setView('home')} />

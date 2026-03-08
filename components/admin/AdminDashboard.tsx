@@ -20,6 +20,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    const [maintenanceMode, setMaintenanceModeState] = useState(false);
+    const [maintenanceMessage, setMaintenanceMessage] = useState('');
+    const [isSavingMaintenance, setIsSavingMaintenance] = useState(false);
+
     const loadAnalytics = useCallback(async () => {
         if (!raffleId) return;
         console.log('[AdminDashboard] Loading analytics...');
@@ -70,6 +74,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
             window.removeEventListener('adminDataUpdated', handleAdminUpdate);
         };
     }, [loadAnalytics]);
+
+    useEffect(() => {
+        const loadMaintenance = async () => {
+            try {
+                const { checkMaintenanceMode } = await import('../../lib/supabase-admin');
+                const maint = await checkMaintenanceMode();
+                // We only use the true value if it didn't fallback via an error
+                // The fallback message starts with 'O servidor' usually, but since `maint` is guaranteed
+                // we'll just set it. If it failed network, it won't matter because this admin page would fail too.
+                setMaintenanceModeState(maint.isMaintenance);
+                setMaintenanceMessage(maint.message || '');
+            } catch (e) { }
+        }
+        loadMaintenance();
+    }, []);
+
+    const handleToggleMaintenance = async () => {
+        if (!confirm(`Deseja realmente ${maintenanceMode ? 'DESATIVAR' : 'ATIVAR'} o modo de manutenção para os clientes?`)) return;
+
+        setIsSavingMaintenance(true);
+        try {
+            const { setMaintenanceMode } = await import('../../lib/supabase-admin');
+            const newMode = !maintenanceMode;
+            // Provide a default message if none is given and they turn it on
+            const msgToSave = maintenanceMessage.trim() !== '' ? maintenanceMessage : 'Estamos passando por instabilidades ou em atualização. Voltaremos em instantes.';
+
+            const success = await setMaintenanceMode(newMode, msgToSave);
+            if (success) {
+                setMaintenanceModeState(newMode);
+                if (newMode && maintenanceMessage.trim() === '') setMaintenanceMessage(msgToSave);
+                alert(`Modo manutenção ${newMode ? 'ATIVADO' : 'DESATIVADO'} com sucesso.`);
+            } else {
+                alert('Erro ao alterar modo de manutenção no banco de dados.');
+            }
+        } catch (e) {
+            alert('Erro ao processar sua requisição.');
+        } finally {
+            setIsSavingMaintenance(false);
+        }
+    };
 
     const handleExportCSV = async () => {
         try {
@@ -254,6 +298,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
                         ></div>
                     </div>
                 </div>
+            </div>
+
+            {/* Maintenance Mode Toggle */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-red-100 flex flex-col md:flex-row gap-4 items-center justify-between mt-4">
+                <div className="flex-1 w-full">
+                    <h3 className="text-xl font-black text-slate-900 mb-1 flex items-center gap-2">
+                        <span className="text-2xl">⚠️</span> Modo Manutenção (Quedas e Atualizações)
+                    </h3>
+                    <p className="text-sm text-slate-500 font-medium">
+                        Ative manualmente para avisar os clientes de que o sistema está sendo atualizado ou reparado.
+                        Essa mensagem também entra sozinha caso o servidor ultrapasse o limite de acessos (Cota do Supabase).
+                    </p>
+                    <input
+                        type="text"
+                        value={maintenanceMessage}
+                        onChange={(e) => setMaintenanceMessage(e.target.value)}
+                        className="mt-3 w-full p-3 border border-slate-300 rounded-lg font-medium text-sm text-slate-800 bg-slate-50 focus:ring-red-500 focus:border-red-500 outline-none"
+                        placeholder="Mensagem opcional... ex: Estamos atualizando nossos servidores para suportar novos acessos!"
+                    />
+                </div>
+                <button
+                    onClick={handleToggleMaintenance}
+                    disabled={isSavingMaintenance}
+                    className={`p-4 rounded-xl font-black text-white shadow-lg transition-transform active:scale-95 flex flex-col items-center justify-center gap-1 min-w-[180px] h-full ${maintenanceMode
+                            ? 'bg-red-600 hover:bg-red-700 shadow-red-600/30'
+                            : 'bg-slate-400 hover:bg-slate-500'
+                        }`}
+                >
+                    <span className="text-3xl">{isSavingMaintenance ? '⏳' : maintenanceMode ? '🛑' : '✅'}</span>
+                    <span className="text-sm text-center uppercase">{maintenanceMode ? 'SISTEMA EM MANUTENÇÃO (DESATIVAR)' : 'TELA NORMAL (ATIVAR MANUTENÇÃO)'}</span>
+                </button>
             </div>
 
             {/* Action Buttons */}
