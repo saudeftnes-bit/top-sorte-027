@@ -6,11 +6,12 @@ import PaymentManager from './PaymentManager';
 import UsersList from './UsersList';
 import RaffleList from './RaffleList';
 import RaffleGridView from './RaffleGridView';
+import OfflineViewer from './OfflineViewer';
 import ConfirmModal from '../ConfirmModal';
 import { getActiveRaffle } from '../../lib/supabase-admin';
 import type { Raffle } from '../../types/database';
 
-type AdminSection = 'dashboard' | 'raffle' | 'payments' | 'users' | 'grid';
+type AdminSection = 'dashboard' | 'raffle' | 'payments' | 'users' | 'grid' | 'offlineViewer';
 
 const AdminPanel: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -246,6 +247,15 @@ const AdminPanel: React.FC = () => {
                         {currentSection === 'grid' && activeRaffle && (
                             <RaffleGridView
                                 raffle={activeRaffle}
+                                onBack={() => {
+                                    setCurrentSection('dashboard');
+                                }}
+                            />
+                        )}
+
+                        {currentSection === 'offlineViewer' && activeRaffle && (
+                            <OfflineViewer
+                                raffleId={activeRaffle.id}
                                 onBack={() => {
                                     setCurrentSection('dashboard');
                                 }}

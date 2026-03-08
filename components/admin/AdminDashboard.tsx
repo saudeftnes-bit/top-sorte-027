@@ -5,7 +5,7 @@ import type { RaffleAnalytics, Raffle } from '../../types/database';
 interface AdminDashboardProps {
     raffleId: string;
     raffle: Raffle;
-    onNavigate: (section: 'raffle' | 'payments' | 'users' | 'grid') => void;
+    onNavigate: (section: 'raffle' | 'payments' | 'users' | 'grid' | 'offlineViewer') => void;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNavigate }) => {
@@ -319,6 +319,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
                         <div className="text-left">
                             <p className="text-lg font-black text-slate-900">Salvar Backup (Excel)</p>
                             <p className="text-xs text-slate-500 font-medium">Baixar lista de clientes (CSV)</p>
+                        </div>
+                    </div>
+                </button>
+                <button
+                    onClick={() => onNavigate('offlineViewer')}
+                    className="bg-white hover:bg-slate-50 border-2 border-slate-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group md:col-span-1"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-slate-100 group-hover:bg-slate-200 rounded-xl flex items-center justify-center transition-colors">
+                            <span className="text-3xl">👁️</span>
+                        </div>
+                        <div className="text-left">
+                            <p className="text-lg font-black text-slate-900">Ver Backup Interno</p>
+                            <p className="text-xs text-slate-500 font-medium">Ler cache local (Modo Offline)</p>
                         </div>
                     </div>
                 </button>
