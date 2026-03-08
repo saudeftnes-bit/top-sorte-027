@@ -467,9 +467,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               {/* Comprovante de Pagamento - aparece após confirmação */}
               {efiStatus?.isPaid && (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 px-1">
-                    <span className="text-lg">🧾</span>
-                    <p className="text-sm font-black text-slate-700 uppercase tracking-wide">Seu Comprovante</p>
+                  <div className="flex items-center gap-2 px-1 justify-center bg-emerald-50 py-3 rounded-2xl border border-emerald-100">
+                    <span className="text-xl">✨</span>
+                    <p className="text-sm font-black text-emerald-800 uppercase tracking-wide">Seu Pagamento foi Aprovado!</p>
                   </div>
                   <PaymentReceipt
                     buyerName={formData.name}
@@ -481,6 +481,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                     raffleName={raffle?.title || 'Top Sorte'}
                     paymentDate={new Date()}
                   />
+
+                  <button
+                    onClick={handleWhatsApp}
+                    className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider mt-4"
+                  >
+                    <WhatsAppIcon className="w-5 h-5 fill-current" />
+                    <span>Avisar no WhatsApp</span>
+                  </button>
                 </div>
               )}
 
