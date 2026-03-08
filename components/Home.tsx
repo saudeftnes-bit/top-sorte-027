@@ -272,10 +272,10 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           <div className="flex flex-col items-center justify-center mb-6 px-2">
             <div className="inline-block relative">
               <h3 className="text-2xl font-black tracking-tighter uppercase italic py-2 px-6 bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-sm select-none flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={5}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-[#22C55E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                OUTROS SORTEIOS
+                RIFAS FINALIZADAS
               </h3>
               <div className="absolute -inset-1 bg-purple-500 opacity-10 blur-xl animate-pulse rounded-full -z-10"></div>
             </div>
@@ -291,8 +291,8 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
                     className="w-full h-auto block"
                   />
                   <div className={`absolute top-2 left-2 text-white font-bold px-2 py-1 rounded-lg text-[10px] uppercase ${otherRaffle.status === 'active' ? 'bg-green-500' :
-                      otherRaffle.status === 'scheduled' ? 'bg-yellow-500' :
-                        otherRaffle.status === 'paused' ? 'bg-red-500' : 'bg-slate-500'
+                    otherRaffle.status === 'scheduled' ? 'bg-yellow-500' :
+                      otherRaffle.status === 'paused' ? 'bg-red-500' : 'bg-slate-500'
                     }`}>
                     {otherRaffle.status === 'active' ? 'ATIVO' :
                       otherRaffle.status === 'scheduled' ? 'AGENDADO' :
