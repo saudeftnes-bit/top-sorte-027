@@ -138,6 +138,29 @@ export async function deleteRaffle(id: string): Promise<boolean> {
     return true;
 }
 
+// ==================== RAFFLE SYSTEM MAINTENANCE ====================
+
+export async function pruneOldRaffles(keepCount: number = 6): Promise<void> {
+    try {
+        const { data: raffles, error } = await supabase
+            .from('raffles')
+            .select('id')
+            .order('created_at', { ascending: false });
+
+        if (error || !raffles) return;
+
+        if (raffles.length > keepCount) {
+            const idsToDelete = raffles.slice(keepCount).map(r => r.id);
+            console.log(`🗑️ [Admin] Removendo ${idsToDelete.length} rifas antigas para manter apenas as ${keepCount} mais recentes.`);
+            for (const id of idsToDelete) {
+                await deleteRaffle(id); // O delete do banco deve (baseado na FK cascade) excluir os reservations, se configurado
+            }
+        }
+    } catch (e) {
+        console.error('Error pruning old raffles:', e);
+    }
+}
+
 export async function resetRaffleNumbers(raffleId: string): Promise<number> {
     console.log('🗑️ [Admin] Zerando números do sorteio:', raffleId);
 
@@ -240,6 +263,9 @@ export async function createRaffle(raffle: Omit<Raffle, 'id' | 'created_at' | 'u
         console.error('Error creating raffle:', error);
         return null;
     }
+
+    // Auto-clean: keep only the 6 most recent
+    await pruneOldRaffles(6);
 
     return data;
 }

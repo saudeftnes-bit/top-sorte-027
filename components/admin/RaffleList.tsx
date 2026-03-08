@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAllRaffles, deleteRaffle, updateRaffle, getRaffleAnalytics } from '../../lib/supabase-admin';
+import { getAllRaffles, deleteRaffle, updateRaffle, getRaffleAnalytics, pruneOldRaffles } from '../../lib/supabase-admin';
 import type { Raffle } from '../../types/database';
 import ConfirmModal from '../ConfirmModal';
 
@@ -23,6 +23,8 @@ const RaffleList: React.FC<RaffleListProps> = ({ onEditRaffle, onCreateRaffle, o
 
     const loadRaffles = async () => {
         setIsLoading(true);
+        // Primeiro garantimos que o sistema só tenha as últimas 6 rifas (Limpeza Automática)
+        await pruneOldRaffles(6);
         const data = await getAllRaffles();
         setRaffles(data);
         setIsLoading(false);

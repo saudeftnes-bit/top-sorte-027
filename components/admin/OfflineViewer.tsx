@@ -6,7 +6,10 @@ interface OfflineViewerProps {
     onBack: () => void;
 }
 
-const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
+const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId: initialRaffleId, onBack }) => {
+    const [selectedRaffleId, setSelectedRaffleId] = useState(initialRaffleId);
+    const [cachedRaffles, setCachedRaffles] = useState<Raffle[]>([]);
+
     const [reservations, setReservations] = useState<Reservation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'paid' | 'pending'>('all');
@@ -14,9 +17,31 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
     const [searchType, setSearchType] = useState<'all' | 'number'>('all');
 
     useEffect(() => {
+        // Load available raffles from cache
+        try {
+            const cachedAll = localStorage.getItem('admin_cache_all_raffles');
+            if (cachedAll) {
+                const raffles: Raffle[] = JSON.parse(cachedAll);
+                // Keep only those that have a corresponding reservation cache too, just to be safe,
+                // or just list them all. We'll list up to 6 most recent.
+                const recent = raffles.slice(0, 6);
+                setCachedRaffles(recent);
+
+                // If initialRaffleId is not in the cached list, it might be an issue, but we'll leave it as selected.
+                if (!recent.find(r => r.id === initialRaffleId) && recent.length > 0) {
+                    // Note: optionally default to the first if initialRaffleId isn't found
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao ler raffles do cache:", error);
+        }
+    }, [initialRaffleId]);
+
+    useEffect(() => {
         const loadCache = () => {
+            setIsLoading(true);
             try {
-                const cachedData = localStorage.getItem(`admin_cache_reservations_${raffleId}`);
+                const cachedData = localStorage.getItem(`admin_cache_reservations_${selectedRaffleId}`);
                 if (cachedData) {
                     setReservations(JSON.parse(cachedData));
                 }
@@ -28,7 +53,7 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
         };
 
         loadCache();
-    }, [raffleId]);
+    }, [selectedRaffleId]);
 
     const formatPhone = (phone: string | null) => {
         if (!phone) return '-';
@@ -102,6 +127,28 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId, onBack }) => {
                     <p className="text-slate-500 font-medium">Lendo do Cache Local (Última cópia salva)</p>
                 </div>
             </div>
+
+            {/* Seleção de Rifa */}
+            {cachedRaffles.length > 0 && (
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Selecione o Sorteio (Até 6 salvos):</label>
+                    <select
+                        value={selectedRaffleId}
+                        onChange={(e) => setSelectedRaffleId(e.target.value)}
+                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 text-slate-900 font-medium outline-none bg-slate-50"
+                    >
+                        {/* Se o currentRaffle não estiver na lista de caches, a gente adiciona provisoriamente pra não dar erro */}
+                        {!cachedRaffles.find(r => r.id === selectedRaffleId) && selectedRaffleId && (
+                            <option value={selectedRaffleId}>Sorteio Atual (Buscando...)</option>
+                        )}
+                        {cachedRaffles.map(r => (
+                            <option key={r.id} value={r.id}>
+                                Sorteio {r.code || 'S/N'} - {r.title} ({r.status})
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm border border-slate-200 w-fit">
                 <button
