@@ -301,45 +301,35 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           </div>
         </section>
       ) : (
-        <section className="relative bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 rounded-3xl overflow-hidden shadow-2xl mt-4 p-8 text-center">
-          {/* decorative blobs */}
-          <div className="absolute top-0 right-0 w-56 h-56 bg-purple-600 rounded-full opacity-10 -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-40 h-40 bg-violet-500 rounded-full opacity-10 translate-y-1/2 -translate-x-1/2 blur-3xl pointer-events-none" />
+        <section className="bg-white rounded-3xl shadow-lg border border-slate-100 mt-4 p-10 text-center overflow-hidden relative">
+          {/* Soft gradient top bar */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-300 via-pink-300 to-amber-300 rounded-t-3xl" />
 
-          <div className="relative z-10">
-            {/* Animated icon */}
-            <div
-              className="transition-all duration-400 ease-in-out"
-              style={{ opacity: waitFading ? 0 : 1, transform: waitFading ? 'scale(0.85)' : 'scale(1)' }}
-            >
-              <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-5 border border-white/20 backdrop-blur-sm shadow-xl">
-                <span className="text-4xl">{currentWaitMsg.icon}</span>
-              </div>
-              <h2
-                className="text-xl font-black text-white mb-2 leading-snug"
-              >
-                {currentWaitMsg.title}
-              </h2>
-              <p className="text-white/50 text-sm font-medium">{currentWaitMsg.sub}</p>
+          <div
+            style={{
+              opacity: waitFading ? 0 : 1,
+              transition: 'opacity 0.5s ease',
+            }}
+          >
+            {/* Icon */}
+            <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-purple-100">
+              <span className="text-3xl">{currentWaitMsg.icon}</span>
             </div>
 
-            {/* Dot indicators */}
-            <div className="flex items-center justify-center gap-2 mt-6">
-              {waitingMessages.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setWaitFading(true); setTimeout(() => { setWaitMsgIdx(i); setWaitFading(false); }, 300); }}
-                  className={`rounded-full transition-all duration-300 ${
-                    i === waitMsgIdx ? 'w-6 h-2 bg-purple-400' : 'w-2 h-2 bg-white/20 hover:bg-white/40'
-                  }`}
-                />
-              ))}
-            </div>
+            {/* Title */}
+            <h2 className="text-xl font-black text-slate-900 mb-2 leading-snug">
+              {currentWaitMsg.title}
+            </h2>
+
+            {/* Subtitle */}
+            <p className="text-slate-400 text-sm font-medium">
+              {currentWaitMsg.sub}
+            </p>
 
             {/* WhatsApp hint */}
-            <div className="mt-6 pt-5 border-t border-white/10 flex items-center justify-center gap-2 text-white/40 text-xs">
+            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-slate-400 text-xs">
               <span>📲</span>
-              <span>Ative as notificações do WhatsApp para saber quando abrir!</span>
+              <span>Ative as notificações para saber quando abrir!</span>
             </div>
           </div>
         </section>
