@@ -301,7 +301,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           </div>
         </section>
       ) : (
-        <section className="bg-white rounded-3xl shadow-lg border border-slate-100 mt-4 p-10 text-center overflow-hidden relative">
+        <section className="bg-gradient-to-br from-purple-50 via-violet-50 to-pink-50 rounded-3xl shadow-md border border-purple-100 mt-4 p-10 text-center overflow-hidden relative">
           {/* Soft gradient top bar */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-300 via-pink-300 to-amber-300 rounded-t-3xl" />
 
