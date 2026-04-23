@@ -244,14 +244,33 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
               <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
               Apenas R$ {featuredRaffle.price_per_number?.toFixed(2).replace('.', ',') || '13,00'} por número
             </div>
-            {/* Botão de CTA ou aviso de grade preenchida */}
-            <button
-              onClick={onStart}
-              className={`w-full ${featuredRaffle.status === 'active' ? `${themeAccentColor} ${themeHoverAccentColor} animate-pulse` : 'bg-slate-600 hover:bg-slate-700'
-                } text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg`}
-            >
-              {featuredRaffle.status === 'active' ? '🎯 ESCOLHER MEUS NÚMEROS' : '👀 VER RESULTADOS'}
-            </button>
+            {/* Botão de CTA Premium */}
+            <div className="relative mt-2">
+              {featuredRaffle.status === 'active' && (
+                <>
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-yellow-400 to-orange-500 animate-ring-pulse" />
+                  <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 opacity-30 blur-lg" />
+                </>
+              )}
+              <button
+                onClick={onStart}
+                className={`relative w-full font-black py-6 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 text-xl tracking-wide ${
+                  featuredRaffle.status === 'active'
+                    ? 'bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 text-slate-900 animate-cta-glow'
+                    : 'bg-slate-600 hover:bg-slate-700 text-white shadow-lg'
+                }`}
+              >
+                {featuredRaffle.status === 'active' ? (
+                  <>
+                    <span className="text-2xl">🎯</span>
+                    <span>ESCOLHER MEUS NÚMEROS</span>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </>
+                ) : '👀 VER RESULTADOS'}
+              </button>
+            </div>
           </div>
         </section>
       ) : (
@@ -394,77 +413,85 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
       {/* Proof Section - Slideshow de Ganhadores */}
       <section>
         <div className="flex items-center justify-between mb-4 px-2">
-          <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Ganhadores Reais</h3>
-          <span className="text-purple-600 font-bold text-xs">Prova Real ✓</span>
+          <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+            <span className="text-yellow-500">🏆</span> Ganhadores Reais
+          </h3>
+          <span className="bg-green-100 text-green-700 font-black text-xs px-3 py-1 rounded-full border border-green-200">✓ Prova Real</span>
         </div>
 
-        {/* Slideshow de Fotos dos Ganhadores - Altura fixa para evitar tela preta */}
+        {/* Slideshow Premium com Ken Burns */}
         <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-slate-900 h-[350px] sm:h-[450px] md:h-[550px]">
-          {/* Images */}
           <div className="relative w-full h-full">
             {winnersPhotos.map((photo, index) => (
               <div
                 key={photo.id || index}
-                className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                  }`}
+                className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
               >
-                {/* Foto do Ganhador */}
-                <div className="w-full h-full flex items-center justify-center bg-slate-900/50">
+                {/* Imagem com Ken Burns */}
+                <div className="w-full h-full overflow-hidden">
                   <img
                     src={photo.photo_url}
                     alt={photo.name}
-                    className="max-w-full max-h-full object-contain"
+                    className={`w-full h-full object-cover ${index === currentSlide ? 'animate-kenburns' : ''}`}
                   />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
 
-                {/* Info do ganhador */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-20 pointer-events-none">
-                  <p className="text-4xl md:text-5xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">🏆 {photo.name}</p>
-                  <p className="text-lg md:text-xl font-bold text-green-400 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">{photo.prize}</p>
+                {/* Gradiente duplo: topo escuro + base bem escura */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/10 to-black/50" />
+
+                {/* Card do ganhador com glassmorphism */}
+                <div className="absolute bottom-10 left-4 right-4 z-20">
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-2xl">
+                    <p className="text-2xl md:text-3xl font-black text-white mb-2 drop-shadow-lg">🏆 {photo.name}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-green-500 text-white text-xs font-black px-3 py-1 rounded-full shadow">GANHOU</span>
+                      <p className="text-sm md:text-base font-bold text-green-300">{photo.prize}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
+          {/* Barra de progresso animada */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 z-30 bg-white/10">
+            <div key={currentSlide} className="h-full bg-gradient-to-r from-yellow-400 to-amber-500 animate-slide-progress" />
+          </div>
 
           {/* Indicadores */}
-          <div className="absolute bottom-6 right-6 flex gap-2 z-30">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
             {winnersPhotos.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`h-2 rounded-full transition-all ${index === currentSlide
-                  ? 'w-10 bg-white shadow-lg'
-                  : 'w-2 bg-white/50 hover:bg-white/75'
-                  }`}
+                className={`h-2 rounded-full transition-all ${index === currentSlide ? 'w-8 bg-white shadow-lg' : 'w-2 bg-white/40 hover:bg-white/70'}`}
                 aria-label={`Slide ${index + 1}`}
               />
             ))}
           </div>
 
-          {/* Badge de Ganhador */}
-          <div className="absolute top-4 left-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-black shadow-xl flex items-center gap-2 z-30">
-            <span className="text-xl">✨</span>
-            GANHADORES
+          {/* Badge topo com gradiente dourado */}
+          <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-4 py-2 rounded-full text-xs font-black shadow-xl flex items-center gap-2 z-30">
+            <span>👑</span>
+            GANHADORES REAIS
           </div>
 
           {/* Setas de Navegação */}
           <button
             onClick={() => setCurrentSlide((prev) => (prev - 1 + winnersPhotos.length) % winnersPhotos.length)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all hover:scale-110 z-30"
+            className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-3 rounded-full transition-all hover:scale-110 z-30 border border-white/20"
             aria-label="Anterior"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <button
             onClick={() => setCurrentSlide((prev) => (prev + 1) % winnersPhotos.length)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all hover:scale-110 z-30"
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-3 rounded-full transition-all hover:scale-110 z-30 border border-white/20"
             aria-label="Próximo"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
             </svg>
           </button>

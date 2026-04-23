@@ -130,19 +130,40 @@ const AdminPanel: React.FC = () => {
                         </div>
                         <div>
                             <h1 className="text-lg font-black text-slate-900">Admin Panel</h1>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Top Sorte 027</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                {!showRaffleList && activeRaffle ? (
+                                    <button
+                                        onClick={() => { setShowRaffleList(true); }}
+                                        className="text-purple-500 hover:text-purple-700 font-bold flex items-center gap-1"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
+                                        Rifas / {activeRaffle.title?.substring(0, 20) || 'Rifa'}
+                                    </button>
+                                ) : 'Top Sorte 027'}
+                            </p>
                         </div>
                     </div>
 
-                    <button
-                        onClick={handleLogout}
-                        className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Sair
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {!showRaffleList && (
+                            <button
+                                onClick={() => { setShowRaffleList(true); setActiveRaffle(null); }}
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h8" /></svg>
+                                Rifas
+                            </button>
+                        )}
+                        <button
+                            onClick={handleLogout}
+                            className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Sair
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -201,14 +222,10 @@ const AdminPanel: React.FC = () => {
 
                         {currentSection === 'raffle' && (
                             <RaffleManager
-                                raffleId={activeRaffle?.id || ''} // Empty ID means creation mode
+                                raffleId={activeRaffle?.id || ''}
                                 onBack={() => {
-                                    if (activeRaffle?.id) {
-                                        setCurrentSection('dashboard');
-                                    } else {
-                                        setShowRaffleList(true);
-                                        setActiveRaffle(null);
-                                    }
+                                    setShowRaffleList(true);
+                                    setActiveRaffle(null);
                                     refreshData();
                                 }}
                                 onGoToList={() => {

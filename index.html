@@ -128,6 +128,41 @@
         .animate-gradient-text {
             animation: gradient-text 3s ease infinite;
         }
+
+        @keyframes kenburns {
+            0% { transform: scale(1) translate(0, 0); }
+            33% { transform: scale(1.12) translate(-1.5%, 1%); }
+            66% { transform: scale(1.08) translate(1.5%, -1%); }
+            100% { transform: scale(1) translate(0, 0); }
+        }
+        .animate-kenburns {
+            animation: kenburns 10s ease-in-out infinite;
+        }
+
+        @keyframes slide-progress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        .animate-slide-progress {
+            animation: slide-progress 5s linear forwards;
+        }
+
+        @keyframes cta-glow {
+            0% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.5), 0 8px 32px rgba(251, 191, 36, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.9), 0 8px 40px rgba(251, 191, 36, 0.6), 0 0 60px rgba(251, 191, 36, 0.3); }
+            100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.5), 0 8px 32px rgba(251, 191, 36, 0.3); }
+        }
+        .animate-cta-glow {
+            animation: cta-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes ring-pulse {
+            0% { transform: scale(1); opacity: 0.4; }
+            100% { transform: scale(1.15); opacity: 0; }
+        }
+        .animate-ring-pulse {
+            animation: ring-pulse 1.5s ease-out infinite;
+        }
     </style>
     <script type="importmap">
 {
