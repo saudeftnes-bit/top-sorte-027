@@ -344,68 +344,89 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
         </section>
       )}
 
-      {/* Seção Como Funciona */}
-      <section className="mt-6">
-        <div className="flex items-center justify-between mb-4 px-2">
+      {/* ── COMO FUNCIONA ── */}
+      <section>
+        {/* Section title */}
+        <div className="flex items-center justify-between mb-4 px-1">
           <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-            <span className="text-2xl">📋</span>
-            COMO FUNCIONA
+            <span>📋</span> Como Funciona
           </h3>
+          <span className="bg-purple-100 text-purple-700 font-black text-xs px-3 py-1 rounded-full border border-purple-200">
+            Simples e Rápido ⚡
+          </span>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-white rounded-3xl shadow-xl p-6 border-2 border-purple-100">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Passo 1 */}
-            <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-purple-200">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-xl">
-                  1
-                </div>
-                <div>
-                  <h4 className="font-black text-purple-900 mb-1">📱 Escolha Seus Números</h4>
-                  <p className="text-sm text-slate-600">Selecione os números da sorte e reserve-os por alguns minutos</p>
-                </div>
-              </div>
-            </div>
+        {/* Dark card container */}
+        <div className="relative bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 rounded-3xl overflow-hidden shadow-2xl p-6">
+          {/* bg decorations */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600 rounded-full opacity-10 -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-500 rounded-full opacity-10 translate-y-1/2 -translate-x-1/2 blur-3xl pointer-events-none" />
 
-            {/* Passo 2 */}
-            <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-purple-200">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-xl">
-                  2
+          {/* Steps */}
+          <div className="relative z-10 flex flex-col gap-0">
+            {[
+              {
+                num: '01', icon: '📱', title: 'Escolha Seus Números',
+                desc: 'Navegue pela grade e selecione os números da sorte que deseja.',
+                from: 'from-purple-500', to: 'to-violet-600', dot: 'bg-purple-400'
+              },
+              {
+                num: '02', icon: '💳', title: 'Faça o Pagamento PIX',
+                desc: 'Pague de forma rápida, fácil e 100% segura via PIX.',
+                from: 'from-sky-500', to: 'to-blue-600', dot: 'bg-sky-400'
+              },
+              {
+                num: '03', icon: '⚡', title: 'Aprovação Imediata',
+                desc: 'O sistema confirma seu pagamento em segundos automaticamente.',
+                from: 'from-green-500', to: 'to-emerald-600', dot: 'bg-green-400'
+              },
+              {
+                num: '04', icon: '🏆', title: 'Concorra ao Prêmio',
+                desc: 'Seus números estão confirmados e concorrendo ao sorteio!',
+                from: 'from-amber-500', to: 'to-orange-500', dot: 'bg-amber-400'
+              },
+            ].map(({ num, icon, title, desc, from, to, dot }, i, arr) => (
+              <div key={num} className="flex gap-4">
+                {/* Left: number + connector */}
+                <div className="flex flex-col items-center">
+                  <div className={`w-12 h-12 bg-gradient-to-br ${from} ${to} rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0`}>
+                    <span className="text-white font-black text-xs">{num}</span>
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div className="flex flex-col items-center flex-1 py-2 gap-1">
+                      {[...Array(4)].map((_, di) => (
+                        <div key={di} className={`w-1 h-1 rounded-full ${dot} opacity-50`} />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <h4 className="font-black text-purple-900 mb-1">💳 Faça o PIX</h4>
-                  <p className="text-sm text-slate-600">Pagamento rápido, fácil e seguro via PIX</p>
-                </div>
-              </div>
-            </div>
 
-            {/* Passo 3 */}
-            <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-purple-200">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-xl">
-                  3
-                </div>
-                <div>
-                  <h4 className="font-black text-purple-900 mb-1">⚡ Aprovação Imediata</h4>
-                  <p className="text-sm text-slate-600">O sistema identifica seu pagamento em segundos e libera seus números</p>
+                {/* Right: content card */}
+                <div className={`flex-1 bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 ${i < arr.length - 1 ? 'mb-3' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{icon}</span>
+                    <div>
+                      <h4 className="font-black text-white text-sm leading-tight">{title}</h4>
+                      <p className="text-white/50 text-xs mt-0.5 leading-snug">{desc}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Passo 4 */}
-            <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-purple-200">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-xl">
-                  4
-                </div>
-                <div>
-                  <h4 className="font-black text-purple-900 mb-1">🎯 Participe do Sorteio</h4>
-                  <p className="text-sm text-slate-600">Seus números já estão concorrendo ao prêmio!</p>
-                </div>
+          {/* Trust badges */}
+          <div className="relative z-10 mt-5 pt-5 border-t border-white/10 grid grid-cols-3 gap-3">
+            {[
+              { icon: '🔒', label: 'Pagamento\nSeguro' },
+              { icon: '✅', label: 'Sorteio\nTransparente' },
+              { icon: '🏆', label: 'Prêmios\nGarantidos' },
+            ].map(({ icon, label }) => (
+              <div key={label} className="bg-white/5 rounded-xl p-3 border border-white/10 text-center">
+                <span className="text-xl block mb-1">{icon}</span>
+                <p className="text-white/60 text-[10px] font-bold leading-tight whitespace-pre-line">{label}</p>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
