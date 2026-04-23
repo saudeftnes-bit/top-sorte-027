@@ -301,14 +301,15 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           </div>
         </section>
       ) : (
-        <section className="bg-gradient-to-br from-purple-50 via-violet-50 to-pink-50 rounded-3xl shadow-md border border-purple-100 mt-4 p-10 text-center overflow-hidden relative">
+        <section className="bg-gradient-to-br from-purple-100 via-violet-100 to-pink-100 rounded-3xl shadow-md border border-purple-200 mt-4 p-10 text-center overflow-hidden relative">
           {/* Soft gradient top bar */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-300 via-pink-300 to-amber-300 rounded-t-3xl" />
 
           <div
             style={{
               opacity: waitFading ? 0 : 1,
-              transition: 'opacity 0.5s ease',
+              transform: waitFading ? 'translateY(12px)' : 'translateY(0)',
+              transition: 'opacity 0.45s ease, transform 0.45s ease',
             }}
           >
             {/* Icon */}
