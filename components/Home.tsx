@@ -262,13 +262,13 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
               >
                 {featuredRaffle.status === 'active' ? (
                   <>
-                    <span className="text-2xl">🎯</span>
+                    <span className="text-2xl">🍀</span>
                     <span>ESCOLHER MEUS NÚMEROS</span>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                   </>
-                ) : '👀 VER RESULTADOS'}
+                ) : <><span className="animate-blink-eyes">👀</span><span>VER RESULTADOS</span></>}
               </button>
             </div>
           </div>
@@ -335,7 +335,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
                     onClick={() => onSelectRaffle?.(otherRaffle)}
                     className="w-full bg-slate-600 hover:bg-slate-700 text-white font-black py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg"
                   >
-                    👀 Visualizar rifa
+                    <span className="animate-blink-eyes">👀</span> Visualizar rifa
                   </button>
                 </div>
               </div>
