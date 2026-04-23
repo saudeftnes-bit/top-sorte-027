@@ -26,7 +26,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
 
     const loadAnalytics = useCallback(async () => {
         if (!raffleId) return;
-        console.log('[AdminDashboard] Loading analytics...');
         setIsRefreshing(true);
         const data = await getRaffleAnalytics(raffleId);
         setAnalytics({
@@ -34,45 +33,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
             totalPossible: raffle.total_numbers || 100
         });
 
-        // --- NOVO: Atualização Silenciosa do Backup Offline ---
-        // Toda vez que o dashboard atualizar (a cada 30s), nós também puxamos a lista
-        // mais recente de clientes e salvamos no cache, garantindo que se o limite da cota 
-        // estourar no minuto seguinte, o "Modo Offline" estará 100% atualizado.
         try {
             const { getReservationsByRaffle } = await import('../../lib/supabase-admin');
-            await getReservationsByRaffle(raffleId); // A própria função `getReservationsByRaffle` já se encarrega de salvar no `localStorage` por debaixo dos panos
+            await getReservationsByRaffle(raffleId);
         } catch (e) {
             console.error('[AdminDashboard] Erro na atualização silenciosa do cache', e);
         }
 
         setIsLoading(false);
         setIsRefreshing(false);
-        console.log('[AdminDashboard] Analytics loaded:', data);
     }, [raffleId]);
 
     useEffect(() => {
-        console.log('[AdminDashboard] Setting up initial load and interval...');
         loadAnalytics();
-        // Refresh every 30 seconds
         const interval = setInterval(loadAnalytics, 30000);
         return () => clearInterval(interval);
     }, [loadAnalytics]);
 
-    // Listen for admin data updates
     useEffect(() => {
-        console.log('[AdminDashboard] Setting up event listener for adminDataUpdated...');
-
-        const handleAdminUpdate = () => {
-            console.log('[AdminDashboard] Admin update event received, reloading analytics...');
-            loadAnalytics();
-        };
-
+        const handleAdminUpdate = () => loadAnalytics();
         window.addEventListener('adminDataUpdated', handleAdminUpdate);
-
-        return () => {
-            console.log('[AdminDashboard] Cleaning up event listener...');
-            window.removeEventListener('adminDataUpdated', handleAdminUpdate);
-        };
+        return () => window.removeEventListener('adminDataUpdated', handleAdminUpdate);
     }, [loadAnalytics]);
 
     useEffect(() => {
@@ -80,33 +61,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
             try {
                 const { checkMaintenanceMode } = await import('../../lib/supabase-admin');
                 const maint = await checkMaintenanceMode();
-                // We only use the true value if it didn't fallback via an error
-                // The fallback message starts with 'O servidor' usually, but since `maint` is guaranteed
-                // we'll just set it. If it failed network, it won't matter because this admin page would fail too.
                 setMaintenanceModeState(maint.isMaintenance);
                 setMaintenanceMessage(maint.message || '');
             } catch (e) { }
-        }
+        };
         loadMaintenance();
     }, []);
 
     const handleToggleMaintenance = async () => {
-        if (!confirm(`Deseja realmente ${maintenanceMode ? 'DESATIVAR' : 'ATIVAR'} o modo de manutenção para os clientes?`)) return;
-
+        if (!confirm(`Deseja realmente ${maintenanceMode ? 'DESATIVAR' : 'ATIVAR'} o modo de manutenção?`)) return;
         setIsSavingMaintenance(true);
         try {
             const { setMaintenanceMode } = await import('../../lib/supabase-admin');
             const newMode = !maintenanceMode;
-            // Provide a default message if none is given and they turn it on
-            const msgToSave = maintenanceMessage.trim() !== '' ? maintenanceMessage : 'Estamos passando por instabilidades ou em atualização. Voltaremos em instantes.';
-
+            const msgToSave = maintenanceMessage.trim() !== '' ? maintenanceMessage : 'Estamos passando por instabilidades. Voltaremos em instantes.';
             const success = await setMaintenanceMode(newMode, msgToSave);
             if (success) {
                 setMaintenanceModeState(newMode);
                 if (newMode && maintenanceMessage.trim() === '') setMaintenanceMessage(msgToSave);
                 alert(`Modo manutenção ${newMode ? 'ATIVADO' : 'DESATIVADO'} com sucesso.`);
             } else {
-                alert('Erro ao alterar modo de manutenção no banco de dados.');
+                alert('Erro ao alterar modo de manutenção.');
             }
         } catch (e) {
             alert('Erro ao processar sua requisição.');
@@ -120,30 +95,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
             setIsRefreshing(true);
             const { getReservationsByRaffle } = await import('../../lib/supabase-admin');
             const reservations = await getReservationsByRaffle(raffleId);
-
             if (!reservations || reservations.length === 0) {
                 alert('Não há dados para exportar.');
                 setIsRefreshing(false);
                 return;
             }
-
-            // CSV Header
             let csvContent = "Nome do Comprador,Telefone,Email,Numeros,Status,Valor Pago,Data da Reserva\n";
-
-            // CSV Rows
             reservations.forEach(r => {
                 const name = `"${r.buyer_name || ''}"`;
                 const phone = `"${r.buyer_phone || ''}"`;
                 const email = `"${r.buyer_email || ''}"`;
-                const numbers = `"${r.number || ''}"`; // Supondo que 'number' venha agrupado ou que seja 1 por linha
+                const numbers = `"${r.number || ''}"`;
                 const status = `"${r.status || ''}"`;
                 const value = r.payment_amount ? `"${r.payment_amount.toString().replace('.', ',')}"` : '0';
                 const date = `"${new Date(r.created_at).toLocaleDateString('pt-BR')}"`;
-
                 csvContent += `${name},${phone},${email},${numbers},${status},${value},${date}\n`;
             });
-
-            // Create and download Blob
             const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
@@ -152,10 +119,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
             setIsRefreshing(false);
         } catch (error) {
-            console.error("Erro ao exportar CSV:", error);
             alert("Ocorreu um erro ao gerar o arquivo. Tente novamente.");
             setIsRefreshing(false);
         }
@@ -164,266 +129,163 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-14 w-14 border-4 border-purple-600 border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-slate-500 font-medium">Carregando dados...</p>
+                </div>
             </div>
         );
     }
 
+    const progressPct = Math.min(Math.round((analytics.numbersSold / analytics.totalPossible) * 100), 100);
+
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-3xl p-8 text-white shadow-xl">
-                <h1 className="text-3xl font-black mb-2">📊 Dashboard Admin</h1>
-                <p className="text-purple-100 font-medium">Gestão completa do sorteio</p>
-            </div>
+        <div className="space-y-5">
 
-            {/* Current Raffle Info Card */}
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 shadow-lg border-2 border-purple-200">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center">
-                        <span className="text-2xl">🎯</span>
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-black text-slate-900">Sorteio Atual</h2>
-                        <p className="text-xs text-slate-500 font-medium">Configurações cadastradas</p>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-xl p-4 shadow-sm">
-                        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Título</p>
-                        <p className="text-sm font-black text-slate-900">{raffle.title}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4 shadow-sm">
-                        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Preço por Número</p>
-                        <p className="text-lg font-black text-green-600">
-                            R$ {raffle.price_per_number.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4 shadow-sm">
-                        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Status</p>
-                        <p className="text-sm font-black">
-                            {raffle.status === 'active' && <span className="text-green-600">🟢 Ativo</span>}
-                            {raffle.status === 'scheduled' && <span className="text-yellow-600">🟡 Agendado</span>}
-                            {raffle.status === 'finished' && <span className="text-red-600">🔴 Finalizado</span>}
-                        </p>
-                    </div>
-                </div>
-                {raffle.description && (
-                    <div className="mt-4 bg-white rounded-xl p-4 shadow-sm">
-                        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Descrição</p>
-                        <p className="text-sm text-slate-700">{raffle.description}</p>
-                    </div>
-                )}
-            </div>
+            {/* ── HERO HEADER ── */}
+            <div className="relative bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 rounded-3xl p-7 text-white shadow-2xl overflow-hidden">
+                {/* decorative circles */}
+                <div className="absolute top-0 right-0 w-72 h-72 bg-purple-600 rounded-full opacity-10 -translate-y-1/3 translate-x-1/3 blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-52 h-52 bg-violet-500 rounded-full opacity-10 translate-y-1/3 -translate-x-1/3 blur-3xl pointer-events-none" />
 
-            {/* Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Total Revenue */}
-                <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-green-100">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                            <span className="text-2xl">💰</span>
+                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm">
+                            <span className="text-3xl">📊</span>
                         </div>
+                        <div>
+                            <h1 className="text-2xl font-black leading-tight">Dashboard Admin</h1>
+                            <p className="text-purple-300 text-sm font-semibold truncate max-w-[220px]">{raffle.title}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`px-4 py-1.5 rounded-full text-xs font-black border backdrop-blur-sm ${raffle.status === 'active'
+                            ? 'bg-green-500/20 border-green-400/40 text-green-300'
+                            : raffle.status === 'scheduled'
+                                ? 'bg-yellow-500/20 border-yellow-400/40 text-yellow-300'
+                                : 'bg-red-500/20 border-red-400/40 text-red-300'}`}>
+                            {raffle.status === 'active' ? '🟢 Ativo' : raffle.status === 'scheduled' ? '🟡 Agendado' : '🔴 Finalizado'}
+                        </span>
                         <button
                             onClick={loadAnalytics}
                             disabled={isRefreshing}
-                            className={`text-xs font-bold transition-colors ${isRefreshing
-                                ? 'text-purple-600 animate-spin'
-                                : 'text-slate-400 hover:text-slate-600'
-                                }`}
-                            title={isRefreshing ? 'Atualizando...' : 'Atualizar dados'}
+                            className="bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-1.5 rounded-full text-xs font-bold transition-all"
                         >
-                            🔄 {isRefreshing ? '' : 'Atualizar'}
+                            {isRefreshing ? '⏳ Atualizando...' : '🔄 Atualizar'}
                         </button>
                     </div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Total Arrecadado</p>
-                    <p className="text-3xl font-black text-green-600">
-                        R$ {analytics.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
                 </div>
 
-                {/* Numbers Sold */}
-                <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-100">
-                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3">
-                        <span className="text-2xl">🎯</span>
-                    </div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Números Vendidos</p>
-                    <p className="text-3xl font-black text-purple-600">{analytics.numbersSold}</p>
-                    <p className="text-xs text-slate-400 mt-1">de {analytics.totalPossible} números</p>
+                {/* quick stats */}
+                <div className="relative z-10 grid grid-cols-3 gap-3">
+                    {[
+                        { label: 'Arrecadado', value: `R$ ${analytics.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, color: 'text-green-300' },
+                        { label: 'Vendidos', value: `${analytics.numbersSold}`, color: 'text-purple-300' },
+                        { label: 'Progresso', value: `${progressPct}%`, color: 'text-amber-300' },
+                    ].map(({ label, value, color }) => (
+                        <div key={label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10 text-center">
+                            <p className={`text-xl font-black ${color}`}>{value}</p>
+                            <p className="text-white/50 text-xs mt-0.5">{label}</p>
+                        </div>
+                    ))}
                 </div>
 
-                {/* Numbers Pending */}
-                <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-yellow-100">
-                    <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center mb-3">
-                        <span className="text-2xl">⏳</span>
-                    </div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Pendentes</p>
-                    <p className="text-3xl font-black text-yellow-600">{analytics.numbersPending}</p>
-                    <p className="text-xs text-slate-400 mt-1">aguardando pagamento</p>
-                </div>
-
-                {/* Numbers Available */}
-                <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-100">
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3">
-                        <span className="text-2xl">✨</span>
-                    </div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Disponíveis</p>
-                    <p className="text-3xl font-black text-blue-600">{analytics.numbersAvailable}</p>
-                    <p className="text-xs text-slate-400 mt-1">prontos para venda</p>
-                </div>
-
-                {/* Total Buyers */}
-                <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-orange-100">
-                    <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-3">
-                        <span className="text-2xl">👥</span>
-                    </div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Compradores</p>
-                    <p className="text-3xl font-black text-orange-600">{analytics.totalBuyers}</p>
-                    <p className="text-xs text-slate-400 mt-1">participantes únicos</p>
-                </div>
-
-                {/* Completion Rate */}
-                <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-pink-100">
-                    <div className="w-12 h-12 bg-pink-100 rounded-xl flex items-center justify-center mb-3">
-                        <span className="text-2xl">📈</span>
-                    </div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Progresso</p>
-                    <p className="text-3xl font-black text-pink-600">
-                        {Math.round((analytics.numbersSold / analytics.totalPossible) * 100)}%
-                    </p>
-                    <div className="w-full bg-pink-100 rounded-full h-2 mt-2">
+                {/* progress bar */}
+                <div className="relative z-10 mt-4">
+                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
-                            className="bg-pink-600 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${(analytics.numbersSold / analytics.totalPossible) * 100}%` }}
-                        ></div>
+                            className="h-full bg-gradient-to-r from-purple-400 to-pink-400 rounded-full transition-all duration-700"
+                            style={{ width: `${progressPct}%` }}
+                        />
                     </div>
+                    <p className="text-white/40 text-xs mt-1">{analytics.numbersSold} de {analytics.totalPossible} números vendidos</p>
                 </div>
             </div>
 
-            {/* Maintenance Mode Toggle */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-red-100 flex flex-col md:flex-row gap-4 items-center justify-between mt-4">
-                <div className="flex-1 w-full">
-                    <h3 className="text-xl font-black text-slate-900 mb-1 flex items-center gap-2">
-                        <span className="text-2xl">⚠️</span> Modo Manutenção (Quedas e Atualizações)
-                    </h3>
-                    <p className="text-sm text-slate-500 font-medium">
-                        Ative manualmente para avisar os clientes de que o sistema está sendo atualizado ou reparado.
-                        Essa mensagem também entra sozinha caso o servidor ultrapasse o limite de acessos (Cota do Supabase).
-                    </p>
-                    <input
-                        type="text"
-                        value={maintenanceMessage}
-                        onChange={(e) => setMaintenanceMessage(e.target.value)}
-                        className="mt-3 w-full p-3 border border-slate-300 rounded-lg font-medium text-sm text-slate-800 bg-slate-50 focus:ring-red-500 focus:border-red-500 outline-none"
-                        placeholder="Mensagem opcional... ex: Estamos atualizando nossos servidores para suportar novos acessos!"
-                    />
+            {/* ── ANALYTICS CARDS ── */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                    { icon: '💰', label: 'Total Arrecadado', value: `R$ ${analytics.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, sub: 'confirmados', from: 'from-green-500', to: 'to-emerald-600' },
+                    { icon: '🎯', label: 'Núm. Vendidos', value: `${analytics.numbersSold}`, sub: `de ${analytics.totalPossible}`, from: 'from-purple-500', to: 'to-violet-600' },
+                    { icon: '⏳', label: 'Pendentes', value: `${analytics.numbersPending}`, sub: 'aguardando pag.', from: 'from-amber-500', to: 'to-orange-500' },
+                    { icon: '✨', label: 'Disponíveis', value: `${analytics.numbersAvailable}`, sub: 'prontos p/ venda', from: 'from-sky-500', to: 'to-blue-600' },
+                    { icon: '👥', label: 'Compradores', value: `${analytics.totalBuyers}`, sub: 'únicos', from: 'from-rose-500', to: 'to-pink-600' },
+                    { icon: '📈', label: 'Progresso', value: `${progressPct}%`, sub: 'da meta atingida', from: 'from-slate-600', to: 'to-slate-800' },
+                ].map(({ icon, label, value, sub, from, to }) => (
+                    <div key={label} className={`bg-gradient-to-br ${from} ${to} rounded-2xl p-5 shadow-lg text-white`}>
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                            <span className="text-xl">{icon}</span>
+                        </div>
+                        <p className="text-xs font-bold text-white/70 uppercase tracking-wider mb-1">{label}</p>
+                        <p className="text-2xl font-black leading-none">{value}</p>
+                        <p className="text-xs text-white/50 mt-1">{sub}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* ── ACTION BUTTONS ── */}
+            <div>
+                <h2 className="text-sm font-black text-slate-500 uppercase tracking-wider mb-3 px-1">Ações Rápidas</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[
+                        { section: 'raffle' as const, icon: '🎯', label: 'Gerenciar Sorteio', desc: 'Editar textos e imagens', from: 'from-purple-500', to: 'to-violet-600' },
+                        { section: 'payments' as const, icon: '💳', label: 'Pagamentos', desc: 'Confirmar reservas PIX', from: 'from-green-500', to: 'to-emerald-600' },
+                        { section: 'users' as const, icon: '👥', label: 'Usuários', desc: 'Lista de compradores', from: 'from-sky-500', to: 'to-blue-600' },
+                        { section: 'grid' as const, icon: '📸', label: 'Grade e Print', desc: 'Marcar vencedor', from: 'from-orange-500', to: 'to-amber-500' },
+                        { section: 'offlineViewer' as const, icon: '👁️', label: 'Backup Interno', desc: 'Cache local / offline', from: 'from-slate-600', to: 'to-slate-800' },
+                    ].map(({ section, icon, label, desc, from, to }) => (
+                        <button
+                            key={section}
+                            onClick={() => onNavigate(section)}
+                            className={`bg-gradient-to-br ${from} ${to} text-white rounded-2xl p-5 shadow-lg hover:shadow-xl hover:brightness-110 transition-all active:scale-95 text-left`}
+                        >
+                            <span className="text-3xl mb-3 block">{icon}</span>
+                            <p className="font-black text-sm leading-tight">{label}</p>
+                            <p className="text-xs text-white/60 mt-1">{desc}</p>
+                        </button>
+                    ))}
+
+                    <button
+                        onClick={handleExportCSV}
+                        disabled={isRefreshing}
+                        className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-2xl p-5 shadow-lg hover:shadow-xl hover:brightness-110 transition-all active:scale-95 text-left"
+                    >
+                        <span className="text-3xl mb-3 block">{isRefreshing ? '⏳' : '📥'}</span>
+                        <p className="font-black text-sm leading-tight">Exportar CSV</p>
+                        <p className="text-xs text-white/60 mt-1">Baixar lista .csv</p>
+                    </button>
                 </div>
-                <button
-                    onClick={handleToggleMaintenance}
-                    disabled={isSavingMaintenance}
-                    className={`p-4 rounded-xl font-black text-white shadow-lg transition-transform active:scale-95 flex flex-col items-center justify-center gap-1 min-w-[180px] h-full ${maintenanceMode
-                            ? 'bg-red-600 hover:bg-red-700 shadow-red-600/30'
-                            : 'bg-slate-400 hover:bg-slate-500'
-                        }`}
-                >
-                    <span className="text-3xl">{isSavingMaintenance ? '⏳' : maintenanceMode ? '🛑' : '✅'}</span>
-                    <span className="text-sm text-center uppercase">{maintenanceMode ? 'SISTEMA EM MANUTENÇÃO (DESATIVAR)' : 'TELA NORMAL (ATIVAR MANUTENÇÃO)'}</span>
-                </button>
             </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button
-                    onClick={() => onNavigate('raffle')}
-                    className="bg-white hover:bg-purple-50 border-2 border-purple-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-purple-100 group-hover:bg-purple-200 rounded-xl flex items-center justify-center transition-colors">
-                            <span className="text-3xl">🎯</span>
-                        </div>
-                        <div className="text-left">
-                            <p className="text-lg font-black text-slate-900">Gerenciar Sorteio</p>
-                            <p className="text-xs text-slate-500 font-medium">Editar textos, imagens e preços</p>
-                        </div>
+            {/* ── MAINTENANCE TOGGLE ── */}
+            <div className={`rounded-2xl p-6 shadow-lg border-l-4 transition-colors ${maintenanceMode ? 'bg-red-50 border-red-500' : 'bg-white border-slate-300'}`}>
+                <div className="flex flex-col md:flex-row gap-5 items-start md:items-center justify-between">
+                    <div className="flex-1 w-full">
+                        <h3 className="text-lg font-black text-slate-900 flex items-center gap-2 mb-1">
+                            <span>⚠️</span>
+                            Modo Manutenção
+                            {maintenanceMode && <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">ATIVO</span>}
+                        </h3>
+                        <p className="text-sm text-slate-500 mb-3">Ative para exibir um aviso aos clientes durante atualizações ou instabilidades.</p>
+                        <input
+                            type="text"
+                            value={maintenanceMessage}
+                            onChange={(e) => setMaintenanceMessage(e.target.value)}
+                            className="w-full p-3 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:ring-2 focus:ring-red-400 outline-none"
+                            placeholder="Mensagem para os clientes..."
+                        />
                     </div>
-                </button>
-
-                <button
-                    onClick={() => onNavigate('payments')}
-                    className="bg-white hover:bg-green-50 border-2 border-green-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-green-100 group-hover:bg-green-200 rounded-xl flex items-center justify-center transition-colors">
-                            <span className="text-3xl">💳</span>
-                        </div>
-                        <div className="text-left">
-                            <p className="text-lg font-black text-slate-900">Pagamentos</p>
-                            <p className="text-xs text-slate-500 font-medium">Confirmar e gerenciar reservas</p>
-                        </div>
-                    </div>
-                </button>
-
-                <button
-                    onClick={() => onNavigate('users')}
-                    className="bg-white hover:bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-blue-100 group-hover:bg-blue-200 rounded-xl flex items-center justify-center transition-colors">
-                            <span className="text-3xl">👥</span>
-                        </div>
-                        <div className="text-left">
-                            <p className="text-lg font-black text-slate-900">Usuários</p>
-                            <p className="text-xs text-slate-500 font-medium">Lista de compradores</p>
-                        </div>
-                    </div>
-                </button>
-
-                <button
-                    onClick={() => onNavigate('grid')}
-                    className="bg-white hover:bg-orange-50 border-2 border-orange-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-orange-100 group-hover:bg-orange-200 rounded-xl flex items-center justify-center transition-colors">
-                            <span className="text-3xl">📸</span>
-                        </div>
-                        <div className="text-left">
-                            <p className="text-lg font-black text-slate-900">Grade e Print</p>
-                            <p className="text-xs text-slate-500 font-medium">Marcar vencedor e baixar print</p>
-                        </div>
-                    </div>
-                </button>
-
-                <button
-                    onClick={handleExportCSV}
-                    disabled={isRefreshing}
-                    className="bg-white hover:bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group md:col-span-2 lg:col-span-1"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-colors ${isRefreshing ? 'bg-slate-100 animate-pulse' : 'bg-emerald-100 group-hover:bg-emerald-200'
-                            }`}>
-                            <span className="text-3xl">{isRefreshing ? '⏳' : '📥'}</span>
-                        </div>
-                        <div className="text-left">
-                            <p className="text-lg font-black text-slate-900">Salvar Backup (Excel)</p>
-                            <p className="text-xs text-slate-500 font-medium">Baixar lista de clientes (CSV)</p>
-                        </div>
-                    </div>
-                </button>
-                <button
-                    onClick={() => onNavigate('offlineViewer')}
-                    className="bg-white hover:bg-slate-50 border-2 border-slate-200 rounded-2xl p-6 transition-all active:scale-95 shadow-lg group md:col-span-1"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-slate-100 group-hover:bg-slate-200 rounded-xl flex items-center justify-center transition-colors">
-                            <span className="text-3xl">👁️</span>
-                        </div>
-                        <div className="text-left">
-                            <p className="text-lg font-black text-slate-900">Ver Backup Interno</p>
-                            <p className="text-xs text-slate-500 font-medium">Ler cache local (Modo Offline)</p>
-                        </div>
-                    </div>
-                </button>
+                    <button
+                        onClick={handleToggleMaintenance}
+                        disabled={isSavingMaintenance}
+                        className={`px-6 py-3 rounded-xl font-black text-white shadow-lg transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap ${maintenanceMode ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-500 hover:bg-slate-600'}`}
+                    >
+                        <span className="text-xl">{isSavingMaintenance ? '⏳' : maintenanceMode ? '🛑' : '✅'}</span>
+                        {maintenanceMode ? 'Desativar' : 'Ativar Manutenção'}
+                    </button>
+                </div>
             </div>
+
         </div>
     );
 };
