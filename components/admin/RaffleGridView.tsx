@@ -8,6 +8,7 @@ interface RaffleGridViewProps {
 }
 
 interface WinnerEntry {
+    id: string;
     number: string;
     position: number; // 1, 2, 3, ...
     customName?: string; // Manual override name
@@ -40,10 +41,10 @@ const getPrintColors = (position: number) =>
 const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
     const [reservations, setReservations] = useState<Record<string, { status: string; name: string; phone?: string }>>({});
     const [isLoading, setIsLoading] = useState(true);
-    // Feature 4: Winners with prize positions
     const [winners, setWinners] = useState<WinnerEntry[]>([]);
     const [isCapturing, setIsCapturing] = useState(false);
     const [bgStyle, setBgStyle] = useState<string>('#001D3D');
+    const [manualNum, setManualNum] = useState('');
     const printRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -69,28 +70,42 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
         setIsLoading(false);
     };
 
-    // Feature 4: Click a number to toggle winner status, cycling through positions
+    // Add a number as winner (allows adding the same number multiple times!)
     const handleNumberClick = (num: string) => {
         setWinners(prev => {
-            const existing = prev.find(w => w.number === num);
-            if (existing) {
-                // Remove from winners list
-                return prev.filter(w => w.number !== num);
-            } else {
-                // Add as next prize position
-                const nextPosition = (prev.length > 0 ? Math.max(...prev.map(w => w.position)) : 0) + 1;
-                return [...prev, {
-                    number: num,
-                    position: nextPosition,
-                    customName: reservations[num]?.name || undefined,
-                }];
-            }
+            const nextPosition = prev.length + 1;
+            return [...prev, {
+                id: `${num}_${Date.now()}_${Math.random()}`,
+                number: num,
+                position: nextPosition,
+                customName: reservations[num]?.name || undefined,
+            }];
         });
     };
 
-    // Feature 4: Update the custom name (override) for a winner
-    const updateWinnerName = (number: string, name: string) => {
-        setWinners(prev => prev.map(w => w.number === number ? { ...w, customName: name } : w));
+    // Add manual number via input form
+    const handleAddManualNumber = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!manualNum.trim()) return;
+        const cleanNum = manualNum.trim().padStart(raffle.total_numbers >= 1000 ? 3 : 2, '0');
+        handleNumberClick(cleanNum);
+        setManualNum('');
+    };
+
+    // Remove a specific winner entry by ID and recalculate positions
+    const removeWinnerById = (id: string) => {
+        setWinners(prev => {
+            const filtered = prev.filter(w => w.id !== id);
+            return filtered.map((w, idx) => ({
+                ...w,
+                position: idx + 1
+            }));
+        });
+    };
+
+    // Update custom name for a specific winner entry ID
+    const updateWinnerNameById = (id: string, name: string) => {
+        setWinners(prev => prev.map(w => w.id === id ? { ...w, customName: name } : w));
     };
 
     // Helper: draw a rounded rectangle
@@ -114,13 +129,13 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
         try {
             const DPR = 3;           // High resolution
-            const W = 480;           // Logical width (increased for bigger card layout)
-            const PAD = 40;          // Side padding
+            const W = 460;           // Logical width
+            const PAD = 30;          // Side padding
             const CARD_W = W - PAD * 2;  // 400px
-            const CARD_H = 175;       // Height for centered card
-            const CARD_GAP = 24;
-            const HEADER_H = 290;
-            const FOOTER_H = 130;
+            const CARD_H = 105;       // Compact card height for visible info
+            const CARD_GAP = 16;
+            const HEADER_H = 210;
+            const FOOTER_H = 85;
             const totalH = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + FOOTER_H + PAD;
 
             const canvas = document.createElement('canvas');
@@ -144,37 +159,37 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
             // ── TOPSORTE pill ─────────────────────────────────────
             const pillLabel = 'TOPSORTE_027';
-            ctx.font = 'bold 20px Montserrat, Arial';
-            const pillW = ctx.measureText(pillLabel).width + 72;
-            const pillH = 50;
+            ctx.font = 'bold 16px Montserrat, Arial';
+            const pillW = ctx.measureText(pillLabel).width + 56;
+            const pillH = 40;
             const pillX = (W - pillW) / 2;
-            const pillY = 40;
+            const pillY = 28;
             ctx.fillStyle = '#FFD60A';
             roundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
             ctx.fill();
-            ctx.font = '900 20px Montserrat, Arial';
+            ctx.font = '900 16px Montserrat, Arial';
             ctx.fillStyle = '#001D3D';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(pillLabel, W / 2, pillY + pillH / 2);
 
             // ── "Resultado Oficial" subtitle ──────────────────────
-            centredText('RESULTADO OFICIAL', 122, '800 14px Montserrat, Arial', '#94a3b8');
+            centredText('RESULTADO OFICIAL', 92, '800 12px Montserrat, Arial', '#94a3b8');
 
             // ── Main Title ────────────────────────────────────────
-            ctx.font = '900 42px Montserrat, Arial';
+            ctx.font = '900 32px Montserrat, Arial';
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('VENCEDORES DO', W / 2, 172);
+            ctx.fillText('VENCEDORES DO', W / 2, 134);
 
-            ctx.font = '900 42px Montserrat, Arial';
+            ctx.font = '900 32px Montserrat, Arial';
             ctx.fillStyle = '#FFD60A';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(`CONCURSO #${raffle.code || '000'}`, W / 2, 225);
+            ctx.fillText(`CONCURSO #${raffle.code || '000'}`, W / 2, 174);
 
-            // ── Winner Cards ──────────────────────────────────────
+            // ── Winner Cards (Compact & Centered) ────────────────
             sortedWinners.forEach((winner, i) => {
                 const pc = getPrintColors(winner.position);
                 const pi = getPrizeInfo(winner.position);
@@ -185,77 +200,75 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
                 // Card background
                 ctx.fillStyle = 'rgba(255,255,255,0.08)';
-                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 32);
+                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 24);
                 ctx.fill();
 
                 // Card border
                 ctx.strokeStyle = 'rgba(255,255,255,0.18)';
                 ctx.lineWidth = 1.5;
-                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 32);
+                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 24);
                 ctx.stroke();
 
                 // 1. Prize label pill (Centered top)
                 const labelText = `${pi.icon} ${pi.label.toUpperCase()}`;
-                ctx.font = '900 16px Montserrat, Arial';
-                const labelW = ctx.measureText(labelText).width + 36;
-                const labelH = 34;
+                ctx.font = '900 14px Montserrat, Arial';
+                const labelW = ctx.measureText(labelText).width + 30;
+                const labelH = 28;
                 const labelX = (W - labelW) / 2;
-                const labelY = cardY + 20;
+                const labelY = cardY + 14;
 
                 ctx.fillStyle = pc.labelBg;
                 roundRect(ctx, labelX, labelY, labelW, labelH, labelH / 2);
                 ctx.fill();
 
-                ctx.font = '900 15px Montserrat, Arial';
+                ctx.font = '900 13px Montserrat, Arial';
                 ctx.fillStyle = pc.labelText;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(labelText, W / 2, labelY + labelH / 2);
 
-                // 2. COTA #XX Badge (Centered middle)
-                const cotaText = `COTA #${winner.number}`;
-                ctx.font = '900 28px Montserrat, Arial';
-                const badgeW = ctx.measureText(cotaText).width + 44;
-                const badgeH = 44;
-                const badgeX = (W - badgeW) / 2;
-                const badgeY = labelY + labelH + 12;
+                // 2. Cota Badge + Winner Name (Centered row)
+                const cotaText = `#${winner.number}`;
+                ctx.font = '900 22px Montserrat, Arial';
+                const cotaW = ctx.measureText(cotaText).width + 24;
+                const cotaH = 34;
 
+                const nameText = displayName.toUpperCase();
+                let fontSize = 24;
+                ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
+                const maxNameW = CARD_W - cotaW - 50;
+
+                while (ctx.measureText(nameText).width > maxNameW && fontSize > 12) {
+                    fontSize -= 1;
+                    ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
+                }
+
+                const nameW = ctx.measureText(nameText).width;
+                const totalRowW = cotaW + 12 + nameW;
+                const startX = (W - totalRowW) / 2;
+                const rowY = labelY + labelH + 12;
+
+                // Draw Cota badge
                 ctx.fillStyle = pc.bg;
-                roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 20);
+                roundRect(ctx, startX, rowY, cotaW, cotaH, 14);
                 ctx.fill();
 
                 ctx.fillStyle = pc.text;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(cotaText, W / 2, badgeY + badgeH / 2);
+                ctx.font = '900 20px Montserrat, Arial';
+                ctx.fillText(cotaText, startX + cotaW / 2, rowY + cotaH / 2);
 
-                // 3. Winner name (Centered bottom)
-                const nameY = badgeY + badgeH + 26;
-                const maxNameW = CARD_W - 40;
-                let fontSize = 30;
-                ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
-                let nameDisplay = displayName.toUpperCase();
-
-                while (ctx.measureText(nameDisplay).width > maxNameW && fontSize > 12) {
-                    fontSize -= 1;
-                    ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
-                }
-
-                if (fontSize <= 12) {
-                    while (ctx.measureText(nameDisplay).width > maxNameW && nameDisplay.length > 3) {
-                        nameDisplay = nameDisplay.slice(0, -1);
-                    }
-                    if (nameDisplay !== displayName.toUpperCase()) nameDisplay += '…';
-                }
-
+                // Draw Name
                 ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'center';
+                ctx.textAlign = 'left';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(nameDisplay, W / 2, nameY);
+                ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
+                ctx.fillText(nameText, startX + cotaW + 12, rowY + cotaH / 2);
             });
 
             // ── Divider ───────────────────────────────────────────
-            const divY = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + 24;
+            const divY = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + 12;
             ctx.strokeStyle = 'rgba(255,214,10,0.3)';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -264,8 +277,8 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.stroke();
 
             // ── Footer ────────────────────────────────────────────
-            centredText('PARABÉNS AOS GANHADORES!', divY + 40, '900 italic 22px Montserrat, Arial', '#FFD60A');
-            centredText('OBRIGADO A TODOS POR PARTICIPAR', divY + 80, '700 12px Montserrat, Arial', 'rgba(255,255,255,0.3)');
+            centredText('PARABÉNS AOS GANHADORES!', divY + 32, '900 italic 20px Montserrat, Arial', '#FFD60A');
+            centredText('OBRIGADO A TODOS POR PARTICIPAR', divY + 62, '700 11px Montserrat, Arial', 'rgba(255,255,255,0.3)');
 
             // ── Download ──────────────────────────────────────────
             const link = document.createElement('a');
@@ -328,9 +341,33 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                         <span className="text-xl mt-0.5">ℹ️</span>
                         <div>
                             <p className="font-black text-blue-800 text-sm">Como definir os ganhadores</p>
-                            <p className="text-blue-600 text-xs font-medium mt-0.5">Clique nos números para marcá-los como prêmios. O primeiro número clicado vira 🥇 1º Prêmio, o segundo 🥈 2º, e assim por diante. Clique novamente para remover.</p>
+                            <p className="text-blue-600 text-xs font-medium mt-0.5">
+                                Clique nos números na grade (ou digite a cota abaixo) para adicioná-los. Você pode clicar no mesmo número várias vezes para premiá-lo em posições diferentes (ex: 1º, 2º e 3º prêmio).
+                            </p>
                         </div>
                     </div>
+
+                    {/* Manual Number Quick Input */}
+                    <form onSubmit={handleAddManualNumber} className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 flex flex-wrap sm:flex-nowrap gap-3 items-center">
+                        <div className="flex-1 min-w-[160px]">
+                            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1">
+                                Digitar Cota Manual / Repetida
+                            </label>
+                            <input
+                                type="text"
+                                value={manualNum}
+                                onChange={e => setManualNum(e.target.value)}
+                                placeholder="Ex: 06"
+                                className="w-full bg-white border-2 border-slate-300 focus:border-purple-600 rounded-xl px-4 py-2.5 font-black text-slate-900 text-base outline-none shadow-sm"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-black transition-all shadow-md active:scale-95 self-end text-sm whitespace-nowrap"
+                        >
+                            + ADICIONAR PRÊMIO
+                        </button>
+                    </form>
 
                     {/* Management Grid */}
                     <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
@@ -339,53 +376,53 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                 🔢 Seleção de Vencedores
                             </h3>
                             <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-sm font-black uppercase tracking-widest">
-                                {winners.length} SELECIONADOS
+                                {winners.length} PRÊMIOS DEFINIDOS
                             </div>
                         </div>
 
                         <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 mb-8">
                             {numbers.map((num) => {
                                 const reservation = reservations[num];
-                                const winner = winners.find(w => w.number === num);
+                                const numberWinners = winners.filter(w => w.number === num);
+                                const isWinner = numberWinners.length > 0;
+                                const firstWinner = numberWinners[0];
                                 const isPaid = reservation?.status === 'paid';
-                                const prizeInfo = winner ? getPrizeInfo(winner.position) : null;
+                                const prizeInfo = firstWinner ? getPrizeInfo(firstWinner.position) : null;
 
                                 return (
                                     <div
                                         key={num}
                                         onClick={() => handleNumberClick(num)}
-                                        title={winner ? `${prizeInfo?.label}: ${winner.customName || reservations[num]?.name || '---'}` : reservation?.name}
+                                        title={isWinner ? `Cota #${num} (${numberWinners.length}x prêmio): ${firstWinner?.customName || reservations[num]?.name || '---'}` : reservation?.name}
                                         className={`
                                             aspect-square flex flex-col items-center justify-center rounded-xl border-2 transition-all cursor-pointer select-none relative
-                                            ${winner
+                                            ${isWinner
                                                 ? 'scale-110 z-10 shadow-lg ring-4 ring-yellow-100'
                                                 : isPaid
                                                     ? 'bg-blue-600 border-blue-700 text-white hover:bg-blue-500'
                                                     : 'bg-slate-50 border-slate-200 text-slate-300 hover:bg-slate-100'}
                                         `}
-                                        style={winner ? { backgroundColor: prizeInfo?.bg, borderColor: prizeInfo?.border } : {}}
+                                        style={isWinner ? { backgroundColor: prizeInfo?.bg, borderColor: prizeInfo?.border } : {}}
                                     >
-                                        {winner && (
-                                            <span className="absolute -top-2 -right-2 text-base leading-none">{prizeInfo?.icon}</span>
-                                        )}
-                                        <span className={`text-sm font-black`} style={winner ? { color: prizeInfo?.color } : {}}>
-                                            {num}
-                                        </span>
-                                        {winner && (
-                                            <span className="text-[8px] font-black uppercase" style={{ color: prizeInfo?.color }}>
-                                                {winner.position}º
+                                        {isWinner && (
+                                            <span className="absolute -top-2 -right-2 text-xs font-black bg-purple-600 text-white px-1.5 py-0.5 rounded-full shadow-sm leading-none">
+                                                {numberWinners.length > 1 ? `${numberWinners.length}x` : prizeInfo?.icon}
                                             </span>
                                         )}
+                                        <span className={`text-sm font-black`} style={isWinner ? { color: prizeInfo?.color } : {}}>
+                                            {num}
+                                        </span>
                                     </div>
                                 );
                             })}
                         </div>
 
-                        {/* Feature 4: Winners Management Table with positions and editable names */}
+                        {/* Winners Management Table with positions, editable names, and removal */}
                         {winners.length > 0 && (
                             <div className="overflow-hidden bg-white rounded-3xl border-2 border-slate-100 shadow-sm mt-10">
-                                <div className="bg-slate-50 py-4 px-6 border-b border-slate-100">
+                                <div className="bg-slate-50 py-4 px-6 border-b border-slate-100 flex items-center justify-between">
                                     <h4 className="font-black text-slate-500 uppercase text-xs tracking-widest">Sequência de Ganhadores</h4>
+                                    <span className="text-xs text-slate-400 font-bold">Total: {winners.length} prêmios</span>
                                 </div>
                                 <table className="w-full">
                                     <tbody className="divide-y divide-slate-100">
@@ -393,16 +430,16 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                             const prizeInfo = getPrizeInfo(winner.position);
                                             const dbName = reservations[winner.number]?.name;
                                             return (
-                                                <tr key={winner.number} className="group">
+                                                <tr key={winner.id} className="group">
                                                     <td className="px-5 py-5 w-36">
                                                         <div className="flex flex-col items-center gap-1.5">
                                                             <div
-                                                                className="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg border-2"
+                                                                className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-md border-2"
                                                                 style={{ backgroundColor: prizeInfo.bg, color: prizeInfo.color, borderColor: prizeInfo.border }}
                                                             >
-                                                                {winner.number}
+                                                                #{winner.number}
                                                             </div>
-                                                            <span className="text-xs font-black uppercase px-3 py-1 rounded-full shadow-sm" style={{ backgroundColor: prizeInfo.bg, color: prizeInfo.color, border: `1px solid ${prizeInfo.border}` }}>
+                                                            <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full shadow-sm whitespace-nowrap" style={{ backgroundColor: prizeInfo.bg, color: prizeInfo.color, border: `1px solid ${prizeInfo.border}` }}>
                                                                 {prizeInfo.icon} {prizeInfo.label}
                                                             </span>
                                                         </div>
@@ -412,13 +449,14 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                         <input
                                                             type="text"
                                                             value={winner.customName || ''}
-                                                            onChange={e => updateWinnerName(winner.number, e.target.value)}
+                                                            onChange={e => updateWinnerNameById(winner.id, e.target.value)}
                                                             placeholder={dbName || 'Nome manual...'}
-                                                            className="w-full bg-white border-2 border-slate-300 focus:border-blue-600 rounded-xl px-4 py-3 font-black text-slate-900 text-base shadow-sm outline-none transition-colors"
+                                                            className="w-full bg-white border-2 border-slate-300 focus:border-blue-600 rounded-xl px-4 py-2.5 font-black text-slate-900 text-base shadow-sm outline-none transition-colors"
                                                         />
                                                         {dbName && winner.customName !== dbName && (
                                                             <button
-                                                                onClick={() => updateWinnerName(winner.number, dbName)}
+                                                                type="button"
+                                                                onClick={() => updateWinnerNameById(winner.id, dbName)}
                                                                 className="text-xs text-blue-500 hover:text-blue-700 font-bold mt-1 block"
                                                             >
                                                                 ↩ Usar nome do banco: {dbName}
@@ -439,8 +477,9 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                     </td>
                                                     <td className="px-4 py-4 text-right">
                                                         <button
-                                                            onClick={() => handleNumberClick(winner.number)}
-                                                            className="text-red-400 hover:text-red-600 font-black text-xs uppercase opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            type="button"
+                                                            onClick={() => removeWinnerById(winner.id)}
+                                                            className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-xl font-black text-xs uppercase transition-colors"
                                                         >
                                                             ✕ REMOVER
                                                         </button>
@@ -513,11 +552,11 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                             <div
                                 id="print-area-capture"
                                 ref={printRef}
-                                className="mx-auto p-12 text-white shadow-2xl transition-colors duration-300"
+                                className="mx-auto p-10 text-white shadow-2xl transition-colors duration-300"
                                 style={{
                                     backgroundColor: bgStyle,
                                     width: '420px',
-                                    minHeight: '800px',
+                                    minHeight: '600px',
                                     border: '12px solid rgba(255, 255, 255, 0.05)',
                                     display: 'block',
                                     boxSizing: 'border-box',
@@ -525,107 +564,108 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                 }}
                             >
                                 {/* Logo / Brand Header */}
-                                <div style={{ marginBottom: '40px', width: '100%', textAlign: 'center' }}>
+                                <div style={{ marginBottom: '24px', width: '100%', textAlign: 'center' }}>
                                     <div style={{
                                         display: 'inline-block',
                                         backgroundColor: '#FFD60A',
                                         color: '#001D3D',
-                                        padding: '12px 36px',
+                                        padding: '10px 32px',
                                         borderRadius: '50px',
                                         fontWeight: '900',
-                                        fontSize: '18px',
+                                        fontSize: '16px',
                                         textTransform: 'uppercase',
-                                        letterSpacing: '0.2em',
+                                        letterSpacing: '0.15em',
                                         textAlign: 'center',
-                                        boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
+                                        boxShadow: '0 8px 20px rgba(0,0,0,0.3)'
                                     }}>
                                         TOPSORTE_027
                                     </div>
                                 </div>
 
                                 {/* Main Title */}
-                                <div style={{ marginBottom: '60px', width: '100%', textAlign: 'center' }}>
-                                    <h2 style={{ color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '12px', marginBottom: '15px' }}>
+                                <div style={{ marginBottom: '32px', width: '100%', textAlign: 'center' }}>
+                                    <h2 style={{ color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '11px', marginBottom: '8px' }}>
                                         Resultado Oficial
                                     </h2>
-                                    <h1 style={{ color: '#ffffff', fontWeight: '900', fontSize: '36px', textTransform: 'uppercase', letterSpacing: '-0.02em', fontStyle: 'italic', lineHeight: '1.1' }}>
+                                    <h1 style={{ color: '#ffffff', fontWeight: '900', fontSize: '30px', textTransform: 'uppercase', letterSpacing: '-0.02em', fontStyle: 'italic', lineHeight: '1.1' }}>
                                         Vencedores do <br />
                                         <span style={{ color: '#FFD60A' }}>Concurso #{raffle.code || '000'}</span>
                                     </h1>
                                 </div>
 
-                                {/* Feature 4: Winners List with prize positions — TABLE layout for html2canvas */}
-                                <div style={{ width: '100%', marginBottom: '40px' }}>
+                                {/* Winners List (Compact & Centered) */}
+                                <div style={{ width: '100%', marginBottom: '28px' }}>
                                     {sortedWinners.length > 0 ? (
                                         sortedWinners.map((winner) => {
                                             const printColors = getPrintColors(winner.position);
                                             const prizeInfo = getPrizeInfo(winner.position);
                                             const displayName = winner.customName || reservations[winner.number]?.name || '---';
                                             return (
-                                                <div key={winner.number} style={{
+                                                <div key={winner.id} style={{
                                                     display: 'block',
                                                     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                                    border: '2px solid rgba(255, 255, 255, 0.18)',
-                                                    borderRadius: '32px',
-                                                    marginBottom: '24px',
+                                                    border: '1.5px solid rgba(255, 255, 255, 0.18)',
+                                                    borderRadius: '24px',
+                                                    marginBottom: '16px',
                                                     marginLeft: 'auto',
                                                     marginRight: 'auto',
                                                     width: '380px',
                                                     boxSizing: 'border-box',
-                                                    padding: '24px 20px',
+                                                    padding: '14px 18px',
                                                     textAlign: 'center',
-                                                    boxShadow: '0 12px 35px rgba(0,0,0,0.35)'
+                                                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
                                                 }}>
-                                                    {/* Prize label pill (Centered top) */}
+                                                    {/* Prize label pill */}
                                                     <div style={{
                                                         display: 'inline-block',
                                                         backgroundColor: printColors.labelBg,
                                                         color: printColors.labelText,
                                                         fontWeight: '900',
-                                                        fontSize: '15px',
+                                                        fontSize: '13px',
                                                         textTransform: 'uppercase',
                                                         letterSpacing: '0.08em',
-                                                        padding: '6px 20px',
+                                                        padding: '4px 16px',
                                                         borderRadius: '50px',
-                                                        marginBottom: '12px',
-                                                        boxShadow: '0 4px 14px rgba(0,0,0,0.3)'
+                                                        marginBottom: '10px',
+                                                        boxShadow: '0 3px 10px rgba(0,0,0,0.2)'
                                                     }}>
                                                         {prizeInfo.icon} {prizeInfo.label}
                                                     </div>
 
-                                                    {/* COTA #XX Badge (Centered middle) */}
-                                                    <div>
+                                                    {/* Cota Badge + Name Centered Row */}
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: '12px'
+                                                    }}>
                                                         <div style={{
-                                                            display: 'inline-block',
                                                             backgroundColor: printColors.bg,
                                                             color: printColors.text,
-                                                            borderRadius: '20px',
+                                                            borderRadius: '14px',
                                                             fontWeight: '900',
-                                                            fontSize: '28px',
-                                                            padding: '6px 24px',
-                                                            lineHeight: '1.2',
+                                                            fontSize: '20px',
+                                                            padding: '4px 14px',
+                                                            lineHeight: '1.3',
                                                             textAlign: 'center',
-                                                            marginBottom: '14px',
-                                                            boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
-                                                            letterSpacing: '0.05em'
+                                                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                                            whiteSpace: 'nowrap'
                                                         }}>
-                                                            COTA #{winner.number}
+                                                            #{winner.number}
                                                         </div>
-                                                    </div>
-
-                                                    {/* Winner Name (Centered bottom) */}
-                                                    <div style={{
-                                                        color: '#ffffff',
-                                                        fontWeight: '900',
-                                                        fontSize: '28px',
-                                                        textTransform: 'uppercase',
-                                                        fontStyle: 'italic',
-                                                        letterSpacing: '-0.02em',
-                                                        lineHeight: '1.15',
-                                                        wordBreak: 'break-word',
-                                                        textAlign: 'center'
-                                                    }}>
-                                                        {displayName}
+                                                        <div style={{
+                                                            color: '#ffffff',
+                                                            fontWeight: '900',
+                                                            fontSize: '22px',
+                                                            textTransform: 'uppercase',
+                                                            fontStyle: 'italic',
+                                                            letterSpacing: '-0.02em',
+                                                            lineHeight: '1.1',
+                                                            wordBreak: 'break-word',
+                                                            textAlign: 'left'
+                                                        }}>
+                                                            {displayName}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             );
@@ -633,10 +673,10 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                     ) : (
                                         <div style={{
                                             width: '320px',
-                                            height: '200px',
+                                            height: '160px',
                                             margin: '0 auto',
                                             border: '2px dashed rgba(255, 255, 255, 0.1)',
-                                            borderRadius: '40px',
+                                            borderRadius: '30px',
                                             display: 'table',
                                         }}>
                                             <div style={{
@@ -653,12 +693,12 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                     )}
                                 </div>
 
-                                <div style={{ width: '100%', textAlign: 'center', marginTop: 'auto', paddingBottom: '20px' }}>
-                                    <div style={{ height: '2px', width: '60px', backgroundColor: 'rgba(255, 214, 10, 0.3)', margin: '0 auto 30px' }}></div>
-                                    <h3 style={{ color: '#FFD60A', fontWeight: '900', fontSize: '22px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', marginBottom: '10px' }}>
+                                <div style={{ width: '100%', textAlign: 'center', marginTop: 'auto', paddingBottom: '16px' }}>
+                                    <div style={{ height: '2px', width: '50px', backgroundColor: 'rgba(255, 214, 10, 0.3)', margin: '0 auto 20px' }}></div>
+                                    <h3 style={{ color: '#FFD60A', fontWeight: '900', fontSize: '20px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', marginBottom: '8px' }}>
                                         PARABÉNS AOS GANHADORES!
                                     </h3>
-                                    <p style={{ color: 'rgba(255, 255, 255, 0.3)', fontWeight: '800', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                    <p style={{ color: 'rgba(255, 255, 255, 0.3)', fontWeight: '800', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                                         Obrigado a todos por participar
                                     </p>
                                 </div>
