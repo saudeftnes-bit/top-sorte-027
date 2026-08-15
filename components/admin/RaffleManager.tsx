@@ -437,7 +437,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                         type="text"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                         placeholder="Ex: MOTO 0KM OU R$ 15.000 NO PIX"
                     />
                 </div>
@@ -448,7 +448,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         rows={3}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium resize-none"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base resize-none shadow-sm"
                         placeholder="Descrição adicional do sorteio..."
                     />
                 </div>
@@ -461,7 +461,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             step="0.01"
                             value={pricePerNumber}
                             onChange={(e) => setPricePerNumber(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                             placeholder="13.00"
                         />
                     </div>
@@ -471,10 +471,10 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                         <select
                             value={status}
                             onChange={(e) => setStatus(e.target.value as any)}
-                            className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none font-black transition-all ${status === 'active' ? 'border-green-500 bg-green-50 text-green-700' :
-                                status === 'scheduled' ? 'border-yellow-500 bg-yellow-50 text-yellow-700' :
-                                    status === 'paused' ? 'border-red-500 bg-red-50 text-red-700' :
-                                        'border-purple-500 bg-purple-50 text-purple-700'
+                            className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none font-black transition-all ${status === 'active' ? 'border-green-500 bg-green-50 text-green-900' :
+                                status === 'scheduled' ? 'border-yellow-500 bg-yellow-50 text-yellow-900' :
+                                    status === 'paused' ? 'border-red-500 bg-red-50 text-red-900' :
+                                        'border-purple-500 bg-purple-50 text-purple-900'
                                 }`}
                         >
                             <option value="active">🟢 SORTEIO ATIVO</option>
@@ -493,7 +493,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             type="number"
                             value={selectionTimeout}
                             onChange={(e) => setSelectionTimeout(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                             placeholder="5"
                         />
                     </div>
@@ -505,7 +505,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             type="number"
                             value={paymentTimeout}
                             onChange={(e) => setPaymentTimeout(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                             placeholder="15"
                         />
                     </div>
@@ -540,7 +540,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             type="url"
                             value={mainImageUrl}
                             onChange={(e) => setMainImageUrl(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                             placeholder="https://images.unsplash.com/..."
                         />
                     </div>
@@ -560,7 +560,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             type="number"
                             value={totalNumbers}
                             onChange={(e) => setTotalNumbers(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                             placeholder="100"
                             min="1"
                             max="100"
@@ -573,7 +573,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                         <select
                             value={selectionMode}
                             onChange={(e) => setSelectionMode(e.target.value as any)}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-600 focus:outline-none font-medium"
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                         >
                             <option value="loteria">🎲 Loteria (Números)</option>
                             <option value="jogo_bicho">🐓 Jogo do Bicho (Animais)</option>
@@ -606,14 +606,14 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                             type="text"
                             value={newWinnerName}
                             onChange={(e) => setNewWinnerName(e.target.value)}
-                            className="px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
+                            className="px-4 py-2.5 rounded-lg border-2 border-purple-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                             placeholder="Nome do ganhador"
                         />
                         <input
                             type="text"
                             value={newWinnerPrize}
                             onChange={(e) => setNewWinnerPrize(e.target.value)}
-                            className="px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
+                            className="px-4 py-2.5 rounded-lg border-2 border-purple-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                             placeholder="Prêmio"
                         />
                     </div>
@@ -644,7 +644,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                                 type="url"
                                 value={newWinnerPhotoUrl}
                                 onChange={(e) => setNewWinnerPhotoUrl(e.target.value)}
-                                className="w-full px-4 py-2 rounded-lg border-2 border-purple-200 focus:border-purple-600 focus:outline-none font-medium"
+                                className="w-full px-4 py-2.5 rounded-lg border-2 border-purple-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-purple-600 focus:outline-none font-bold text-base shadow-sm"
                                 placeholder="URL da foto"
                             />
                         </div>
