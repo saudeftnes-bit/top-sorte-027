@@ -113,11 +113,11 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
         try {
             const DPR = 3;           // High resolution
-            const W = 480;           // Logical width (increased from 420 for bigger card layout)
+            const W = 480;           // Logical width (increased for bigger card layout)
             const PAD = 40;          // Side padding
-            const CARD_W = W - PAD * 2;  // 400px (was 324px)
-            const CARD_H = 140;       // (was 110px)
-            const CARD_GAP = 22;
+            const CARD_W = W - PAD * 2;  // 400px
+            const CARD_H = 175;       // Height for centered card
+            const CARD_GAP = 24;
             const HEADER_H = 290;
             const FOOTER_H = 130;
             const totalH = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + FOOTER_H + PAD;
@@ -174,9 +174,6 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.fillText(`CONCURSO #${raffle.code || '000'}`, W / 2, 225);
 
             // ── Winner Cards ──────────────────────────────────────
-            const BADGE_SIZE = 96;
-            const BADGE_RADIUS = 24;
-
             sortedWinners.forEach((winner, i) => {
                 const pc = getPrintColors(winner.position);
                 const pi = getPrizeInfo(winner.position);
@@ -187,50 +184,53 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
                 // Card background
                 ctx.fillStyle = 'rgba(255,255,255,0.08)';
-                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 30);
+                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 32);
                 ctx.fill();
 
                 // Card border
                 ctx.strokeStyle = 'rgba(255,255,255,0.18)';
                 ctx.lineWidth = 1.5;
-                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 30);
+                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 32);
                 ctx.stroke();
 
-                // Number badge (left side)
-                const badgeX = cardX + 22;
-                const badgeY = cardY + (CARD_H - BADGE_SIZE) / 2;
-                ctx.fillStyle = pc.bg;
-                roundRect(ctx, badgeX, badgeY, BADGE_SIZE, BADGE_SIZE, BADGE_RADIUS);
-                ctx.fill();
-
-                // Number text (centred in badge)
-                ctx.font = '900 36px Montserrat, Arial';
-                ctx.fillStyle = pc.text;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(winner.number, badgeX + BADGE_SIZE / 2, badgeY + BADGE_SIZE / 2);
-
-                // Prize label pill (right side, top)
+                // 1. Prize label pill (Centered top)
                 const labelText = `${pi.icon} ${pi.label.toUpperCase()}`;
                 ctx.font = '900 16px Montserrat, Arial';
-                const labelW = ctx.measureText(labelText).width + 32;
+                const labelW = ctx.measureText(labelText).width + 36;
                 const labelH = 34;
-                const labelX = badgeX + BADGE_SIZE + 20;
-                const labelY = cardY + 22;
+                const labelX = (W - labelW) / 2;
+                const labelY = cardY + 20;
+
                 ctx.fillStyle = pc.labelBg;
                 roundRect(ctx, labelX, labelY, labelW, labelH, labelH / 2);
                 ctx.fill();
 
                 ctx.font = '900 15px Montserrat, Arial';
                 ctx.fillStyle = pc.labelText;
-                ctx.textAlign = 'left';
+                ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(labelText, labelX + 16, labelY + labelH / 2);
+                ctx.fillText(labelText, W / 2, labelY + labelH / 2);
 
-                // Winner name (right side, below badge)
-                const nameY = labelY + labelH + 16;
-                // Adjust font size dynamically to avoid truncating last names
-                const maxNameW = CARD_W - BADGE_SIZE - 60;
+                // 2. COTA #XX Badge (Centered middle)
+                const cotaText = `COTA #${winner.number}`;
+                ctx.font = '900 28px Montserrat, Arial';
+                const badgeW = ctx.measureText(cotaText).width + 44;
+                const badgeH = 44;
+                const badgeX = (W - badgeW) / 2;
+                const badgeY = labelY + labelH + 12;
+
+                ctx.fillStyle = pc.bg;
+                roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 20);
+                ctx.fill();
+
+                ctx.fillStyle = pc.text;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(cotaText, W / 2, badgeY + badgeH / 2);
+
+                // 3. Winner name (Centered bottom)
+                const nameY = badgeY + badgeH + 26;
+                const maxNameW = CARD_W - 40;
                 let fontSize = 30;
                 ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
                 let nameDisplay = displayName.toUpperCase();
@@ -240,7 +240,6 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                     ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
                 }
 
-                // Only truncate if we hit the minimum font size and it STILL doesn't fit
                 if (fontSize <= 12) {
                     while (ctx.measureText(nameDisplay).width > maxNameW && nameDisplay.length > 3) {
                         nameDisplay = nameDisplay.slice(0, -1);
@@ -249,9 +248,9 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 }
 
                 ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                ctx.fillText(nameDisplay, labelX, nameY);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(nameDisplay, W / 2, nameY);
             });
 
             // ── Divider ───────────────────────────────────────────
@@ -519,84 +518,67 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                     display: 'block',
                                                     backgroundColor: 'rgba(255, 255, 255, 0.08)',
                                                     border: '2px solid rgba(255, 255, 255, 0.18)',
-                                                    borderRadius: '35px',
-                                                    marginBottom: '22px',
+                                                    borderRadius: '32px',
+                                                    marginBottom: '24px',
                                                     marginLeft: 'auto',
                                                     marginRight: 'auto',
                                                     width: '380px',
                                                     boxSizing: 'border-box',
-                                                    padding: '22px 24px',
-                                                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+                                                    padding: '24px 20px',
+                                                    textAlign: 'center',
+                                                    boxShadow: '0 12px 35px rgba(0,0,0,0.35)'
                                                 }}>
-                                                    {/* TABLE layout: badge | content */}
-                                                    <table style={{
-                                                        width: '100%',
-                                                        borderCollapse: 'collapse',
-                                                        tableLayout: 'fixed',
+                                                    {/* Prize label pill (Centered top) */}
+                                                    <div style={{
+                                                        display: 'inline-block',
+                                                        backgroundColor: printColors.labelBg,
+                                                        color: printColors.labelText,
+                                                        fontWeight: '900',
+                                                        fontSize: '15px',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '0.08em',
+                                                        padding: '6px 20px',
+                                                        borderRadius: '50px',
+                                                        marginBottom: '12px',
+                                                        boxShadow: '0 4px 14px rgba(0,0,0,0.3)'
                                                     }}>
-                                                        <tbody>
-                                                            <tr>
-                                                                {/* Number badge cell */}
-                                                                <td style={{
-                                                                    width: '90px',
-                                                                    verticalAlign: 'middle',
-                                                                    textAlign: 'center',
-                                                                    paddingRight: '16px',
-                                                                }}>
-                                                                    <div style={{
-                                                                        width: '84px',
-                                                                        height: '84px',
-                                                                        backgroundColor: printColors.bg,
-                                                                        color: printColors.text,
-                                                                        borderRadius: '22px',
-                                                                        fontWeight: '900',
-                                                                        fontSize: '34px',
-                                                                        lineHeight: '84px',
-                                                                        textAlign: 'center',
-                                                                        display: 'block',
-                                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                                                                    }}>
-                                                                        {winner.number}
-                                                                    </div>
-                                                                </td>
-                                                                {/* Content cell: badge + name */}
-                                                                <td style={{
-                                                                    verticalAlign: 'middle',
-                                                                    textAlign: 'left',
-                                                                }}>
-                                                                    {/* Prize label pill */}
-                                                                    <div style={{
-                                                                        display: 'inline-block',
-                                                                        backgroundColor: printColors.labelBg,
-                                                                        color: printColors.labelText,
-                                                                        fontWeight: '900',
-                                                                        fontSize: '15px',
-                                                                        textTransform: 'uppercase',
-                                                                        letterSpacing: '0.08em',
-                                                                        padding: '6px 16px',
-                                                                        borderRadius: '50px',
-                                                                        marginBottom: '10px',
-                                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                                                                    }}>
-                                                                        {prizeInfo.icon} {prizeInfo.label}
-                                                                    </div>
-                                                                    {/* Name */}
-                                                                    <div style={{
-                                                                        color: '#ffffff',
-                                                                        fontWeight: '900',
-                                                                        fontSize: '28px',
-                                                                        textTransform: 'uppercase',
-                                                                        fontStyle: 'italic',
-                                                                        letterSpacing: '-0.03em',
-                                                                        lineHeight: '1.1',
-                                                                        wordBreak: 'break-word',
-                                                                    }}>
-                                                                        {displayName}
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
+                                                        {prizeInfo.icon} {prizeInfo.label}
+                                                    </div>
+
+                                                    {/* COTA #XX Badge (Centered middle) */}
+                                                    <div>
+                                                        <div style={{
+                                                            display: 'inline-block',
+                                                            backgroundColor: printColors.bg,
+                                                            color: printColors.text,
+                                                            borderRadius: '20px',
+                                                            fontWeight: '900',
+                                                            fontSize: '28px',
+                                                            padding: '6px 24px',
+                                                            lineHeight: '1.2',
+                                                            textAlign: 'center',
+                                                            marginBottom: '14px',
+                                                            boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+                                                            letterSpacing: '0.05em'
+                                                        }}>
+                                                            COTA #{winner.number}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Winner Name (Centered bottom) */}
+                                                    <div style={{
+                                                        color: '#ffffff',
+                                                        fontWeight: '900',
+                                                        fontSize: '28px',
+                                                        textTransform: 'uppercase',
+                                                        fontStyle: 'italic',
+                                                        letterSpacing: '-0.02em',
+                                                        lineHeight: '1.15',
+                                                        wordBreak: 'break-word',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        {displayName}
+                                                    </div>
                                                 </div>
                                             );
                                         })
