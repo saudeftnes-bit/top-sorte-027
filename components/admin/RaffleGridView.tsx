@@ -547,21 +547,21 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                         </div>
                     </div>
 
-                    <div className="w-full flex justify-center items-center py-4 overflow-x-auto">
+                    <div className="w-full flex justify-center items-start py-4">
                         <div
                             id="print-area-capture"
                             ref={printRef}
-                            className="mx-auto text-white shadow-2xl transition-colors duration-300 rounded-[2.5rem]"
+                            className="text-white shadow-2xl transition-colors duration-300 rounded-[2.5rem]"
                             style={{
                                 backgroundColor: bgStyle,
-                                width: '100%',
-                                maxWidth: '420px',
+                                width: '420px',
                                 minHeight: '560px',
                                 padding: '36px 20px',
                                 border: '8px solid rgba(255, 255, 255, 0.08)',
-                                display: 'block',
                                 boxSizing: 'border-box',
-                                position: 'relative'
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center'
                             }}
                         >
                             {/* Logo / Brand Header */}
@@ -595,23 +595,21 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                             </div>
 
                             {/* Winners List (Compact & Centered) */}
-                            <div style={{ width: '100%', marginBottom: '28px' }}>
+                            <div style={{ width: '100%', marginBottom: '28px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                 {sortedWinners.length > 0 ? (
                                     sortedWinners.map((winner) => {
                                         const printColors = getPrintColors(winner.position);
                                         const prizeInfo = getPrizeInfo(winner.position);
                                         const displayName = winner.customName || reservations[winner.number]?.name || '---';
                                         return (
-                                            <div key={winner.id} style={{
+                                    <div key={winner.id} style={{
                                                 display: 'block',
                                                 backgroundColor: 'rgba(255, 255, 255, 0.08)',
                                                 border: '1.5px solid rgba(255, 255, 255, 0.18)',
                                                 borderRadius: '24px',
                                                 marginBottom: '16px',
-                                                marginLeft: 'auto',
-                                                marginRight: 'auto',
                                                 width: '100%',
-                                                maxWidth: '360px',
+                                                maxWidth: '380px',
                                                 boxSizing: 'border-box',
                                                 padding: '14px 16px',
                                                 textAlign: 'center',
