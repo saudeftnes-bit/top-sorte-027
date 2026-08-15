@@ -113,13 +113,13 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
         try {
             const DPR = 3;           // High resolution
-            const W = 420;           // Logical width
-            const PAD = 48;          // Side padding
-            const CARD_W = W - PAD * 2;  // 324px
-            const CARD_H = 110;
-            const CARD_GAP = 20;
-            const HEADER_H = 280;
-            const FOOTER_H = 120;
+            const W = 480;           // Logical width (increased from 420 for bigger card layout)
+            const PAD = 40;          // Side padding
+            const CARD_W = W - PAD * 2;  // 400px (was 324px)
+            const CARD_H = 140;       // (was 110px)
+            const CARD_GAP = 22;
+            const HEADER_H = 290;
+            const FOOTER_H = 130;
             const totalH = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + FOOTER_H + PAD;
 
             const canvas = document.createElement('canvas');
@@ -143,39 +143,39 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
             // ── TOPSORTE pill ─────────────────────────────────────
             const pillLabel = 'TOPSORTE_027';
-            ctx.font = 'bold 18px Montserrat, Arial';
-            const pillW = ctx.measureText(pillLabel).width + 64;
-            const pillH = 46;
+            ctx.font = 'bold 20px Montserrat, Arial';
+            const pillW = ctx.measureText(pillLabel).width + 72;
+            const pillH = 50;
             const pillX = (W - pillW) / 2;
             const pillY = 40;
             ctx.fillStyle = '#FFD60A';
             roundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
             ctx.fill();
-            ctx.font = '900 18px Montserrat, Arial';
+            ctx.font = '900 20px Montserrat, Arial';
             ctx.fillStyle = '#001D3D';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(pillLabel, W / 2, pillY + pillH / 2);
 
             // ── "Resultado Oficial" subtitle ──────────────────────
-            centredText('RESULTADO OFICIAL', 118, '700 13px Montserrat, Arial', '#94a3b8');
+            centredText('RESULTADO OFICIAL', 122, '800 14px Montserrat, Arial', '#94a3b8');
 
             // ── Main Title ────────────────────────────────────────
-            ctx.font = '900 38px Montserrat, Arial';
+            ctx.font = '900 42px Montserrat, Arial';
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('VENCEDORES DO', W / 2, 165);
+            ctx.fillText('VENCEDORES DO', W / 2, 172);
 
-            ctx.font = '900 38px Montserrat, Arial';
+            ctx.font = '900 42px Montserrat, Arial';
             ctx.fillStyle = '#FFD60A';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(`CONCURSO #${raffle.code || '000'}`, W / 2, 215);
+            ctx.fillText(`CONCURSO #${raffle.code || '000'}`, W / 2, 225);
 
             // ── Winner Cards ──────────────────────────────────────
-            const BADGE_SIZE = 80;
-            const BADGE_RADIUS = 20;
+            const BADGE_SIZE = 96;
+            const BADGE_RADIUS = 24;
 
             sortedWinners.forEach((winner, i) => {
                 const pc = getPrintColors(winner.position);
@@ -186,25 +186,25 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 const cardX = PAD;
 
                 // Card background
-                ctx.fillStyle = 'rgba(255,255,255,0.07)';
-                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 28);
+                ctx.fillStyle = 'rgba(255,255,255,0.08)';
+                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 30);
                 ctx.fill();
 
                 // Card border
-                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-                ctx.lineWidth = 1;
-                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 28);
+                ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+                ctx.lineWidth = 1.5;
+                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 30);
                 ctx.stroke();
 
                 // Number badge (left side)
-                const badgeX = cardX + 20;
+                const badgeX = cardX + 22;
                 const badgeY = cardY + (CARD_H - BADGE_SIZE) / 2;
                 ctx.fillStyle = pc.bg;
                 roundRect(ctx, badgeX, badgeY, BADGE_SIZE, BADGE_SIZE, BADGE_RADIUS);
                 ctx.fill();
 
                 // Number text (centred in badge)
-                ctx.font = '900 30px Montserrat, Arial';
+                ctx.font = '900 36px Montserrat, Arial';
                 ctx.fillStyle = pc.text;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -212,36 +212,36 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
                 // Prize label pill (right side, top)
                 const labelText = `${pi.icon} ${pi.label.toUpperCase()}`;
-                ctx.font = '700 14px Montserrat, Arial';
-                const labelW = ctx.measureText(labelText).width + 28;
-                const labelH = 28;
-                const labelX = badgeX + BADGE_SIZE + 18;
+                ctx.font = '900 16px Montserrat, Arial';
+                const labelW = ctx.measureText(labelText).width + 32;
+                const labelH = 34;
+                const labelX = badgeX + BADGE_SIZE + 20;
                 const labelY = cardY + 22;
                 ctx.fillStyle = pc.labelBg;
                 roundRect(ctx, labelX, labelY, labelW, labelH, labelH / 2);
                 ctx.fill();
 
-                ctx.font = '700 13px Montserrat, Arial';
+                ctx.font = '900 15px Montserrat, Arial';
                 ctx.fillStyle = pc.labelText;
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(labelText, labelX + 14, labelY + labelH / 2);
+                ctx.fillText(labelText, labelX + 16, labelY + labelH / 2);
 
                 // Winner name (right side, below badge)
-                const nameY = labelY + labelH + 14;
+                const nameY = labelY + labelH + 16;
                 // Adjust font size dynamically to avoid truncating last names
-                const maxNameW = CARD_W - BADGE_SIZE - 56;
-                let fontSize = 26;
+                const maxNameW = CARD_W - BADGE_SIZE - 60;
+                let fontSize = 30;
                 ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
                 let nameDisplay = displayName.toUpperCase();
 
-                while (ctx.measureText(nameDisplay).width > maxNameW && fontSize > 11) {
+                while (ctx.measureText(nameDisplay).width > maxNameW && fontSize > 12) {
                     fontSize -= 1;
                     ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
                 }
 
                 // Only truncate if we hit the minimum font size and it STILL doesn't fit
-                if (fontSize <= 11) {
+                if (fontSize <= 12) {
                     while (ctx.measureText(nameDisplay).width > maxNameW && nameDisplay.length > 3) {
                         nameDisplay = nameDisplay.slice(0, -1);
                     }
@@ -394,27 +394,27 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                             const dbName = reservations[winner.number]?.name;
                                             return (
                                                 <tr key={winner.number} className="group">
-                                                    <td className="px-4 py-4 w-28">
-                                                        <div className="flex flex-col items-center gap-1">
+                                                    <td className="px-5 py-5 w-36">
+                                                        <div className="flex flex-col items-center gap-1.5">
                                                             <div
-                                                                className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-md"
-                                                                style={{ backgroundColor: prizeInfo.bg, color: prizeInfo.color, border: `2px solid ${prizeInfo.border}` }}
+                                                                className="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg border-2"
+                                                                style={{ backgroundColor: prizeInfo.bg, color: prizeInfo.color, borderColor: prizeInfo.border }}
                                                             >
                                                                 {winner.number}
                                                             </div>
-                                                            <span className="text-[10px] font-black uppercase" style={{ color: prizeInfo.color }}>
+                                                            <span className="text-xs font-black uppercase px-3 py-1 rounded-full shadow-sm" style={{ backgroundColor: prizeInfo.bg, color: prizeInfo.color, border: `1px solid ${prizeInfo.border}` }}>
                                                                 {prizeInfo.icon} {prizeInfo.label}
                                                             </span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-4">
-                                                        <p className="text-xs font-bold text-slate-400 uppercase mb-1">Nome do Ganhador</p>
+                                                    <td className="px-5 py-5">
+                                                        <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Nome do Ganhador ({prizeInfo.label})</p>
                                                         <input
                                                             type="text"
                                                             value={winner.customName || ''}
                                                             onChange={e => updateWinnerName(winner.number, e.target.value)}
                                                             placeholder={dbName || 'Nome manual...'}
-                                                            className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 font-black text-slate-800 text-sm outline-none focus:border-blue-500 transition-colors"
+                                                            className="w-full bg-white border-2 border-slate-300 focus:border-blue-600 rounded-xl px-4 py-3 font-black text-slate-900 text-base shadow-sm outline-none transition-colors"
                                                         />
                                                         {dbName && winner.customName !== dbName && (
                                                             <button
@@ -517,15 +517,16 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                             return (
                                                 <div key={winner.number} style={{
                                                     display: 'block',
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                                    border: '2px solid rgba(255, 255, 255, 0.18)',
                                                     borderRadius: '35px',
-                                                    marginBottom: '20px',
+                                                    marginBottom: '22px',
                                                     marginLeft: 'auto',
                                                     marginRight: 'auto',
-                                                    width: '340px',
+                                                    width: '380px',
                                                     boxSizing: 'border-box',
-                                                    padding: '18px 20px',
+                                                    padding: '22px 24px',
+                                                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
                                                 }}>
                                                     {/* TABLE layout: badge | content */}
                                                     <table style={{
@@ -537,22 +538,23 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                             <tr>
                                                                 {/* Number badge cell */}
                                                                 <td style={{
-                                                                    width: '70px',
+                                                                    width: '90px',
                                                                     verticalAlign: 'middle',
                                                                     textAlign: 'center',
-                                                                    paddingRight: '14px',
+                                                                    paddingRight: '16px',
                                                                 }}>
                                                                     <div style={{
-                                                                        width: '64px',
-                                                                        height: '64px',
+                                                                        width: '84px',
+                                                                        height: '84px',
                                                                         backgroundColor: printColors.bg,
                                                                         color: printColors.text,
-                                                                        borderRadius: '18px',
+                                                                        borderRadius: '22px',
                                                                         fontWeight: '900',
-                                                                        fontSize: '26px',
-                                                                        lineHeight: '64px',
+                                                                        fontSize: '34px',
+                                                                        lineHeight: '84px',
                                                                         textAlign: 'center',
                                                                         display: 'block',
+                                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                                                                     }}>
                                                                         {winner.number}
                                                                     </div>
@@ -568,12 +570,13 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                                         backgroundColor: printColors.labelBg,
                                                                         color: printColors.labelText,
                                                                         fontWeight: '900',
-                                                                        fontSize: '12px',
+                                                                        fontSize: '15px',
                                                                         textTransform: 'uppercase',
-                                                                        letterSpacing: '0.1em',
-                                                                        padding: '4px 12px',
+                                                                        letterSpacing: '0.08em',
+                                                                        padding: '6px 16px',
                                                                         borderRadius: '50px',
-                                                                        marginBottom: '8px',
+                                                                        marginBottom: '10px',
+                                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
                                                                     }}>
                                                                         {prizeInfo.icon} {prizeInfo.label}
                                                                     </div>
@@ -581,7 +584,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                                     <div style={{
                                                                         color: '#ffffff',
                                                                         fontWeight: '900',
-                                                                        fontSize: '24px',
+                                                                        fontSize: '28px',
                                                                         textTransform: 'uppercase',
                                                                         fontStyle: 'italic',
                                                                         letterSpacing: '-0.03em',
