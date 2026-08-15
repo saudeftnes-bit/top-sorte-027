@@ -43,6 +43,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
     // Feature 4: Winners with prize positions
     const [winners, setWinners] = useState<WinnerEntry[]>([]);
     const [isCapturing, setIsCapturing] = useState(false);
+    const [bgStyle, setBgStyle] = useState<string>('#001D3D');
     const printRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -129,7 +130,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.scale(DPR, DPR);
 
             // ── Background ────────────────────────────────────────
-            ctx.fillStyle = '#001D3D';
+            ctx.fillStyle = bgStyle;
             ctx.fillRect(0, 0, W, totalH);
 
             // helper: centred text
@@ -456,9 +457,55 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
 
                 {/* Column 2: Print Preview */}
                 <div className="space-y-6">
-                    <div className="flex items-center gap-3 ml-4">
-                        <span className="text-2xl">📱</span>
-                        <h3 className="text-2xl font-black text-slate-900">Prévia do Print (Mobile)</h3>
+                    <div className="flex items-center justify-between ml-4">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">📱</span>
+                            <h3 className="text-2xl font-black text-slate-900">Prévia do Print (Mobile)</h3>
+                        </div>
+                    </div>
+
+                    {/* Color Selector Controls */}
+                    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-lg space-y-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+                                🎨 Cor de Fundo do Print
+                            </span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                Escolha a cor
+                            </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            {[
+                                { name: 'Azul Marinho', hex: '#001D3D' },
+                                { name: 'Preto Luxo', hex: '#0A0A0A' },
+                                { name: 'Roxo Sorte', hex: '#2E1065' },
+                                { name: 'Verde Esmeralda', hex: '#022C22' },
+                                { name: 'Vinho Nobre', hex: '#450A0A' },
+                                { name: 'Dourado', hex: '#451A03' },
+                            ].map(c => (
+                                <button
+                                    key={c.hex}
+                                    type="button"
+                                    onClick={() => setBgStyle(c.hex)}
+                                    className={`w-10 h-10 rounded-2xl border-2 transition-all flex items-center justify-center shadow-sm ${bgStyle === c.hex ? 'ring-4 ring-purple-300 scale-110 border-white shadow-md' : 'border-transparent hover:scale-105'}`}
+                                    style={{ backgroundColor: c.hex }}
+                                    title={c.name}
+                                >
+                                    {bgStyle === c.hex && <span className="text-white text-xs font-black">✓</span>}
+                                </button>
+                            ))}
+
+                            {/* Custom Color Picker */}
+                            <label className="relative cursor-pointer flex items-center gap-2 bg-slate-50 hover:bg-slate-100 px-4 py-2 rounded-2xl border-2 border-slate-200 transition-colors ml-auto text-xs font-black text-slate-700 shadow-sm active:scale-95">
+                                <span>🎨 Personalizada</span>
+                                <input
+                                    type="color"
+                                    value={bgStyle}
+                                    onChange={e => setBgStyle(e.target.value)}
+                                    className="w-6 h-6 rounded-lg cursor-pointer border-0 bg-transparent"
+                                />
+                            </label>
+                        </div>
                     </div>
 
                     <div className="relative w-full overflow-hidden pb-4 flex justify-center">
@@ -466,8 +513,9 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                             <div
                                 id="print-area-capture"
                                 ref={printRef}
-                                className="bg-[#001D3D] mx-auto p-12 text-white"
+                                className="mx-auto p-12 text-white shadow-2xl transition-colors duration-300"
                                 style={{
+                                    backgroundColor: bgStyle,
                                     width: '420px',
                                     minHeight: '800px',
                                     border: '12px solid rgba(255, 255, 255, 0.05)',
