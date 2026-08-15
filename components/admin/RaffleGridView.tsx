@@ -495,23 +495,17 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 </div>
 
                 {/* Column 2: Print Preview */}
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between ml-4">
-                        <div className="flex items-center gap-3">
-                            <span className="text-2xl">📱</span>
-                            <h3 className="text-2xl font-black text-slate-900">Prévia do Print (Mobile)</h3>
-                        </div>
+                <div className="w-full space-y-6">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">📱</span>
+                        <h3 className="text-2xl font-black text-slate-900">Prévia do Print</h3>
                     </div>
 
                     {/* Color Selector Controls */}
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-lg space-y-4">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-                                🎨 Cor de Fundo do Print
-                            </span>
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                Escolha a cor
-                            </span>
+                            <span className="text-sm font-black text-slate-800">🎨 Cor de Fundo do Print</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Escolha a cor</span>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
                             {[
@@ -533,9 +527,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                     {bgStyle === c.hex && <span className="text-white text-xs font-black">✓</span>}
                                 </button>
                             ))}
-
-                            {/* Custom Color Picker */}
-                            <label className="relative cursor-pointer flex items-center gap-2 bg-slate-50 hover:bg-slate-100 px-4 py-2 rounded-2xl border-2 border-slate-200 transition-colors ml-auto text-xs font-black text-slate-700 shadow-sm active:scale-95">
+                            <label className="cursor-pointer flex items-center gap-2 bg-slate-50 hover:bg-slate-100 px-4 py-2 rounded-2xl border-2 border-slate-200 transition-colors ml-auto text-xs font-black text-slate-700 shadow-sm">
                                 <span>🎨 Personalizada</span>
                                 <input
                                     type="color"
@@ -547,164 +539,135 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                         </div>
                     </div>
 
-                    <div className="w-full flex justify-center items-start py-4">
+                    {/* Print Preview Card — centered with margin auto */}
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
                         <div
                             id="print-area-capture"
                             ref={printRef}
-                            className="text-white shadow-2xl transition-colors duration-300 rounded-[2.5rem]"
+                            className="text-white shadow-2xl transition-colors duration-300 rounded-[2rem]"
                             style={{
                                 backgroundColor: bgStyle,
-                                width: '420px',
-                                minHeight: '560px',
-                                padding: '36px 20px',
-                                border: '8px solid rgba(255, 255, 255, 0.08)',
+                                width: '100%',
+                                maxWidth: '400px',
+                                minHeight: '500px',
+                                padding: '32px 20px',
+                                border: '6px solid rgba(255,255,255,0.08)',
                                 boxSizing: 'border-box',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center'
+                                textAlign: 'center',
                             }}
                         >
-                            {/* Logo / Brand Header */}
-                            <div style={{ marginBottom: '24px', width: '100%', textAlign: 'center' }}>
+                            {/* Brand Header */}
+                            <div style={{ marginBottom: '20px', textAlign: 'center' }}>
                                 <div style={{
                                     display: 'inline-block',
                                     backgroundColor: '#FFD60A',
                                     color: '#001D3D',
-                                    padding: '10px 32px',
+                                    padding: '9px 28px',
                                     borderRadius: '50px',
                                     fontWeight: '900',
-                                    fontSize: '16px',
+                                    fontSize: '15px',
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.15em',
-                                    textAlign: 'center',
-                                    boxShadow: '0 8px 20px rgba(0,0,0,0.3)'
+                                    boxShadow: '0 6px 18px rgba(0,0,0,0.3)'
                                 }}>
                                     TOPSORTE_027
                                 </div>
                             </div>
 
-                            {/* Main Title */}
-                            <div style={{ marginBottom: '32px', width: '100%', textAlign: 'center' }}>
-                                <h2 style={{ color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '11px', marginBottom: '8px' }}>
+                            {/* Title */}
+                            <div style={{ marginBottom: '28px', textAlign: 'center' }}>
+                                <p style={{ color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '10px', marginBottom: '8px' }}>
                                     Resultado Oficial
-                                </h2>
-                                <h1 style={{ color: '#ffffff', fontWeight: '900', fontSize: '30px', textTransform: 'uppercase', letterSpacing: '-0.02em', fontStyle: 'italic', lineHeight: '1.1' }}>
+                                </p>
+                                <h1 style={{ color: '#ffffff', fontWeight: '900', fontSize: '28px', textTransform: 'uppercase', letterSpacing: '-0.02em', fontStyle: 'italic', lineHeight: '1.15', margin: 0 }}>
                                     Vencedores do <br />
                                     <span style={{ color: '#FFD60A' }}>Concurso #{raffle.code || '000'}</span>
                                 </h1>
                             </div>
 
-                            {/* Winners List (Compact & Centered) */}
-                            <div style={{ width: '100%', marginBottom: '28px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                {sortedWinners.length > 0 ? (
-                                    sortedWinners.map((winner) => {
-                                        const printColors = getPrintColors(winner.position);
-                                        const prizeInfo = getPrizeInfo(winner.position);
-                                        const displayName = winner.customName || reservations[winner.number]?.name || '---';
-                                        return (
-                                    <div key={winner.id} style={{
-                                                display: 'block',
-                                                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                                border: '1.5px solid rgba(255, 255, 255, 0.18)',
-                                                borderRadius: '24px',
-                                                marginBottom: '16px',
-                                                width: '100%',
-                                                maxWidth: '380px',
-                                                boxSizing: 'border-box',
-                                                padding: '14px 16px',
-                                                textAlign: 'center',
-                                                boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
-                                            }}>
-                                                {/* Prize label pill */}
-                                                <div style={{
-                                                    display: 'inline-block',
-                                                    backgroundColor: printColors.labelBg,
-                                                    color: printColors.labelText,
-                                                    fontWeight: '900',
-                                                    fontSize: '13px',
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: '0.08em',
-                                                    padding: '4px 16px',
-                                                    borderRadius: '50px',
-                                                    marginBottom: '10px',
-                                                    boxShadow: '0 3px 10px rgba(0,0,0,0.2)'
-                                                }}>
-                                                    {prizeInfo.icon} {prizeInfo.label}
-                                                </div>
-
-                                                {/* Cota Badge + Name Centered Row */}
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '10px',
-                                                    width: '100%'
-                                                }}>
-                                                    <div style={{
-                                                        backgroundColor: printColors.bg,
-                                                        color: printColors.text,
-                                                        borderRadius: '14px',
-                                                        fontWeight: '900',
-                                                        fontSize: '20px',
-                                                        padding: '4px 14px',
-                                                        lineHeight: '1.3',
-                                                        textAlign: 'center',
-                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                                                        whiteSpace: 'nowrap',
-                                                        flexShrink: 0
-                                                    }}>
-                                                        #{winner.number}
-                                                    </div>
-                                                    <div style={{
-                                                        color: '#ffffff',
-                                                        fontWeight: '900',
-                                                        fontSize: '20px',
-                                                        textTransform: 'uppercase',
-                                                        fontStyle: 'italic',
-                                                        letterSpacing: '-0.02em',
-                                                        lineHeight: '1.1',
-                                                        wordBreak: 'break-word',
-                                                        textAlign: 'center'
-                                                    }}>
-                                                        {displayName}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div style={{
-                                        width: '100%',
-                                        maxWidth: '320px',
-                                        height: '160px',
-                                        margin: '0 auto',
-                                        border: '2px dashed rgba(255, 255, 255, 0.1)',
-                                        borderRadius: '30px',
-                                        display: 'table',
-                                    }}>
-                                        <div style={{
-                                            display: 'table-cell',
-                                            verticalAlign: 'middle',
+                            {/* Winners */}
+                            <div style={{ marginBottom: '24px' }}>
+                                {sortedWinners.length > 0 ? sortedWinners.map((winner) => {
+                                    const pc = getPrintColors(winner.position);
+                                    const pi = getPrizeInfo(winner.position);
+                                    const displayName = winner.customName || reservations[winner.number]?.name || '---';
+                                    return (
+                                        <div key={winner.id} style={{
+                                            backgroundColor: 'rgba(255,255,255,0.08)',
+                                            border: '1.5px solid rgba(255,255,255,0.18)',
+                                            borderRadius: '20px',
+                                            marginBottom: '12px',
+                                            padding: '12px 14px',
                                             textAlign: 'center',
-                                            padding: '0 20px',
+                                            boxShadow: '0 6px 20px rgba(0,0,0,0.3)'
                                         }}>
-                                            <p style={{ color: 'rgba(255, 255, 255, 0.2)', fontWeight: '900', textTransform: 'uppercase', fontStyle: 'italic', margin: 0 }}>
-                                                Selecione os números na tabela <br /> para gerar o resultado
-                                            </p>
+                                            {/* Prize pill */}
+                                            <div style={{
+                                                display: 'inline-block',
+                                                backgroundColor: pc.labelBg,
+                                                color: pc.labelText,
+                                                fontWeight: '900',
+                                                fontSize: '12px',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.08em',
+                                                padding: '3px 14px',
+                                                borderRadius: '50px',
+                                                marginBottom: '8px',
+                                            }}>
+                                                {pi.icon} {pi.label}
+                                            </div>
+                                            {/* Cota + Name row */}
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                                <span style={{
+                                                    backgroundColor: pc.bg,
+                                                    color: pc.text,
+                                                    borderRadius: '12px',
+                                                    fontWeight: '900',
+                                                    fontSize: '18px',
+                                                    padding: '3px 12px',
+                                                    whiteSpace: 'nowrap',
+                                                    flexShrink: 0,
+                                                }}>
+                                                    #{winner.number}
+                                                </span>
+                                                <span style={{
+                                                    color: '#ffffff',
+                                                    fontWeight: '900',
+                                                    fontSize: '19px',
+                                                    textTransform: 'uppercase',
+                                                    fontStyle: 'italic',
+                                                    letterSpacing: '-0.02em',
+                                                    lineHeight: '1.1',
+                                                    wordBreak: 'break-word',
+                                                }}>
+                                                    {displayName}
+                                                </span>
+                                            </div>
                                         </div>
+                                    );
+                                }) : (
+                                    <div style={{
+                                        border: '2px dashed rgba(255,255,255,0.1)',
+                                        borderRadius: '24px',
+                                        padding: '40px 20px',
+                                        textAlign: 'center',
+                                    }}>
+                                        <p style={{ color: 'rgba(255,255,255,0.2)', fontWeight: '900', textTransform: 'uppercase', fontStyle: 'italic', margin: 0, fontSize: '13px' }}>
+                                            Selecione os números<br />para gerar o resultado
+                                        </p>
                                     </div>
                                 )}
                             </div>
 
-                                <div style={{ width: '100%', textAlign: 'center', marginTop: 'auto', paddingBottom: '16px' }}>
-                                    <div style={{ height: '2px', width: '50px', backgroundColor: 'rgba(255, 214, 10, 0.3)', margin: '0 auto 20px' }}></div>
-                                    <h3 style={{ color: '#FFD60A', fontWeight: '900', fontSize: '20px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.05em', marginBottom: '8px' }}>
-                                        PARABÉNS AOS GANHADORES!
-                                    </h3>
-                                    <p style={{ color: 'rgba(255, 255, 255, 0.3)', fontWeight: '800', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                                        Obrigado a todos por participar
-                                    </p>
-                                </div>
+                            {/* Footer */}
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ height: '2px', width: '40px', backgroundColor: 'rgba(255,214,10,0.3)', margin: '0 auto 16px' }}></div>
+                                <p style={{ color: '#FFD60A', fontWeight: '900', fontSize: '18px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-0.04em', margin: '0 0 6px' }}>
+                                    PARABÉNS AOS GANHADORES!
+                                </p>
+                                <p style={{ color: 'rgba(255,255,255,0.3)', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>
+                                    Obrigado a todos por participar
+                                </p>
                             </div>
                         </div>
                     </div>
