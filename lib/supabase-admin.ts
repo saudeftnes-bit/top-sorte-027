@@ -1,4 +1,4 @@
-﻿import { supabase as supabaseClient } from './supabase';
+import { supabase as supabaseClient } from './supabase';
 export const supabase = supabaseClient;
 import type { Raffle, Reservation, WinnerPhoto, RaffleAnalytics } from '../types/database';
 
@@ -310,7 +310,7 @@ export async function getReservationsByRaffle(raffleId: string): Promise<Reserva
 export async function createReservation(reservation: Omit<Reservation, 'id' | 'created_at' | 'updated_at'>): Promise<Reservation | null> {
     const { data, error } = await supabase
         .from('reservations')
-        .insert([reservation])
+        .upsert([reservation], { onConflict: 'raffle_id, number' })
         .select()
         .single();
 
@@ -560,10 +560,10 @@ export async function createManualReservation(
             expires_at: expiresAt
         }));
 
-        // 3. Inserir
+        // 3. Inserir (Upsert para sobrescrever se havia registro cancelado/expirado)
         const { error: insertError } = await supabase
             .from('reservations')
-            .insert(reservations);
+            .upsert(reservations, { onConflict: 'raffle_id, number' });
 
         if (insertError) throw insertError;
 

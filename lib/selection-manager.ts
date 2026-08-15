@@ -46,7 +46,7 @@ export async function createTemporarySelection(
 
         const { data, error } = await supabase
             .from('reservations')
-            .insert(insertData)
+            .upsert(insertData, { onConflict: 'raffle_id, number' })
             .select(); // Ver o que foi inserido
 
         if (error) {
