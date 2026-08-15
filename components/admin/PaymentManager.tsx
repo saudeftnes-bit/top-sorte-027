@@ -128,12 +128,13 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
         }> = {};
 
         filtered.forEach(res => {
-            const key = `${res.buyer_name}-${res.buyer_phone}-${res.efi_txid || 'manual'}`;
+            const key = `${res.buyer_name || 'Desconhecido'}-${res.buyer_phone || ''}-${res.efi_txid || 'manual'}`;
+            const amount = typeof res.payment_amount === 'number' && !isNaN(res.payment_amount) ? res.payment_amount : 0;
             if (!groups[key]) {
                 groups[key] = {
                     id: res.id,
                     ids: [res.id],
-                    buyer_name: res.buyer_name,
+                    buyer_name: res.buyer_name || 'Desconhecido',
                     buyer_phone: res.buyer_phone || '',
                     buyer_email: res.buyer_email || '',
                     numbers: [res.number],
@@ -141,22 +142,24 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                     payment_method: res.payment_method || 'manual',
                     efi_txid: res.efi_txid,
                     efi_status: res.efi_status,
-                    payment_amount: res.payment_amount,
-                    created_at: res.created_at
+                    payment_amount: amount,
+                    created_at: res.created_at || ''
                 };
             } else {
                 groups[key].ids.push(res.id);
                 groups[key].numbers.push(res.number);
-                groups[key].payment_amount += res.payment_amount;
+                groups[key].payment_amount += amount;
                 // Manter o status mais "recente" ou mais importante
                 if (res.status === 'paid') groups[key].status = 'paid';
             }
         });
 
         // Ordenar por data
-        const sorted = Object.values(groups).sort((a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+        const sorted = Object.values(groups).sort((a, b) => {
+            const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+            return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+        });
 
         return {
             allGroups: sorted,
@@ -261,13 +264,15 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                                         <div>
                                             <h3 className="text-lg font-black text-slate-900">{group.buyer_name}</h3>
                                             <p className="text-xs text-slate-500 font-medium">
-                                                {new Date(group.created_at).toLocaleDateString('pt-BR', {
-                                                    day: '2-digit',
-                                                    month: '2-digit',
-                                                    year: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                })}
+                                                {group.created_at && !isNaN(new Date(group.created_at).getTime())
+                                                    ? new Date(group.created_at).toLocaleDateString('pt-BR', {
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })
+                                                    : '---'}
                                             </p>
                                         </div>
                                     </div>
@@ -294,7 +299,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                                         <div className="flex items-center gap-2">
                                             <span className="text-slate-400">💰</span>
                                             <span className="text-sm font-bold text-green-600">
-                                                R$ {group.payment_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                R$ {(group.payment_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
                                     </div>
