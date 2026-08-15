@@ -38,7 +38,7 @@ const getPrintColors = (position: number) =>
     PRIZE_PRINT_COLORS[position] || { bg: '#334155', text: '#fff', labelBg: '#475569', labelText: '#fff' };
 
 const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
-    const [reservations, setReservations] = useState<Record<string, { status: string; name: string }>>({});
+    const [reservations, setReservations] = useState<Record<string, { status: string; name: string; phone?: string }>>({});
     const [isLoading, setIsLoading] = useState(true);
     // Feature 4: Winners with prize positions
     const [winners, setWinners] = useState<WinnerEntry[]>([]);
@@ -52,13 +52,14 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
     const loadReservations = async () => {
         setIsLoading(true);
         const data = await getReservationsByRaffle(raffle.id);
-        const map: Record<string, { status: string; name: string }> = {};
+        const map: Record<string, { status: string; name: string; phone?: string }> = {};
 
         data.forEach(res => {
             if (res.status !== 'cancelled') {
                 map[res.number] = {
                     status: res.status,
-                    name: res.buyer_name
+                    name: res.buyer_name,
+                    phone: res.buyer_phone
                 };
             }
         });
@@ -418,10 +419,22 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                         {dbName && winner.customName !== dbName && (
                                                             <button
                                                                 onClick={() => updateWinnerName(winner.number, dbName)}
-                                                                className="text-xs text-blue-500 hover:text-blue-700 font-bold mt-1"
+                                                                className="text-xs text-blue-500 hover:text-blue-700 font-bold mt-1 block"
                                                             >
                                                                 ↩ Usar nome do banco: {dbName}
                                                             </button>
+                                                        )}
+                                                        {reservations[winner.number]?.phone && (
+                                                            <div className="mt-2">
+                                                                <a
+                                                                    href={`https://wa.me/55${reservations[winner.number].phone!.replace(/\D/g, '')}?text=${encodeURIComponent(`Parabéns ${winner.customName || dbName || 'Ganhador'}! Você foi o ganhador do ${prizeInfo.label} no Top Sorte 027 com a cota #${winner.number}! 🎉🏆`)}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+                                                                >
+                                                                    <span>💬</span> WhatsApp: {reservations[winner.number].phone}
+                                                                </a>
+                                                            </div>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-4 text-right">

@@ -255,9 +255,14 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                                                 <h3 className="text-xl font-black text-slate-900">{buyer.name}</h3>
                                                 <div className="flex flex-wrap gap-2 mt-1">
                                                     {buyer.phone && (
-                                                        <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                                                            📱 {buyer.phone}
-                                                        </span>
+                                                        <a
+                                                            href={`https://wa.me/55${buyer.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${buyer.name}! Entrando em contato sobre a sua participação no Top Sorte 027 🎉`)}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95"
+                                                        >
+                                                            <span>💬</span> WhatsApp: {buyer.phone}
+                                                        </a>
                                                     )}
                                                     {buyer.email && (
                                                         <span className="text-xs text-slate-500 font-medium flex items-center gap-1">

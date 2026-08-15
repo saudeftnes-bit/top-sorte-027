@@ -291,10 +291,14 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                                         {group.buyer_phone && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-slate-400">📱</span>
-                                                <span className="text-sm font-medium text-slate-600">{group.buyer_phone}</span>
-                                            </div>
+                                            <a
+                                                href={`https://wa.me/55${group.buyer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${group.buyer_name}! Entrando em contato sobre a sua reserva no Top Sorte 027 🎉`)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+                                            >
+                                                <span>💬</span> WhatsApp: {group.buyer_phone}
+                                            </a>
                                         )}
                                         <div className="flex items-center gap-2">
                                             <span className="text-slate-400">💰</span>
