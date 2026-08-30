@@ -19,16 +19,67 @@ export function getOrCreateSessionId(): string {
 }
 
 /**
- * Cria uma reserva temporária quando usuário seleciona um número
- * Status: 'pending' → Aparece AMARELO para outros
+ * Cria uma reserva temporária quando usuário seleciona um número.
+ * Status: 'pending' → Aparece AMARELO para outros.
+ *
+ * PROTEÇÃO contra race condition: verifica se o número já tem um PIX ativo
+ * ou uma reserva válida de outro usuário antes de criar/sobrescrever.
  */
 export async function createTemporarySelection(
     raffleId: string,
     number: string,
     sessionId: string,
-    timeoutMinutes: number = 30
+    timeoutMinutes: number = 3
 ): Promise<boolean> {
     try {
+        const nowMs = Date.now();
+
+        // ── Verificação de conflito ────────────────────────────────────────────
+        // Antes de fazer o upsert, checar se existe reserva PAGA ou ativa de outro usuário.
+        const { data: existing, error: checkError } = await supabase
+            .from('reservations')
+            .select('id, buyer_name, efi_txid, expires_at, status')
+            .eq('raffle_id', raffleId)
+            .eq('number', number)
+            .maybeSingle(); // Buscar QUALQUER reserva (sem filtro de status)
+
+        if (checkError) {
+            console.warn('⚠️ [Insert] Erro ao verificar reserva existente:', checkError);
+        }
+
+        if (existing) {
+            // Caso 0: Número já PAGO — SEMPRE bloquear (nunca sobrescrever!)
+            if (existing.status === 'paid') {
+                console.warn(`🔒 [Insert] Número ${number} BLOQUEADO — já está PAGO por "${existing.buyer_name}"`);
+                return false;
+            }
+
+            // Pular reservas canceladas (podem ser sobrescritas)
+            if (existing.status === 'cancelled') {
+                console.log(`♻️ [Insert] Número ${number} estava cancelled — sobrescrevendo`);
+                // Continuar para o UPSERT
+            } else {
+                const expiresAtMs = existing.expires_at ? new Date(existing.expires_at).getTime() : 0;
+                const isNotExpired = expiresAtMs > nowMs;
+
+                // Caso 1: PIX ativo de outro comprador — BLOQUEAR
+                if (existing.efi_txid && isNotExpired) {
+                    console.warn(`🔒 [Insert] Número ${number} BLOQUEADO — PIX ativo até ${existing.expires_at}`);
+                    return false;
+                }
+
+                // Caso 2: Reserva válida de outro usuário (sem PIX ainda) — BLOQUEAR
+                if (!existing.efi_txid && existing.buyer_name !== sessionId && isNotExpired) {
+                    console.warn(`🔒 [Insert] Número ${number} BLOQUEADO — reservado por outro usuário`);
+                    return false;
+                }
+
+                // Caso 3: É a reserva do próprio usuário → pode sobrescrever/renovar
+                console.log(`🔄 [Insert] Renovando reserva do próprio usuário para número ${number}`);
+            }
+        }
+        // ──────────────────────────────────────────────────────────────────────
+
         const expiresAt = new Date(Date.now() + timeoutMinutes * 60 * 1000).toISOString();
 
         const insertData = {
@@ -47,7 +98,7 @@ export async function createTemporarySelection(
         const { data, error } = await supabase
             .from('reservations')
             .upsert(insertData, { onConflict: 'raffle_id, number' })
-            .select(); // Ver o que foi inserido
+            .select();
 
         if (error) {
             console.error('❌ [Insert] Erro ao criar:', error);

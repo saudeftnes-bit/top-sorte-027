@@ -185,13 +185,13 @@ const OfflineViewer: React.FC<OfflineViewerProps> = ({ raffleId: initialRaffleId
                             placeholder={searchType === 'number' ? "Digite apenas o número do bilhete..." : "Buscar por nome, telefone ou número..."}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-slate-50 text-slate-900"
+                            className="block w-full pl-10 pr-3 py-3 border-2 border-slate-300 rounded-xl focus:ring-purple-500 focus:border-purple-600 bg-white text-slate-900 font-black text-base placeholder:text-slate-600 placeholder:font-semibold shadow-sm"
                         />
                     </div>
                     <select
                         value={searchType}
                         onChange={(e) => setSearchType(e.target.value as 'all' | 'number')}
-                        className="p-3 border border-slate-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-slate-50 text-slate-900 font-medium outline-none md:w-auto w-full"
+                        className="p-3 border-2 border-slate-300 rounded-xl focus:ring-purple-500 focus:border-purple-600 bg-white text-slate-900 font-black text-sm outline-none md:w-auto w-full shadow-sm"
                     >
                         <option value="all">🔍 Buscar em tudo</option>
                         <option value="number">🔢 Apenas Nº da Rifa</option>

@@ -65,19 +65,28 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
     };
 
     return (
-        <>
-            {/* Download button */}
-            <button
-                onClick={handleDownload}
-                disabled={isGenerating}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider"
-            >
-                {isGenerating ? (
-                    <>⌛ Gerando comprovante...</>
-                ) : (
-                    <><span>📄</span> Baixar Comprovante de Pagamento</>
-                )}
-            </button>
+        <div className="space-y-3">
+            {/* Incentive Callout Box */}
+            <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 rounded-2xl p-5 text-white shadow-xl flex flex-col items-center text-center gap-2 border-2 border-emerald-300 relative overflow-hidden">
+                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-3xl shadow-inner mb-1">
+                    📲
+                </div>
+                <h4 className="font-black text-lg text-white tracking-tight uppercase">Deseja baixar seu comprovante?</h4>
+                <p className="text-xs text-emerald-100 font-bold leading-relaxed px-2">
+                    Baixe agora seu comprovante oficial com seus números e guarde no seu celular para acompanhar o sorteio! 🍀
+                </p>
+                <button
+                    onClick={handleDownload}
+                    disabled={isGenerating}
+                    className="w-full mt-2 flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 disabled:opacity-50 text-emerald-950 font-black py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider border border-white/40"
+                >
+                    {isGenerating ? (
+                        <>⌛ Gerando comprovante...</>
+                    ) : (
+                        <><span>📥</span> Sim, Baixar Meu Comprovante</>
+                    )}
+                </button>
+            </div>
 
             {/* Hidden receipt template — rendered off-screen for html2canvas */}
             <div
@@ -213,7 +222,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 };
 

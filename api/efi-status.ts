@@ -33,6 +33,82 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const status = await getChargeStatus(txid);
 
+        // ════════════════════════════════════════════════════════════════════════
+        // DUPLA REDUNDÂNCIA: Se status é CONCLUIDA, confirma no banco imediatamente
+        // (Garante que se o webhook atrasar, a consulta ativa já crava como PAGO)
+        // ════════════════════════════════════════════════════════════════════════
+        if (status.status === 'CONCLUIDA') {
+            try {
+                const { createClient } = await import('@supabase/supabase-js');
+                const supabase = createClient(
+                    process.env.VITE_SUPABASE_URL || '',
+                    process.env.VITE_SUPABASE_ANON_KEY || ''
+                );
+
+                // 1. Buscar dados da transação
+                const { data: txData } = await supabase
+                    .from('efi_transactions')
+                    .select('raffle_id, buyer_name, buyer_phone, buyer_email, amount, numbers_json')
+                    .eq('txid', txid)
+                    .single();
+
+                // 2. Atualizar transação para CONCLUIDA
+                await supabase
+                    .from('efi_transactions')
+                    .update({
+                        status: 'CONCLUIDA',
+                        paid_at: status.paidAt || new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('txid', txid);
+
+                // 3. Atualizar reservas para 'paid'
+                const updatePayload: any = {
+                    status: 'paid',
+                    expires_at: null,
+                    updated_at: new Date().toISOString()
+                };
+                if (txData?.buyer_name) updatePayload.buyer_name = txData.buyer_name;
+                if (txData?.buyer_phone) updatePayload.buyer_phone = txData.buyer_phone;
+
+                const { data: updatedRes } = await supabase
+                    .from('reservations')
+                    .update(updatePayload)
+                    .eq('efi_txid', txid)
+                    .neq('status', 'paid')
+                    .select();
+
+                // 4. Se não encontrou reservas por efi_txid, fazer recovery pelos números
+                if ((!updatedRes || updatedRes.length === 0) && txData?.numbers_json) {
+                    const rawNumbers: string[] = JSON.parse(txData.numbers_json);
+                    const numbers = Array.from(new Set(rawNumbers.map((n: any) => String(n).trim()))).filter((n): n is string => Boolean(n));
+
+                    if (numbers.length > 0) {
+                        const reservationsToCreate = numbers.map((num: string) => ({
+                            raffle_id: txData.raffle_id,
+                            number: num,
+                            buyer_name: txData.buyer_name,
+                            buyer_phone: txData.buyer_phone || '',
+                            buyer_email: txData.buyer_email || '',
+                            status: 'paid',
+                            payment_amount: txData.amount / numbers.length,
+                            payment_method: 'efi',
+                            efi_txid: txid,
+                            expires_at: null,
+                            updated_at: new Date().toISOString(),
+                        }));
+
+                        await supabase
+                            .from('reservations')
+                            .upsert(reservationsToCreate, { onConflict: 'raffle_id,number' });
+                    }
+                }
+                console.log(`✅ [API Efi Status] Pagamento ${txid} confirmado com dupla redundância!`);
+            } catch (dbErr: any) {
+                console.error('⚠️ [API Efi Status] Erro ao sincronizar status no banco:', dbErr.message);
+            }
+        }
+
         return res.status(200).json({
             success: true,
             ...status,

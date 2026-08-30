@@ -28,8 +28,8 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
   const [winnersPhotos, setWinnersPhotos] = useState<WinnerPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter other raffles (exclude current active one)
-  const otherRaffles = raffles.filter(r => r.id !== featuredRaffle?.id);
+  // Filter other raffles (exclude current active one and non-public statuses)
+  const otherRaffles = raffles.filter(r => r.id !== featuredRaffle?.id && r.status !== 'scheduled' && r.status !== 'paused');
 
   // Mensagens aleatórias para quando não há rifa ativa
   const waitingMessages = [
@@ -188,28 +188,28 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
     <div className="flex flex-col gap-8 p-4 max-w-2xl mx-auto">
       {/* Featured Raffle Card or Maintenance State */}
       {maintenanceState?.isMaintenance ? (
-        <section className="bg-red-50 rounded-[2.5rem] shadow-xl border-2 border-red-200 mt-4 p-8 md:p-12 text-center animate-in fade-in duration-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-red-100 opacity-50 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-red-100 opacity-50 pointer-events-none"></div>
+        <section className="bg-gradient-to-b from-amber-50 to-orange-50/50 rounded-[2.5rem] shadow-xl border-2 border-amber-200 mt-4 p-8 md:p-12 text-center animate-in fade-in duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-amber-100/60 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-amber-100/60 pointer-events-none"></div>
 
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-red-200 z-10 relative">
-            <span className="text-4xl">⚠️</span>
+          <div className="w-20 h-20 bg-amber-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-amber-200 z-10 relative">
+            <span className="text-4xl">🛠️</span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-black text-red-700 mb-4 tracking-tight uppercase relative z-10">
-            Atenção: Sistema Instável
+          <h2 className="text-2xl md:text-3xl font-black text-amber-950 mb-4 tracking-tight uppercase relative z-10">
+            Atenção: Sistema em Manutenção
           </h2>
-          <div className="bg-white/60 p-4 rounded-2xl mb-6 relative z-10 backdrop-blur-sm border border-red-100">
-            <p className="text-base text-red-900 font-bold max-w-lg mx-auto leading-relaxed whitespace-pre-line">
-              {maintenanceState.message}
+          <div className="bg-white/80 p-5 rounded-2xl mb-6 relative z-10 backdrop-blur-sm border border-amber-200 shadow-sm">
+            <p className="text-base text-amber-950 font-black max-w-lg mx-auto leading-relaxed whitespace-pre-line">
+              {maintenanceState.message || 'Estamos trabalhando para oferecer o melhor do Top Sorte para você, nosso cliente especial! 🍀✨'}
             </p>
           </div>
-          <p className="text-sm text-red-600 font-medium mb-8 relative z-10">
-            Não se preocupe, seus dados e compras recentes estão seguros. Tente recarregar a tela em alguns instantes.
+          <p className="text-sm text-amber-900/80 font-bold mb-8 relative z-10">
+            Fique tranquilo: todas as suas cotas e compras já realizadas estão 100% salvas e seguras. Em instantes tudo estará de volta!
           </p>
           <div className="relative z-10">
             <button
               onClick={() => window.location.reload()}
-              className="bg-red-600 hover:bg-red-700 text-white font-black py-4 px-10 rounded-2xl shadow-lg shadow-red-600/20 transition-transform active:scale-95 text-lg w-full sm:w-auto flex items-center justify-center gap-2 mx-auto"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-black py-4 px-10 rounded-2xl shadow-lg shadow-amber-600/20 transition-transform active:scale-95 text-lg w-full sm:w-auto flex items-center justify-center gap-2 mx-auto"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
               Atualizar Página

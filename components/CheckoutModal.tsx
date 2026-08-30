@@ -19,9 +19,13 @@ interface CheckoutModalProps {
   onSetPending: (name: string, numbers: string[]) => void;
   onBuyMore?: () => void;
   reservations?: import('../App').ReservationMap;
+  /** Chamado quando o QR Code PIX é gerado com sucesso. Pausa o timer de seleção no App. */
+  onPixGenerated?: () => void;
+  /** Chamado quando o QR Code PIX expira sem pagamento. Reseta o timer no App. */
+  onPixExpired?: () => void;
 }
 
-const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPrice, raffleId, raffle, onClose, onConfirmPurchase, onSetPending, onBuyMore, reservations }) => {
+const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPrice, raffleId, raffle, onClose, onConfirmPurchase, onSetPending, onBuyMore, reservations, onPixGenerated, onPixExpired }) => {
   const [step, setStep] = useState<'info' | 'payment'>('info');
 
   // Feature 1: Pre-fill from localStorage (phone-based identification)
@@ -143,6 +147,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
         if (raffleId) {
           await cleanupSessionSelections(raffleId, sessionId.current);
         }
+        // Notificar App.tsx que o PIX expirou (reseta hasActivePix)
+        onPixExpired?.();
         setModalConfig({
           title: 'Tempo Expirado',
           message: '⏰ Tempo expirado! Seus números foram liberados. Por favor, reserve novamente.',
@@ -202,7 +208,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
         },
         body: JSON.stringify({
           raffleId,
-          numbers: selectedNumbers,
+          numbers: Array.from(new Set(selectedNumbers.map(n => String(n).trim()))),
           buyer: {
             name: formData.name,
             phone: formData.phone,
@@ -220,6 +226,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
           errorData = await response.json();
         } catch (e) {
           throw new Error("Erro de conexão com a API. (Lembre-se: 'npm run dev' não processa a pasta /api, você precisa usar a Vercel ou testar em produção).");
+        }
+        // Tratar erro 409: números já tomados por outro comprador com PIX ativo
+        if (response.status === 409 || errorData?.code === 'NUMBERS_TAKEN') {
+          throw new Error(`⚠️ ${errorData?.error || 'Números indisponíveis'}. Por favor, volte e selecione outros números.`);
         }
         const detailMsg = errorData?.message || errorData?.details || '';
         throw new Error(`${errorData?.error || 'Erro desconhecido'}${detailMsg ? `: ${detailMsg}` : ''}`);
@@ -240,6 +250,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
       setPixCopiaCola(data.pixCopiaCola);
       setExpiresAt(data.expiresAt);
       setFinalPrice(totalPrice);
+
+      // Notificar App.tsx que o PIX foi gerado (pausa o timer de seleção)
+      onPixGenerated?.();
 
       // Atualizar local state como PENDING
       onSetPending(formData.name, selectedNumbers);

@@ -21,8 +21,31 @@ export async function cleanupExpiredReservations(): Promise<number> {
         }
 
         if (error) {
-            console.error('❌ [Cleanup] Erro crítico ao limpar reservas expiradas:', error);
-            return 0;
+            console.warn('⚠️ [Cleanup] RPCs não disponíveis, executando limpeza direta via query:', error.message);
+            const nowIso = new Date().toISOString();
+            
+            // 1. Limpar seleções temporárias na grade que já expiraram (sem PIX)
+            const { error: delErr } = await supabase
+                .from('reservations')
+                .delete()
+                .eq('status', 'pending')
+                .is('efi_txid', null)
+                .lt('expires_at', nowIso);
+
+            // 2. Marcar como cancelled reservas com PIX expirado (mantém para webhook recovery)
+            const { error: upErr } = await supabase
+                .from('reservations')
+                .update({ status: 'cancelled', updated_at: nowIso })
+                .eq('status', 'pending')
+                .not('efi_txid', 'is', null)
+                .lt('expires_at', nowIso);
+
+            if (delErr || upErr) {
+                console.error('❌ [Cleanup] Erro na limpeza direta:', delErr || upErr);
+            } else {
+                console.log('✅ [Cleanup] Limpeza direta executada com sucesso.');
+            }
+            return 1;
         }
 
         const count = data || 0;

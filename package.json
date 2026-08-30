@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "monitor": "node monitor_compras.mjs",
+    "exportar": "node monitor_compras.mjs --export",
     "build": "vite build",
     "preview": "vite preview"
   },

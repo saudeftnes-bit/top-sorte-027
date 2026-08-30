@@ -56,13 +56,24 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
         const data = await getReservationsByRaffle(raffle.id);
         const map: Record<string, { status: string; name: string; phone?: string }> = {};
 
+        const nowMs = Date.now();
         data.forEach(res => {
-            if (res.status !== 'cancelled') {
+            if (res.status === 'paid') {
                 map[res.number] = {
-                    status: res.status,
+                    status: 'paid',
                     name: res.buyer_name,
                     phone: res.buyer_phone
                 };
+            } else if (res.status === 'pending') {
+                const expMs = res.expires_at ? new Date(res.expires_at).getTime() : 0;
+                // Se já expirou a tolerância, não bloqueia o número na grade
+                if (!res.expires_at || expMs > nowMs) {
+                    map[res.number] = {
+                        status: 'pending',
+                        name: res.buyer_name,
+                        phone: res.buyer_phone
+                    };
+                }
             }
         });
 
@@ -302,7 +313,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
     }
 
     const total = raffle.total_numbers || 100;
-    const numbers = Array.from({ length: total }, (_, i) => (i + 1).toString().padStart(total >= 1000 ? 3 : 2, '0'));
+    const numbers = Array.from({ length: total }, (_, i) => i.toString().padStart(total >= 1000 ? 3 : 2, '0'));
     const sortedWinners = [...winners].sort((a, b) => a.position - b.position);
 
     return (
@@ -357,7 +368,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                 type="text"
                                 value={manualNum}
                                 onChange={e => setManualNum(e.target.value)}
-                                placeholder="Ex: 06"
+                                placeholder="Ex: 00"
                                 className="w-full bg-white border-2 border-slate-300 focus:border-purple-600 rounded-xl px-4 py-2.5 font-black text-slate-900 text-base outline-none shadow-sm"
                             />
                         </div>

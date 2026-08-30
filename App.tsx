@@ -23,6 +23,10 @@ const App: React.FC = () => {
   const [view, setView] = useState<RaffleState>('home');
   const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  // Flag: indica que um QR Code PIX foi gerado para os números selecionados.
+  // Enquanto true, o timer de seleção NÃO deve apagar as reservas do banco,
+  // pois o comprador ainda pode efetuar o pagamento pelo QR Code ativo.
+  const [hasActivePix, setHasActivePix] = useState(false);
 
   // Supabase state
   const [featuredRaffle, setFeaturedRaffle] = useState<Raffle | null>(null); // The main 'active' raffle for the site
@@ -236,8 +240,16 @@ const App: React.FC = () => {
     const timeoutMs = timeoutMinutes * 60 * 1000;
 
     const interval = setInterval(() => {
-      // Se o checkout estiver aberto, não expiramos a reserva para evitar erros de UI e liberação indevida
+      // Se o checkout estiver aberto, não expiramos a reserva
       if (isCheckoutOpen) return;
+
+      // Se um QR Code PIX foi gerado, o timer de seleção da UI não deve
+      // apagar os números — o comprador ainda pode pagar o PIX ativo.
+      // O cleanup real acontecerá quando o expires_at do PIX vencer no banco.
+      if (hasActivePix) {
+        setSelectionTimeRemaining(0); // Zerar o display do timer
+        return;
+      }
 
       const elapsed = Date.now() - selectionStartTime;
       const remaining = timeoutMs - elapsed;
@@ -253,30 +265,12 @@ const App: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [selectionStartTime, selectedRaffle, isCheckoutOpen]);
+  }, [selectionStartTime, selectedRaffle, isCheckoutOpen, hasActivePix]);
 
-  // Cleanup ao sair do app (beforeunload)
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (selectedRaffle && selectedRaffle.status === 'active' && sessionId.current && selectedNumbers.length > 0) {
-        console.log('🧹 [Cleanup] Usuário fechando app...');
-        cleanupSessionSelections(selectedRaffle.id, sessionId.current);
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [selectedRaffle, selectedNumbers.length]);
-
-  // Cleanup ao desmontar componente
-  useEffect(() => {
-    return () => {
-      if (selectedRaffle && sessionId.current && selectedNumbers.length > 0) {
-        console.log('🧹 [Cleanup] Componente desmontando...');
-        cleanupSessionSelections(selectedRaffle.id, sessionId.current);
-      }
-    };
-  }, [selectedRaffle?.id]);
+  // REMOVIDO: Limpeza agressiva em beforeunload/unmount.
+  // Em celulares (iPhone/Android), alternar entre o navegador e o app do banco
+  // dispara o evento beforeunload, o que apagava a reserva do cliente enquanto ele pagava o PIX.
+  // A expiração segura já é controlada exclusivamente pelo timer de expiração do banco de dados.
 
 
   const loadRaffleData = async () => {
@@ -315,10 +309,29 @@ const App: React.FC = () => {
         setFeaturedRaffle(activeOne);
 
         if (activeOne) {
+          const nowMs = Date.now();
           // Carregar estatísticas exclusivas da rifa principal (Home)
           const activeOneReservations = await getReservationsByRaffle(activeOne.id);
           const paid = activeOneReservations.filter(r => r.status === 'paid').length;
-          const pending = activeOneReservations.filter(r => r.status === 'pending').length;
+          const pending = activeOneReservations.filter(r => {
+            if (r.status !== 'pending') return false;
+            const expMs = r.expires_at ? new Date(r.expires_at).getTime() : 0;
+            return !r.expires_at || expMs > nowMs;
+          }).length;
+          const totalReq = activeOne.total_numbers || 100;
+
+          // Se todos os números estiverem 100% pagos, mover automaticamente para finalizadas
+          if (paid >= totalReq) {
+            console.log(`🏆 [Auto-Finish] Todos os ${paid}/${totalReq} números pagos! Movendo "${activeOne.title}" para finalizadas...`);
+            await updateRaffle(activeOne.id, { status: 'finished' });
+            const freshRaffles = await getRaffles();
+            setRaffles(freshRaffles);
+            const nextActive = freshRaffles.find(r => r.status === 'active') || null;
+            setFeaturedRaffle(nextActive);
+            setFeaturedStats({ paid: 0, pending: 0 });
+            return;
+          }
+
           setFeaturedStats({ paid, pending });
 
           // Se o usuário ainda não escolheu uma para ver, a selecionada inicial é a featured
@@ -377,14 +390,25 @@ const App: React.FC = () => {
 
       console.log('📊 [Data] Aplicando dados para rifa:', raffleId);
 
-      // Convert to legacy format for compatibility
+      // Convert to legacy format with REAL-TIME expiration filter
       const reservationsMap: ReservationMap = {};
+      const nowMs = Date.now();
+
       reservationsData.forEach((res) => {
-        if (res.status !== 'cancelled') {
+        if (res.status === 'paid') {
           reservationsMap[res.number] = {
             name: res.buyer_name,
-            status: res.status as NumberStatus,
+            status: 'paid',
           };
+        } else if (res.status === 'pending') {
+          const expiresAtMs = res.expires_at ? new Date(res.expires_at).getTime() : 0;
+          // Se o tempo de tolerância já expirou, NÃO bloqueia o número (fica verde/livre na hora!)
+          if (!res.expires_at || expiresAtMs > nowMs) {
+            reservationsMap[res.number] = {
+              name: res.buyer_name,
+              status: 'pending',
+            };
+          }
         }
       });
 
@@ -517,11 +541,11 @@ const App: React.FC = () => {
         selectedRaffle.id,
         num,
         sessionId.current,
-        selectedRaffle.selection_timeout || 30
+        selectedRaffle.selection_timeout || 3
       );
 
       if (success) {
-        setSelectedNumbers(prev => [...prev, num]);
+        setSelectedNumbers(prev => Array.from(new Set([...prev, num])));
       } else {
         console.error(`❌ Falha ao selecionar número ${num}. Pode já estar ocupado.`);
         // Opcional: mostrar um toast ou alerta discreto aqui
@@ -737,7 +761,7 @@ const App: React.FC = () => {
             Top Sorte 027 © 2026 - Todos os direitos reservados
           </p>
           <p className="text-slate-300 text-[8px] font-mono">
-            BUILD_VER: 2026-02-20_15:15
+            BUILD_VER: 2026-08-27_09:16_V2
           </p>
         </footer>
       </main>
@@ -799,14 +823,13 @@ const App: React.FC = () => {
             raffle={selectedRaffle || undefined}
             reservations={visibleReservations}
             onClose={async () => {
-              if (selectedNumbers.length > 0 && selectedRaffle) {
-                // 1. Limpar do banco
+              // Se havia PIX ativo, as reservas ficam no banco com o nome real do comprador
+              // (não pelo sessionId), então cleanupSessionSelections não as apaga.
+              // O expires_at do PIX garantirá a limpeza automática quando vencer.
+              if (!hasActivePix && selectedNumbers.length > 0 && selectedRaffle) {
+                // Só limpa se NÃO houver PIX gerado (reservas ainda pelo sessionId)
                 await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
-
-                // 2. Aguardar processamento
                 await new Promise(resolve => setTimeout(resolve, 150));
-
-                // 3. Limpar estados locais
                 setSelectedNumbers([]);
                 setReservations(prev => {
                   const updated = { ...prev };
@@ -817,13 +840,34 @@ const App: React.FC = () => {
                   });
                   return updated;
                 });
+              } else if (hasActivePix) {
+                // PIX foi gerado: limpar a UI mas manter a reserva no banco
+                console.log('💳 [Checkout] Fechando com PIX ativo — reserva mantida no banco até o QR expirar.');
+                setSelectedNumbers([]);
               }
+              setHasActivePix(false);
               setIsCheckoutOpen(false);
               setView('selecting');
             }}
-            onConfirmPurchase={confirmPurchase}
+            onConfirmPurchase={(name, nums) => {
+              setHasActivePix(false); // Pago com sucesso → resetar
+              confirmPurchase(name, nums);
+            }}
             onSetPending={setPending}
-            onBuyMore={handleBuyMore}
+            onBuyMore={async () => {
+              setHasActivePix(false);
+              await handleBuyMore();
+            }}
+            onPixGenerated={() => {
+              // QR Code gerado: pausar o timer de seleção para não liberar os números
+              console.log('💳 [App] PIX gerado — pausando timer de seleção');
+              setHasActivePix(true);
+            }}
+            onPixExpired={() => {
+              // QR Code expirou sem pagamento → liberar números e resetar
+              console.log('⏰ [App] PIX expirado — liberando números e resetando timer');
+              setHasActivePix(false);
+            }}
           />
         )
       }
