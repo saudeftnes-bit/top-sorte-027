@@ -136,16 +136,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const isNotExpired = expiresAtMs > nowMs;
                 if (!isNotExpired) return false;
 
-                // Se pertence à mesma pessoa/sessão, permite continuar
+                // Se é apenas uma seleção de carrinho/grade (sem PIX gerado ou buyer_name é sessionId),
+                // o comprador que está preenchendo o formulário para PAGAR tem direito de assumir!
+                const isTempSelection = !r.efi_txid || (r.buyer_name && r.buyer_name.startsWith('session_'));
+                if (isTempSelection) return false;
+
+                // Se pertence à mesma pessoa (mesmo telefone ou mesmo sessionId), permite continuar
                 const isSameBuyer = (buyer.phone && r.buyer_phone === buyer.phone) || (sessionId && r.buyer_name === sessionId);
                 if (isSameBuyer) return false;
 
+                // Apenas bloqueia se OUTRO comprador tem um PIX REAL ativo com QR code gerado dentro do prazo
                 return true;
             });
 
             if (blockedNumbers.length > 0) {
                 const list = blockedNumbers.map((r: any) => r.number).join(', ');
-                console.error(`❌ [API Efi Charge] Conflito: número(s) ${list} com reserva ativa de outro comprador`);
+                console.error(`❌ [API Efi Charge] Conflito: número(s) ${list} com PIX ativo de outro comprador`);
                 return res.status(409).json({
                     error: `Os números ${list} já estão sendo pagos por outro comprador. Por favor, selecione outros números.`,
                     blockedNumbers: blockedNumbers.map((r: any) => r.number),

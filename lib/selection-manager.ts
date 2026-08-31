@@ -90,6 +90,7 @@ export async function createTemporarySelection(
             buyer_phone: '',
             status: 'pending' as const,
             expires_at: expiresAt,
+            efi_txid: null,
             created_at: new Date().toISOString()
         };
 
