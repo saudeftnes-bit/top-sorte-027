@@ -62,29 +62,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     })
                     .eq('txid', txid);
 
-                // 3. Atualizar reservas para 'paid'
-                const updatePayload: any = {
-                    status: 'paid',
-                    expires_at: null,
-                    updated_at: new Date().toISOString()
-                };
-                if (txData?.buyer_name) updatePayload.buyer_name = txData.buyer_name;
-                if (txData?.buyer_phone) updatePayload.buyer_phone = txData.buyer_phone;
-
-                const { data: updatedRes } = await supabase
-                    .from('reservations')
-                    .update(updatePayload)
-                    .eq('efi_txid', txid)
-                    .neq('status', 'paid')
-                    .select();
-
-                // 4. Se não encontrou reservas por efi_txid, fazer recovery pelos números
-                if ((!updatedRes || updatedRes.length === 0) && txData?.numbers_json) {
+                // 3. Atualizar/Gravar TODOS os números comprados diretamente para 'paid'
+                if (txData?.numbers_json) {
                     const rawNumbers: string[] = JSON.parse(txData.numbers_json);
                     const numbers = Array.from(new Set(rawNumbers.map((n: any) => String(n).trim()))).filter((n): n is string => Boolean(n));
 
                     if (numbers.length > 0) {
-                        const reservationsToCreate = numbers.map((num: string) => ({
+                        const reservationsToUpsert = numbers.map((num: string) => ({
                             raffle_id: txData.raffle_id,
                             number: num,
                             buyer_name: txData.buyer_name,
@@ -100,8 +84,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                         await supabase
                             .from('reservations')
-                            .upsert(reservationsToCreate, { onConflict: 'raffle_id,number' });
+                            .upsert(reservationsToUpsert, { onConflict: 'raffle_id,number' });
                     }
+                } else {
+                    const updatePayload: any = {
+                        status: 'paid',
+                        expires_at: null,
+                        updated_at: new Date().toISOString()
+                    };
+                    if (txData?.buyer_name) updatePayload.buyer_name = txData.buyer_name;
+                    if (txData?.buyer_phone) updatePayload.buyer_phone = txData.buyer_phone;
+
+                    await supabase
+                        .from('reservations')
+                        .update(updatePayload)
+                        .eq('efi_txid', txid);
                 }
                 console.log(`✅ [API Efi Status] Pagamento ${txid} confirmado com dupla redundância!`);
             } catch (dbErr: any) {
