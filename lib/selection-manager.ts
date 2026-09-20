@@ -4,6 +4,10 @@ import type { Reservation } from '../types/database';
 /**
  * Gerencia seleções temporárias de números (antes de confirmar compra)
  * Cria reservas com status 'pending' que aparecem como AMARELO para outros usuários
+ *
+ * CORREÇÃO DEFINITIVA (20/09/2026):
+ * Todas as operações agora usam RPC atômica no banco (SELECT FOR UPDATE).
+ * Não há mais SELECT + UPSERT separados — eliminando o race condition.
  */
 
 // Gerar ID de sessão único para identificar este usuário
@@ -22,96 +26,41 @@ export function getOrCreateSessionId(): string {
  * Cria uma reserva temporária quando usuário seleciona um número.
  * Status: 'pending' → Aparece AMARELO para outros.
  *
- * PROTEÇÃO contra race condition: verifica se o número já tem um PIX ativo
- * ou uma reserva válida de outro usuário antes de criar/sobrescrever.
+ * USA RPC ATÔMICA: reserve_number_atomic() com SELECT FOR UPDATE no banco.
+ * Elimina o race condition do SELECT+UPSERT separados anterior.
  */
 export async function createTemporarySelection(
     raffleId: string,
     number: string,
     sessionId: string,
     timeoutMinutes: number = 3
-): Promise<boolean> {
+): Promise<{ success: boolean; reason?: string; message?: string }> {
     try {
-        const nowMs = Date.now();
+        console.log(`➕ [Selection] Reservando número ${number} atomicamente para sessão ${sessionId}`);
 
-        // ── Verificação de conflito ────────────────────────────────────────────
-        // Antes de fazer o upsert, checar se existe reserva PAGA ou ativa de outro usuário.
-        const { data: existing, error: checkError } = await supabase
-            .from('reservations')
-            .select('id, buyer_name, efi_txid, expires_at, status')
-            .eq('raffle_id', raffleId)
-            .eq('number', number)
-            .maybeSingle(); // Buscar QUALQUER reserva (sem filtro de status)
-
-        if (checkError) {
-            console.warn('⚠️ [Insert] Erro ao verificar reserva existente:', checkError);
-        }
-
-        if (existing) {
-            // Caso 0: Número já PAGO — SEMPRE bloquear (nunca sobrescrever!)
-            if (existing.status === 'paid') {
-                console.warn(`🔒 [Insert] Número ${number} BLOQUEADO — já está PAGO por "${existing.buyer_name}"`);
-                return false;
-            }
-
-            // Pular reservas canceladas (podem ser sobrescritas)
-            if (existing.status === 'cancelled') {
-                console.log(`♻️ [Insert] Número ${number} estava cancelled — sobrescrevendo`);
-                // Continuar para o UPSERT
-            } else {
-                const expiresAtMs = existing.expires_at ? new Date(existing.expires_at).getTime() : 0;
-                const isNotExpired = expiresAtMs > nowMs;
-
-                // Caso 1: PIX ativo de outro comprador — BLOQUEAR
-                if (existing.efi_txid && isNotExpired) {
-                    console.warn(`🔒 [Insert] Número ${number} BLOQUEADO — PIX ativo até ${existing.expires_at}`);
-                    return false;
-                }
-
-                // Caso 2: Reserva válida de outro usuário (sem PIX ainda) — BLOQUEAR
-                if (!existing.efi_txid && existing.buyer_name !== sessionId && isNotExpired) {
-                    console.warn(`🔒 [Insert] Número ${number} BLOQUEADO — reservado por outro usuário`);
-                    return false;
-                }
-
-                // Caso 3: É a reserva do próprio usuário → pode sobrescrever/renovar
-                console.log(`🔄 [Insert] Renovando reserva do próprio usuário para número ${number}`);
-            }
-        }
-        // ──────────────────────────────────────────────────────────────────────
-
-        const expiresAt = new Date(Date.now() + timeoutMinutes * 60 * 1000).toISOString();
-
-        const insertData = {
-            raffle_id: raffleId,
-            number: number,
-            buyer_name: sessionId,
-            buyer_email: `temp_${sessionId}@selecting.local`,
-            buyer_phone: '',
-            status: 'pending' as const,
-            expires_at: expiresAt,
-            efi_txid: null,
-            created_at: new Date().toISOString()
-        };
-
-        console.log(`➕ [Insert] Criando reserva:`, insertData);
-
-        const { data, error } = await supabase
-            .from('reservations')
-            .upsert(insertData, { onConflict: 'raffle_id, number' })
-            .select();
+        const { data, error } = await supabase.rpc('reserve_number_atomic', {
+            p_raffle_id: raffleId,
+            p_number: number,
+            p_session_id: sessionId,
+            p_expires_minutes: timeoutMinutes
+        });
 
         if (error) {
-            console.error('❌ [Insert] Erro ao criar:', error);
-            return false;
+            console.error('❌ [Selection] Erro na RPC reserve_number_atomic:', error);
+            return { success: false, reason: 'error', message: error.message };
         }
 
-        console.log(`✅ [Insert] Criado com sucesso:`, data);
-        console.log(`✅ [Selection] Número ${number} bloqueado temporariamente`);
-        return true;
+        const result = data as { success: boolean; reason: string; message: string };
+        if (!result.success) {
+            console.warn(`🔒 [Selection] Número ${number} bloqueado: ${result.reason} — ${result.message}`);
+        } else {
+            console.log(`✅ [Selection] Número ${number} reservado atomicamente.`);
+        }
+
+        return result;
     } catch (error) {
-        console.error('❌ [Insert] Exceção:', error);
-        return false;
+        console.error('❌ [Selection] Exceção:', error);
+        return { success: false, reason: 'error', message: 'Erro inesperado ao reservar número.' };
     }
 }
 
@@ -133,15 +82,15 @@ export async function removeTemporarySelection(
             .eq('number', number)
             .eq('buyer_name', sessionId)
             .eq('status', 'pending')
-            .select(); // Adicionar select para ver o que foi deletado
+            .is('efi_txid', null)  // Só remove seleções sem PIX gerado
+            .select();
 
         if (error) {
             console.error('❌ [Delete] Erro ao remover:', error);
             return false;
         }
 
-        console.log(`✅ [Delete] Removido com sucesso:`, data);
-        console.log(`✅ [Delete] Quantidade de linhas deletadas: ${data?.length || 0}`);
+        console.log(`✅ [Delete] Removido com sucesso. Linhas deletadas: ${data?.length || 0}`);
         return true;
     } catch (error) {
         console.error('❌ [Delete] Exceção ao remover:', error);
@@ -150,7 +99,7 @@ export async function removeTemporarySelection(
 }
 
 /**
- * Remove TODAS as seleções temporárias desta sessão
+ * Remove TODAS as seleções temporárias desta sessão (sem PIX gerado)
  * Usado ao cancelar checkout ou sair da página
  */
 export async function cleanupSessionSelections(
@@ -163,14 +112,15 @@ export async function cleanupSessionSelections(
             .delete()
             .eq('raffle_id', raffleId)
             .eq('buyer_name', sessionId)
-            .eq('status', 'pending');
+            .eq('status', 'pending')
+            .is('efi_txid', null);  // Só remove seleções sem PIX gerado
 
         if (error) {
             console.error('Error cleaning up session selections:', error);
             return false;
         }
 
-        console.log(`🧹 [Cleanup] Todas as seleções temporárias removidas`);
+        console.log(`🧹 [Cleanup] Todas as seleções temporárias sem PIX removidas para sessão ${sessionId}`);
         return true;
     } catch (error) {
         console.error('Error in cleanupSessionSelections:', error);

@@ -7,7 +7,7 @@ import FAQChatbot from './components/FAQChatbot';
 import { HistoricalRaffleView } from './components/HistoricalRaffleView';
 import AdminPanel from './components/admin/AdminPanel';
 import InstagramVideos from './components/InstagramVideos';
-import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations, getPublicRaffles, checkMaintenanceMode } from './lib/supabase-admin';
+import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations, getPublicRaffles, checkMaintenanceMode, updateRaffle } from './lib/supabase-admin';
 import { getOrCreateSessionId, cleanupSessionSelections, createTemporarySelection, removeTemporarySelection } from './lib/selection-manager';
 import { cleanupExpiredReservations } from './lib/cleanup';
 import { useDarkMode } from './contexts/DarkModeContext';
@@ -324,8 +324,8 @@ const App: React.FC = () => {
           if (paid >= totalReq) {
             console.log(`🏆 [Auto-Finish] Todos os ${paid}/${totalReq} números pagos! Movendo "${activeOne.title}" para finalizadas...`);
             await updateRaffle(activeOne.id, { status: 'finished' });
-            const freshRaffles = await getRaffles();
-            setRaffles(freshRaffles);
+            const freshRaffles = await getPublicRaffles();
+            setPublicRaffles(freshRaffles);
             const nextActive = freshRaffles.find(r => r.status === 'active') || null;
             setFeaturedRaffle(nextActive);
             setFeaturedStats({ paid: 0, pending: 0 });
@@ -536,19 +536,20 @@ const App: React.FC = () => {
         return;
       }
 
-      // Selecionar: criar seleção temporária no Supabase PRIMEIRO
-      const success = await createTemporarySelection(
+      // Selecionar: criar seleção temporária no Supabase PRIMEIRO (operação atômica)
+      const result = await createTemporarySelection(
         selectedRaffle.id,
         num,
         sessionId.current,
         selectedRaffle.selection_timeout || 3
       );
 
-      if (success) {
+      if (result.success) {
         setSelectedNumbers(prev => Array.from(new Set([...prev, num])));
       } else {
-        console.error(`❌ Falha ao selecionar número ${num}. Pode já estar ocupado.`);
-        // Opcional: mostrar um toast ou alerta discreto aqui
+        console.warn(`🔒 Número ${num} não disponível: ${result.reason} — ${result.message}`);
+        // Mostrar mensagem para o usuário
+        alert(result.message || 'Este número não está disponível no momento. Por favor, escolha outro.');
       }
     }
   };

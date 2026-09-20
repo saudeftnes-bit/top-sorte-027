@@ -93,96 +93,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 console.log(`📊 [Webhook Efi] Status para ${txid}: ${status}`);
 
-                // Atualizar transação no banco via RPC
-                const { error: transactionError } = await supabase.rpc('update_efi_transaction_status', {
-                    p_txid: txid,
-                    p_status: status,
-                    p_paid_at: paidAt || '',
-                    p_event: {
-                        timestamp: new Date().toISOString(),
-                        payload: payload,
-                    },
-                });
-
-                if (transactionError) {
-                    console.error(`⚠️ [Webhook Efi] Erro RPC para ${txid}:`, transactionError);
-
-                    // Fallback: Atualização direta na tabela
-                    console.log(`🔄 [Webhook Efi] Tentando atualização direta na tabela para ${txid}`);
-                    await supabase
-                        .from('efi_transactions')
-                        .update({
-                            status: status,
-                            paid_at: paidAt || null,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('txid', txid);
-                }
-
-                // ════════════════════════════════════════════════════════════════
-                // Se pago, atualizar reservas para 'paid'
-                // ════════════════════════════════════════════════════════════════
                 if (status === 'CONCLUIDA') {
-                    console.log(`💰 [Webhook Efi] Pagamento CONFIRMADO para ${txid}! Atualizando reservas...`);
+                    console.log(`💰 [Webhook Efi] Pagamento CONFIRMADO para ${txid}! Chamando confirm_payment_by_txid...`);
 
-                    // 1. Buscar dados da transação para ter os números exatos e comprador
-                    const { data: txInfo } = await supabase
-                        .from('efi_transactions')
-                        .select('raffle_id, buyer_name, buyer_phone, buyer_email, amount, numbers_json')
-                        .eq('txid', txid)
-                        .single();
+                    // ════════════════════════════════════════════════════════════
+                    // CORREÇÃO DEFINITIVA (20/09/2026):
+                    // Usa ÚNICA função atômica confirm_payment_by_txid().
+                    // Verifica txid antes de marcar como pago.
+                    // NUNCA sobrescreve número já pago por outro comprador.
+                    // NUNCA usa UPSERT genérico que sobrescrevia buyer_name.
+                    // ════════════════════════════════════════════════════════════
+                    const { data: confirmResult, error: confirmErr } = await supabase.rpc(
+                        'update_efi_transaction_status',
+                        {
+                            p_txid:    txid,
+                            p_status:  status,
+                            p_paid_at: paidAt || '',
+                            p_event:   { timestamp: new Date().toISOString(), payload },
+                        }
+                    );
 
-                    if (!txInfo || !txInfo.numbers_json) {
-                        console.warn(`⚠️ [Webhook Efi] Transação ${txid} sem numbers_json, tentando update por efi_txid...`);
-                        await supabase
+                    if (confirmErr) {
+                        console.error(`❌ [Webhook Efi] Erro ao confirmar pagamento ${txid}:`, confirmErr);
+                        // Tentativa de fallback seguro: UPDATE apenas por efi_txid, sem sobrescrever buyer_name
+                        const { error: fallbackErr } = await supabase
                             .from('reservations')
                             .update({
-                                status: 'paid',
+                                status:     'paid',
                                 expires_at: null,
                                 updated_at: new Date().toISOString()
                             })
-                            .eq('efi_txid', txid);
-                    } else {
-                        const rawNumbers: string[] = JSON.parse(txInfo.numbers_json);
-                        const numbers: string[] = Array.from(new Set((rawNumbers || []).map((n: any) => String(n).trim()))).filter(Boolean);
-                        console.log(`💰 [Webhook Efi] Gravando pagamento de ${numbers.length} números para "${txInfo.buyer_name}": [${numbers.join(', ')}]`);
+                            .eq('efi_txid', txid)
+                            .neq('status', 'paid');
 
-                        // Criar/atualizar TODOS os números comprados diretamente para PAID
-                        const reservationsToUpsert = numbers.map((num: string) => ({
-                            raffle_id: txInfo.raffle_id,
-                            number: num,
-                            buyer_name: txInfo.buyer_name,
-                            buyer_phone: txInfo.buyer_phone || '',
-                            buyer_email: txInfo.buyer_email || '',
-                            status: 'paid',
-                            payment_amount: txInfo.amount / numbers.length,
-                            payment_method: 'efi',
-                            efi_txid: txid,
-                            expires_at: null, // Pago → sem expiração
-                            updated_at: new Date().toISOString()
-                        }));
-
-                        const { data: upserted, error: upsertErr } = await supabase
-                            .from('reservations')
-                            .upsert(reservationsToUpsert, { onConflict: 'raffle_id,number' })
-                            .select();
-
-                        if (upsertErr) {
-                            console.error(`❌ [Webhook Efi] Erro ao gravar reservas pagas:`, upsertErr);
+                        if (fallbackErr) {
+                            console.error(`❌ [Webhook Efi] Fallback também falhou para ${txid}:`, fallbackErr);
                         } else {
-                            console.log(`✅ [Webhook Efi] SUCESSO: ${upserted?.length || 0} números marcados como PAID para ${txInfo.buyer_name} (txid: ${txid})`);
+                            console.log(`✅ [Webhook Efi] Fallback executado para ${txid}`);
                         }
+                    } else {
+                        console.log(`✅ [Webhook Efi] confirm_payment_by_txid resultado:`, confirmResult);
                     }
+
                 } else {
-                    // Atualizar efi_status mesmo que não seja CONCLUIDA
+                    // Apenas atualizar status da transação (não CONCLUIDA)
+                    await supabase
+                        .from('efi_transactions')
+                        .update({
+                            status:     status,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('txid', txid);
+
+                    // Atualizar efi_status nas reservas (sem tocar em buyer_name ou status)
                     await supabase
                         .from('reservations')
                         .update({
                             efi_status: status,
                             updated_at: new Date().toISOString(),
                         })
-                        .eq('efi_txid', txid);
+                        .eq('efi_txid', txid)
+                        .neq('status', 'paid');  // Nunca toca em reservas pagas
                 }
+
             } catch (error: any) {
                 console.error(`❌ [Webhook Efi] Erro crítico ao processar txid ${txid}:`, error);
             }
