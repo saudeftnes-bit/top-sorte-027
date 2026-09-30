@@ -289,8 +289,9 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.fillText(`Concurso #${raffle.code || '000'}`, W / 2, 310);
 
             // ── 4. Cards de Ganhadores com Acabamento Luxo ──────────
-            const BADGE_SIZE = 82;
-            const BADGE_RADIUS = 22;
+            const BADGE_W = 104;
+            const BADGE_H = 92;
+            const BADGE_RADIUS = 20;
 
             sortedWinners.forEach((winner, i) => {
                 const pc = getPrintColors(winner.position);
@@ -309,64 +310,81 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 ctx.fill();
 
                 // Borda do card
-                ctx.strokeStyle = winner.position === 1 ? 'rgba(255, 215, 0, 0.5)' : 'rgba(255, 255, 255, 0.16)';
+                ctx.strokeStyle = winner.position === 1 ? 'rgba(255, 215, 0, 0.6)' : 'rgba(255, 255, 255, 0.16)';
                 ctx.lineWidth = winner.position === 1 ? 2 : 1;
                 roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 26);
                 ctx.stroke();
 
-                // Badge do Número da Cota (Lado esquerdo)
-                const badgeX = cardX + 16;
-                const badgeY = cardY + (CARD_H - BADGE_SIZE) / 2;
+                // Badge do Número da Cota (HERO da composição: Lado esquerdo)
+                const badgeX = cardX + 14;
+                const badgeY = cardY + (CARD_H - BADGE_H) / 2;
 
                 // Fundo do Badge do Número
                 ctx.fillStyle = pc.bg;
-                roundRect(ctx, badgeX, badgeY, BADGE_SIZE, BADGE_SIZE, BADGE_RADIUS);
+                roundRect(ctx, badgeX, badgeY, BADGE_W, BADGE_H, BADGE_RADIUS);
                 ctx.fill();
 
                 // Borda do Badge
-                ctx.strokeStyle = winner.position === 1 ? '#B45309' : 'rgba(0,0,0,0.15)';
+                ctx.strokeStyle = winner.position === 1 ? '#B45309' : 'rgba(0,0,0,0.2)';
                 ctx.lineWidth = 2;
-                roundRect(ctx, badgeX, badgeY, BADGE_SIZE, BADGE_SIZE, BADGE_RADIUS);
+                roundRect(ctx, badgeX, badgeY, BADGE_W, BADGE_H, BADGE_RADIUS);
                 ctx.stroke();
 
-                // Texto da Cota
-                ctx.font = '900 32px Montserrat, Arial';
+                // Rótulo "COTA" no topo do badge
+                ctx.font = '900 10px Montserrat, Arial';
+                ctx.fillStyle = winner.position === 1 ? 'rgba(1, 43, 93, 0.7)' : 'rgba(0, 0, 0, 0.6)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText('COTA', badgeX + BADGE_W / 2, badgeY + 12);
+
+                // Número da Cota (GRANDE E IMPACTANTE: 44px)
+                ctx.font = '900 44px Montserrat, Arial';
                 ctx.fillStyle = pc.text;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(winner.number, badgeX + BADGE_SIZE / 2, badgeY + BADGE_SIZE / 2);
+                ctx.fillText(winner.number, badgeX + BADGE_W / 2, badgeY + 54);
 
-                // Pílula da Colocação (Lado direito, superior)
+                // Lado direito: Informações do prêmio e do ganhador
+                const infoX = badgeX + BADGE_W + 16;
+                const infoY = cardY + 18;
+
+                // Pílula da Colocação
                 const labelText = `${pi.icon} ${pi.label.toUpperCase()}`;
-                ctx.font = '900 13px Montserrat, Arial';
-                const labelW = ctx.measureText(labelText).width + 26;
+                ctx.font = '900 12px Montserrat, Arial';
+                const labelW = ctx.measureText(labelText).width + 24;
                 const labelH = 26;
-                const labelX = badgeX + BADGE_SIZE + 18;
-                const labelY = cardY + 22;
 
                 ctx.fillStyle = pc.labelBg;
-                roundRect(ctx, labelX, labelY, labelW, labelH, labelH / 2);
+                roundRect(ctx, infoX, infoY, labelW, labelH, labelH / 2);
                 ctx.fill();
 
-                ctx.font = '900 12px Montserrat, Arial';
+                ctx.font = '900 11px Montserrat, Arial';
                 ctx.fillStyle = pc.labelText;
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(labelText, labelX + 13, labelY + labelH / 2);
+                ctx.fillText(labelText, infoX + 12, infoY + labelH / 2);
 
-                // Nome do Ganhador com algoritmo anti-quebra de texto
-                const nameY = labelY + labelH + 16;
-                const maxNameW = CARD_W - BADGE_SIZE - 50;
-                let fontSize = 24;
-                ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
+                // Rótulo "GANHADOR(A):"
+                const labelGanhadorY = infoY + labelH + 11;
+                ctx.font = '800 10px Montserrat, Arial';
+                ctx.fillStyle = '#FFD700';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText('GANHADOR(A):', infoX, labelGanhadorY);
+
+                // Nome do Ganhador (MENOR E PROPORCIONAL: 16px)
+                const nameY = labelGanhadorY + 14;
+                const maxNameW = CARD_W - BADGE_W - 44;
+                let fontSize = 16;
+                ctx.font = `800 italic ${fontSize}px Montserrat, Arial`;
                 let nameDisplay = displayName.toUpperCase();
 
-                while (ctx.measureText(nameDisplay).width > maxNameW && fontSize > 11) {
+                while (ctx.measureText(nameDisplay).width > maxNameW && fontSize > 10) {
                     fontSize -= 1;
-                    ctx.font = `900 italic ${fontSize}px Montserrat, Arial`;
+                    ctx.font = `800 italic ${fontSize}px Montserrat, Arial`;
                 }
 
-                if (fontSize <= 11) {
+                if (fontSize <= 10) {
                     while (ctx.measureText(nameDisplay).width > maxNameW && nameDisplay.length > 3) {
                         nameDisplay = nameDisplay.slice(0, -1);
                     }
@@ -376,7 +394,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 ctx.fillStyle = '#FFFFFF';
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'top';
-                ctx.fillText(nameDisplay, labelX, nameY);
+                ctx.fillText(nameDisplay, infoX, nameY);
             });
 
             // ── 5. Rodapé Comemorativo Exclusivo PremiaMax ───────────
@@ -798,42 +816,49 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                     className="rounded-3xl p-4 border transition-all"
                                                     style={{
                                                         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.04) 100%)',
-                                                        borderColor: winner.position === 1 ? 'rgba(255, 215, 0, 0.5)' : 'rgba(255, 255, 255, 0.16)',
-                                                        boxShadow: winner.position === 1 ? '0 10px 25px -5px rgba(255, 215, 0, 0.15)' : 'none',
+                                                        borderColor: winner.position === 1 ? 'rgba(255, 215, 0, 0.6)' : 'rgba(255, 255, 255, 0.16)',
+                                                        boxShadow: winner.position === 1 ? '0 10px 25px -5px rgba(255, 215, 0, 0.2)' : 'none',
                                                     }}
                                                 >
-                                                    <table className="w-full border-collapse">
-                                                        <tbody>
-                                                            <tr>
-                                                                <td className="w-20 align-middle text-center pr-3">
-                                                                    <div
-                                                                        className="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg mx-auto"
-                                                                        style={{
-                                                                            backgroundColor: printColors.bg,
-                                                                            color: printColors.text,
-                                                                            border: winner.position === 1 ? '2px solid #B45309' : '2px solid rgba(0,0,0,0.15)',
-                                                                        }}
-                                                                    >
-                                                                        {winner.number}
-                                                                    </div>
-                                                                </td>
-                                                                <td className="align-middle text-left">
-                                                                    <div
-                                                                        className="inline-block font-black text-[11px] uppercase tracking-wider px-3 py-1 rounded-full mb-1.5 shadow"
-                                                                        style={{
-                                                                            backgroundColor: printColors.labelBg,
-                                                                            color: printColors.labelText,
-                                                                        }}
-                                                                    >
-                                                                        {prizeInfo.icon} {prizeInfo.label}
-                                                                    </div>
-                                                                    <div className="text-white font-black text-xl uppercase italic tracking-tight leading-tight break-words">
-                                                                        {displayName}
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
+                                                    <div className="flex items-center gap-4">
+                                                        {/* Badge do Número: O Grande Destaque */}
+                                                        <div
+                                                            className="w-24 h-24 rounded-2xl flex flex-col items-center justify-center shadow-xl flex-shrink-0"
+                                                            style={{
+                                                                backgroundColor: printColors.bg,
+                                                                color: printColors.text,
+                                                                border: winner.position === 1 ? '2px solid #B45309' : '2px solid rgba(0,0,0,0.15)',
+                                                            }}
+                                                        >
+                                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-70 leading-none mb-1">
+                                                                COTA
+                                                            </span>
+                                                            <span className="text-4xl font-black leading-none tracking-tight">
+                                                                {winner.number}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Lado Direito: Prêmio e Nome do Ganhador */}
+                                                        <div className="flex-1 min-w-0 text-left">
+                                                            <div
+                                                                className="inline-block font-black text-[11px] uppercase tracking-wider px-3 py-1 rounded-full mb-1 shadow"
+                                                                style={{
+                                                                    backgroundColor: printColors.labelBg,
+                                                                    color: printColors.labelText,
+                                                                }}
+                                                            >
+                                                                {prizeInfo.icon} {prizeInfo.label}
+                                                            </div>
+
+                                                            <p className="text-[10px] font-extrabold text-yellow-400 uppercase tracking-widest mt-1 mb-0.5">
+                                                                Ganhador(a)
+                                                            </p>
+
+                                                            <div className="text-white font-extrabold text-base uppercase italic tracking-tight leading-snug break-words">
+                                                                {displayName}
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             );
                                         })
