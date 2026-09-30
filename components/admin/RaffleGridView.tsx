@@ -141,7 +141,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
         }
         const prizeInfo = getPrizeInfo(winner.position);
         const winnerName = winner.customName || reservations[winner.number]?.name || 'Ganhador';
-        const message = `Parabéns ${winnerName}! Você foi o ganhador do ${prizeInfo.label} no Top Sorte 027 com a cota #${winner.number}! 🎉🏆`;
+        const message = `Parabéns ${winnerName}! Você foi o ganhador do ${prizeInfo.label} no TopPix com a cota #${winner.number}! 🎉🏆`;
         const url = finalPhone
             ? `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`
             : `https://wa.me/?text=${encodeURIComponent(message)}`;
@@ -198,8 +198,8 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 ctx.fillText(text, W / 2, y);
             };
 
-            // ── Pílula de Marca: TOPSORTE_027 ─────────────────────
-            const pillLabel = 'TOPSORTE_027';
+            // ── Pílula de Marca: TOPPIX ───────────────────────────
+            const pillLabel = 'TOPPIX';
             ctx.font = 'bold 18px Montserrat, Arial';
             const pillW = ctx.measureText(pillLabel).width + 64;
             const pillH = 46;
@@ -325,7 +325,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             // ── Download Padronizado ───────────────────────────────
             const link = document.createElement('a');
             link.href = canvas.toDataURL('image/png');
-            link.download = `ganhadores-top-sorte-${raffle.code || 'resultado'}.png`;
+            link.download = `ganhadores-toppix-${raffle.code || 'resultado'}.png`;
             link.click();
         } catch (error) {
             console.error('Erro ao gerar imagem:', error);
@@ -356,7 +356,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                     <div>
                         <div className="flex items-center gap-2">
                             <span className="bg-yellow-400 text-blue-950 font-black text-xs px-2.5 py-0.5 rounded-full">
-                                TOP SORTE 027
+                                TOPPIX
                             </span>
                             <span className="text-xs font-bold text-slate-400">Concurso #{raffle.code || '000'}</span>
                         </div>
@@ -660,7 +660,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                     position: 'relative'
                                 }}
                             >
-                                {/* Pílula da Marca TOPSORTE_027 */}
+                                {/* Pílula da Marca TOPPIX */}
                                 <div style={{ marginBottom: '40px', width: '100%', textAlign: 'center' }}>
                                     <div style={{
                                         display: 'inline-block',
@@ -675,7 +675,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                         textAlign: 'center',
                                         boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
                                     }}>
-                                        TOPSORTE_027
+                                        TOPPIX
                                     </div>
                                 </div>
 

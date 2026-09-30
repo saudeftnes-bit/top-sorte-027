@@ -1,6 +1,6 @@
-# 📸 Documento Oficial: Módulo Grade e Gerador de Print (Top Sorte 027)
+# 📸 Documento Oficial: Módulo Grade e Gerador de Print (TopPix)
 
-**Sistema:** Top Sorte — Ganhe Prêmios Reais  
+**Sistema:** TopPix — Ganhe Prêmios Reais  
 **Módulo:** Grade Interativa de Cotas e Gerador de Print de Resultados  
 **Arquivo Fonte:** [`components/admin/RaffleGridView.tsx`](./components/admin/RaffleGridView.tsx)  
 **Acesso:** Painel Administrativo (`/admin` ➔ Selecionar Sorteio ➔ **Grade e Print**)  
@@ -9,7 +9,7 @@
 
 ## 1. Visão Geral e Objetivo
 
-O módulo **Grade e Print** foi desenvolvido para simplificar e profissionalizar a apuração e divulgação dos resultados dos sorteios do **Top Sorte 027**. 
+O módulo **Grade e Print** foi desenvolvido para simplificar e profissionalizar a apuração e divulgação dos resultados dos sorteios do **TopPix**. 
 
 Ele une duas funções essenciais em uma única tela:
 1. **Conferência Visual da Grade:** Mapa completo e interativo de todas as cotas da rifa (pagas, pendentes e livres), permitindo identificar imediatamente quem comprou cada número.
@@ -60,7 +60,7 @@ Para cada prêmio definido, é montada uma linha na tabela com as seguintes opç
 - **Campo de Nome Editável:** Inicializado automaticamente com o nome do comprador que consta no banco de dados. O administrador pode editar manualmente para abreviar, adicionar sobrenome ou colocar apelido público.
 - **Botão "↩ Usar nome do banco":** Aparece sempre que o nome for alterado, permitindo restaurar o nome de cadastro original com um clique.
 - **Link Direto para o WhatsApp do Ganhador:** Botão verde com o ícone do WhatsApp que abre diretamente uma conversa no aplicativo com a mensagem pronta personalizada:
-  > *"Parabéns [Nome]! Você foi o ganhador do [1º Prêmio] no Top Sorte 027 com a cota #[Número]! 🎉🏆"*
+  > *"Parabéns [Nome]! Você foi o ganhador do [1º Prêmio] no TopPix com a cota #[Número]! 🎉🏆"*
 - **Botão "✕ Remover":** Exclui a cota da lista de vencedores e recalcula automaticamente as posições dos prêmios subsequentes.
 
 ---
@@ -68,7 +68,7 @@ Para cada prêmio definido, é montada uma linha na tabela com as seguintes opç
 ### 3.5. Personalização Visual do Print
 Permite escolher a estética visual do cartão de resultado antes do download:
 - **Paletas Pré-definidas de Alta Conversão:**
-  - 🔵 **Azul Marinho Oficial** (`#001D3D`) — Identidade padrão do Top Sorte 027.
+  - 🔵 **Azul Marinho Oficial** (`#001D3D`) — Identidade padrão do TopPix.
   - ⚫ **Preto Luxo** (`#0A0A0A`) — Visual elegante e sóbrio.
   - 🟣 **Roxo Sorte** (`#2E1065`) — Estilo vibrante e moderno.
   - 🟢 **Verde Esmeralda** (`#022C22`) — Tom alusivo a dinheiro e prosperidade.
@@ -80,7 +80,7 @@ Permite escolher a estética visual do cartão de resultado antes do download:
 
 ### 3.6. Prévia do Print em Tempo Real
 Exibe no canto direito exatamente como a imagem final ficará:
-- **Pílula de Marca:** `TOPSORTE_027` no topo.
+- **Pílula de Marca:** `TOPPIX` no topo.
 - **Identificação do Concurso:** `RESULTADO OFICIAL - VENCEDORES DO CONCURSO #xxx`.
 - **Cartões de Prêmio:**
   - Selo colorido da colocação (ex: `🥇 1º PRÊMIO`).
@@ -94,13 +94,13 @@ Exibe no canto direito exatamente como a imagem final ficará:
 
 ## 4. Tecnologia de Geração do Print (Canvas 2D Ultra HD)
 
-Diferente de capturas de tela comuns via navegador (que podem perder qualidade ou distorcer fontes em celulares), o gerador do Top Sorte utiliza **HTML5 Canvas 2D nativo**:
+Diferente de capturas de tela comuns via navegador (que podem perder qualidade ou distorcer fontes em celulares), o gerador do TopPix utiliza **HTML5 Canvas 2D nativo**:
 
 - **Resolução 3x (DPR = 3):** Gera a imagem com tripla densidade de pixels. O resultado é nítido mesmo ao dar zoom no WhatsApp ou Instagram.
 - **Ajuste Dinâmico de Altura:** A imagem cresce verticalmente de forma harmoniosa conforme o número de prêmios adicionados (1 prêmio, 3 prêmios, 5 prêmios, etc.), mantendo proporções equilibradas.
 - **Anti-quebra de texto:** O algoritmo de medição de texto (`ctx.measureText`) faz looping de decréscimo de fonte até garantir que nomes longos caibam perfeitamente no card.
 - **Nome do Arquivo Padronizado:** O arquivo baixado segue a nomenclatura automática:  
-  `ganhadores-top-sorte-[CODIGO_DO_CONCURSO].png`.
+  `ganhadores-toppix-[CODIGO_DO_CONCURSO].png`.
 
 ---
 
@@ -110,7 +110,7 @@ Quando a extração oficial ocorrer (ex: Loteria Federal ou sorteio ao vivo):
 
 ```mermaid
 flowchart TD
-    A[Acessar Admin do Top Sorte] --> B[Entrar na Rifa Concluída]
+    A[Acessar Admin do TopPix] --> B[Entrar na Rifa Concluída]
     B --> C[Clicar em 'Grade e Print']
     C --> D[Consultar Dezenas Sorteadas]
     D --> E[Clicar nas Cotas ou Digitar Manualmente]
@@ -144,5 +144,5 @@ flowchart TD
 ## 7. Manutenção e Extensibilidade Técnica
 
 - **Adicionar novos estilos de prêmio:** Atualizar os objetos `PRIZE_LABELS` e `PRIZE_PRINT_COLORS` em `components/admin/RaffleGridView.tsx`.
-- **Modificar textos do print:** Localizados entre as linhas `170` e `295` da função `downloadScreenshot`.
+- **Modificar textos do print:** Localizados na função `downloadScreenshot`.
 - **Compatibilidade:** O gerador é 100% executado no lado do cliente (navegador do administrador), sem consumo de banda do servidor e compatível com computadores, notebooks e dispositivos móveis.
