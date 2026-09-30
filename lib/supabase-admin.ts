@@ -330,8 +330,33 @@ export async function updateReservationStatus(id: string, status: 'pending' | 'p
     };
 
     // Se for marcado como pago, removemos a expiração para o cleanup não cancelar o número
+    // e tentamos salvar o payment_amount com base no preço da rifa (para que a arrecadação apareça)
     if (status === 'paid') {
         updates.expires_at = null;
+
+        try {
+            // Busca a reserva para obter raffle_id e payment_amount atual
+            const { data: resData } = await supabase
+                .from('reservations')
+                .select('raffle_id, payment_amount')
+                .eq('id', id)
+                .single();
+
+            if (resData && !(resData.payment_amount > 0)) {
+                // Busca o preço da rifa
+                const { data: raffleData } = await supabase
+                    .from('raffles')
+                    .select('price_per_number')
+                    .eq('id', resData.raffle_id)
+                    .single();
+
+                if (raffleData?.price_per_number > 0) {
+                    updates.payment_amount = raffleData.price_per_number;
+                }
+            }
+        } catch (e) {
+            // Silently ignore — não bloqueia a confirmação do pagamento
+        }
     }
 
     const { error } = await supabase
@@ -456,13 +481,20 @@ export async function deleteWinnerPhoto(id: string): Promise<boolean> {
 export async function getRaffleAnalytics(raffleId: string): Promise<RaffleAnalytics> {
     const reservations = await getReservationsByRaffle(raffleId);
 
-    const raffleData = await supabase.from('raffles').select('total_numbers').eq('id', raffleId).single();
+    const raffleData = await supabase.from('raffles').select('total_numbers, price_per_number').eq('id', raffleId).single();
     const totalPossible = raffleData.data?.total_numbers || 100;
+    const pricePerNumber = raffleData.data?.price_per_number || 0;
 
     const paidReservations = reservations.filter(r => r.status === 'paid');
     const pendingReservations = reservations.filter(r => r.status === 'pending');
 
-    const totalRevenue = paidReservations.reduce((sum, r) => sum + (r.payment_amount || 0), 0);
+    // Se payment_amount está salvo, usa ele; senão usa o preço padrão da rifa como fallback
+    const totalRevenue = paidReservations.reduce((sum, r) => {
+        const amount = (r.payment_amount && r.payment_amount > 0)
+            ? r.payment_amount
+            : pricePerNumber;
+        return sum + amount;
+    }, 0);
     const numbersSold = paidReservations.length;
     const numbersPending = pendingReservations.length;
     const numbersAvailable = totalPossible - numbersSold - numbersPending;

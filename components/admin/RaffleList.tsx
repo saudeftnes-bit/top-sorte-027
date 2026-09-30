@@ -209,38 +209,35 @@ const RaffleList: React.FC<RaffleListProps> = ({
                                                 )}
                                             </p>
 
-                                            {/* Contador de Cotas Restantes */}
+                                            {/* Contador de Números Faltantes */}
                                             {total > 0 && (
-                                                <div className="mt-3" onClick={e => e.stopPropagation()}>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                                            Cotas vendidas/reservadas
-                                                        </span>
+                                                <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-100" onClick={e => e.stopPropagation()}>
+                                                    <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
                                                         {isClosed ? (
-                                                            <span className="text-[11px] font-black text-red-600 uppercase tracking-wider">
-                                                                Esgotada!
+                                                            <span className="text-xs font-black text-red-600 uppercase tracking-wide flex items-center gap-1">
+                                                                <span>🔴</span> Rifa 100% Preenchida!
                                                             </span>
                                                         ) : (
-                                                            <span className="text-[11px] font-black text-slate-700">
-                                                                <span className="text-cyan-600">{remaining}</span> restantes de {total}
+                                                            <span className="text-xs font-black text-slate-700 flex items-center gap-1">
+                                                                <span>⚡</span> Faltam <span className="text-purple-600 font-extrabold text-sm px-1.5 py-0.5 bg-purple-100 rounded-md">{remaining}</span> {remaining === 1 ? 'número' : 'números'} para preencher
                                                             </span>
                                                         )}
+                                                        <span className="text-[11px] font-bold text-slate-500">
+                                                            {sold}/{total} ({progressPct}%)
+                                                        </span>
                                                     </div>
-                                                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
                                                         <div
                                                             className={`h-full rounded-full transition-all duration-700 ${
                                                                 isClosed
                                                                     ? 'bg-red-500'
                                                                     : progressPct >= 75
-                                                                    ? 'bg-orange-400'
-                                                                    : 'bg-gradient-to-r from-cyan-400 to-emerald-400'
+                                                                    ? 'bg-amber-500'
+                                                                    : 'bg-gradient-to-r from-purple-500 to-indigo-600'
                                                             }`}
                                                             style={{ width: `${progressPct}%` }}
                                                         />
                                                     </div>
-                                                    <p className="text-[10px] text-slate-400 mt-1 font-medium">
-                                                        {sold} de {total} cotas ocupadas ({progressPct}%)
-                                                    </p>
                                                 </div>
                                             )}
                                         </div>

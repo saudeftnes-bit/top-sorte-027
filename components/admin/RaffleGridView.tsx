@@ -14,9 +14,9 @@ interface WinnerEntry {
     customName?: string; // Nome personalizado / apelido público
 }
 
-// Paletas pré-definidas premium exclusivas do PremiaMax
+// Paletas pré-definidas
 const PRESET_PALETTES = [
-    { name: 'Azul PremiaMax', hex: '#012B5D', icon: '🔵' },
+    { name: 'Azul Top Sorte', hex: '#012B5D', icon: '🔵' },
     { name: 'Preto Luxo Onyx', hex: '#070D18', icon: '⚫' },
     { name: 'Verde Esmeralda', hex: '#022C22', icon: '🟢' },
     { name: 'Roxo Neon Tech', hex: '#1E0A3C', icon: '🟣' },
@@ -136,7 +136,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
         setWinners(prev => prev.map(w => w.id === id ? { ...w, customName: name } : w));
     };
 
-    // Notificação via WhatsApp direto com mensagem oficial PremiaMax
+    // Notificação via WhatsApp direto com mensagem oficial TopSorte_27
     const openWhatsApp = (winner: WinnerEntry) => {
         const rawPhone = reservations[winner.number]?.phone || '';
         const digits = rawPhone.replace(/\D/g, '');
@@ -146,7 +146,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
         }
         const prizeInfo = getPrizeInfo(winner.position);
         const winnerName = winner.customName || reservations[winner.number]?.name || 'Ganhador';
-        const message = `Parabéns ${winnerName}! Você foi o ganhador do ${prizeInfo.label} no PremiaMax com a cota #${winner.number}! 🎉🏆`;
+        const message = `Parabéns ${winnerName}! Você foi o ganhador do ${prizeInfo.label} no TopSorte_27 com a cota #${winner.number}! 🎉🏆`;
         const url = finalPhone
             ? `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`
             : `https://wa.me/?text=${encodeURIComponent(message)}`;
@@ -175,11 +175,11 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             img.crossOrigin = 'anonymous';
             img.onload = () => resolve(img);
             img.onerror = () => resolve(null);
-            img.src = '/favicon.jpg';
+            img.src = '/logo.png';
         });
     };
 
-    // Geração do Print Profissional PremiaMax via Canvas 2D Ultra HD (DPR = 3)
+    // Geração do Print Profissional TopSorte_27 via Canvas 2D Ultra HD (DPR = 3)
     const downloadScreenshot = async () => {
         setIsCapturing(true);
         await new Promise(r => setTimeout(r, 100));
@@ -201,7 +201,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             const ctx = canvas.getContext('2d')!;
             ctx.scale(DPR, DPR);
 
-            // ── 1. Fundo com Gradiente Nobre PremiaMax ───────────────
+            // ── 1. Fundo com Gradiente Nobre TopSorte_27 ───────────────
             const bgGrad = ctx.createLinearGradient(0, 0, 0, totalH);
             bgGrad.addColorStop(0, selectedBgColor);
             bgGrad.addColorStop(1, '#050B14');
@@ -215,7 +215,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.fillStyle = glow;
             ctx.fillRect(0, 0, W, 320);
 
-            // ── 2. Logo Oficial do App PremiaMax ──────────────────
+            // ── 2. Logo Oficial do App TopSorte_27 ──────────────────
             const logoImg = await loadAppLogo();
             const LOGO_SIZE = 100;
             const logoX = (W - LOGO_SIZE) / 2;
@@ -250,17 +250,17 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 ctx.restore();
             }
 
-            // ── 3. Marca PremiaMax em Destaque ─────────────────────
+            // ── 3. Marca TopSorte_27 em Destaque ─────────────────────
             ctx.font = '900 24px Montserrat, Arial';
             ctx.fillStyle = '#FFFFFF';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('PREMIAMAX', W / 2, 160);
+            ctx.fillText('TopSorte_27', W / 2, 160);
 
-            // Slogan Oficial PremiaMax
+            // Slogan Oficial TopSorte_27
             ctx.font = '800 11px Montserrat, Arial';
             ctx.fillStyle = '#00FF87'; // Verde neon do banner oficial
-            ctx.fillText('MAIS PRÊMIO, MAIS CHANCE DE GANHAR!', W / 2, 184);
+            ctx.fillText('GANHE PRÊMIOS REAIS!', W / 2, 184);
 
             // Pílula "Resultado Oficial"
             const pillY = 212;
@@ -397,7 +397,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 ctx.fillText(nameDisplay, infoX, nameY);
             });
 
-            // ── 5. Rodapé Comemorativo Exclusivo PremiaMax ───────────
+            // ── 5. Rodapé Comemorativo Exclusivo TopSorte_27 ───────────
             const footerY = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + 24;
 
             // Linha divisória em degradê dourado
@@ -419,23 +419,23 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.textBaseline = 'middle';
             ctx.fillText('PARABÉNS AOS GANHADORES!', W / 2, footerY + 36);
 
-            // Slogan PremiaMax
+            // Slogan TopSorte_27
             ctx.font = '800 12px Montserrat, Arial';
             ctx.fillStyle = '#00FF87';
-            ctx.fillText('PREMIAMAX • MAIS PRÊMIO, MAIS CHANCE DE GANHAR!', W / 2, footerY + 66);
+            ctx.fillText('TopSorte_27 • GANHE PRÊMIOS REAIS!', W / 2, footerY + 66);
 
             // Link do App / Auditoria
             ctx.font = '700 11px Montserrat, Arial';
             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.fillText('premiamax.vercel.app', W / 2, footerY + 92);
+            ctx.fillText('topsorte27.vercel.app', W / 2, footerY + 92);
 
             // ── 6. Download Padronizado ─────────────────────────────
             const link = document.createElement('a');
             link.href = canvas.toDataURL('image/png');
-            link.download = `ganhadores-premiamax-${raffle.code || 'resultado'}.png`;
+            link.download = `ganhadores-topsorte27-${raffle.code || 'resultado'}.png`;
             link.click();
         } catch (error) {
-            console.error('Erro ao gerar imagem PremiaMax:', error);
+            console.error('Erro ao gerar imagem TopSorte_27:', error);
             alert('Erro ao gerar o print. Tente novamente.');
         } finally {
             setIsCapturing(false);
@@ -458,19 +458,19 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
                 <div className="flex items-center gap-5">
                     <img
-                        src="/favicon.jpg"
-                        alt="PremiaMax Logo"
+                        src="/logo.png"
+                        alt="Top Sorte Logo"
                         className="w-16 h-16 rounded-2xl shadow-lg border-2 border-yellow-400 object-cover"
                     />
                     <div>
                         <div className="flex items-center gap-2">
                             <span className="bg-yellow-400 text-blue-950 font-black text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                                PREMIAMAX
+                                TopSorte_27
                             </span>
                             <span className="text-xs font-bold text-slate-400">Concurso #{raffle.code || '000'}</span>
                         </div>
                         <h2 className="text-3xl font-black text-slate-900 tracking-tight mt-1">Grade e Gerador de Print Oficial</h2>
-                        <p className="text-sm text-slate-500 font-bold">PremiaMax — Mais prêmio, Mais chance de ganhar!</p>
+                        <p className="text-sm text-slate-500 font-bold">TopSorte_27 — Ganhe prêmios reais!</p>
                     </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -497,7 +497,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl px-6 py-4 flex items-start gap-3">
                         <span className="text-2xl mt-0.5">ℹ️</span>
                         <div>
-                            <p className="font-black text-blue-900 text-sm">Como definir os ganhadores no PremiaMax</p>
+                            <p className="font-black text-blue-900 text-sm">Como definir os ganhadores no TopSorte_27</p>
                             <p className="text-blue-700 text-xs font-medium mt-1 leading-relaxed">
                                 Clique na cota premiada na grade para ordená-la (1º, 2º, 3º Prêmio...). Caso o mesmo ganhador tenha faturado múltiplos prêmios com a mesma cota, basta clicar novamente ou adicionar pelo campo manual.
                             </p>
@@ -610,7 +610,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                         <div className="overflow-hidden bg-white rounded-3xl border-2 border-slate-100 shadow-xl">
                             <div className="bg-slate-50 py-4 px-6 border-b border-slate-100 flex items-center justify-between">
                                 <h4 className="font-black text-slate-700 uppercase text-xs tracking-widest flex items-center gap-2">
-                                    <span>🏆</span> Sequência de Ganhadores PremiaMax
+                                    <span>🏆</span> Sequência de Ganhadores TopSorte_27
                                 </h4>
                                 <span className="text-xs font-bold text-slate-400">Total: {winners.length} prêmios</span>
                             </div>
@@ -693,7 +693,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                     <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                                🎨 Estilo Visual PremiaMax
+                                🎨 Estilo Visual TopSorte_27
                             </h3>
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                                 Cor de Fundo
@@ -747,7 +747,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                         <span className="text-2xl">📱</span>
                         <div>
                             <h3 className="text-2xl font-black text-slate-900">Prévia do Print Oficial</h3>
-                            <p className="text-xs font-bold text-slate-500">Com o Logo Oficial e Identidade PremiaMax</p>
+                            <p className="text-xs font-bold text-slate-500">Com o Logo Oficial e Identidade TopSorte_27</p>
                         </div>
                     </div>
 
@@ -772,20 +772,20 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                 {/* Efeito de luz de fundo (ambient glow) */}
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-sky-500/20 rounded-full blur-3xl pointer-events-none" />
 
-                                {/* 1. Logo Oficial do App PremiaMax */}
+                                {/* 1. Logo Oficial TopSorte_27 */}
                                 <div className="text-center relative z-10 mb-4">
                                     <div className="inline-block relative">
                                         <img
-                                            src="/favicon.jpg"
-                                            alt="PremiaMax Logo"
+                                            src="/logo.png"
+                                            alt="TopSorte_27 Logo"
                                             className="w-24 h-24 rounded-3xl shadow-2xl border-2 border-yellow-400 object-cover mx-auto ring-4 ring-yellow-400/20"
                                         />
                                     </div>
                                     <h2 className="text-2xl font-black text-white tracking-wider mt-3">
-                                        PREMIAMAX
+                                        TopSorte_27
                                     </h2>
                                     <p className="text-[11px] font-black text-[#00FF87] uppercase tracking-widest mt-0.5">
-                                        MAIS PRÊMIO, MAIS CHANCE DE GANHAR!
+                                        GANHE PRÊMIOS REAIS!
                                     </p>
                                 </div>
 
@@ -871,16 +871,16 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                     )}
                                 </div>
 
-                                {/* 4. Rodapé Comemorativo PremiaMax */}
+                                {/* 4. Rodapé Comemorativo TopSorte_27 */}
                                 <div className="text-center relative z-10 pt-4 border-t border-yellow-400/30">
                                     <h3 className="text-yellow-400 font-black text-xl uppercase italic tracking-tight mb-1">
                                         PARABÉNS AOS GANHADORES!
                                     </h3>
                                     <p className="text-[#00FF87] font-extrabold text-[11px] uppercase tracking-wider mb-2">
-                                        PREMIAMAX • MAIS PRÊMIO, MAIS CHANCE DE GANHAR!
+                                        TopSorte_27 • GANHE PRÊMIOS REAIS!
                                     </p>
                                     <p className="text-white/40 font-bold text-[10px] uppercase tracking-widest">
-                                        premiamax.vercel.app
+                                        topsorte27.vercel.app
                                     </p>
                                 </div>
                             </div>
