@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
-import { getReservationsByRaffle, updateReservationStatus } from '../../lib/supabase-admin';
+import { getReservationsByRaffle, updateReservationStatus, getRaffleById } from '../../lib/supabase-admin';
 import { subscribeToReservations } from '../../lib/supabase-admin';
-import type { Reservation } from '../../types/database';
+import type { Reservation, Raffle } from '../../types/database';
 
 interface PaymentManagerProps {
     raffleId: string;
+    raffle?: Raffle;
     onBack: () => void;
     onDataChanged?: () => void;
 }
 
-const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDataChanged }) => {
+const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, raffle: initialRaffle, onBack, onDataChanged }) => {
     const [reservations, setReservations] = useState<Reservation[]>([]);
+    const [activeRaffle, setActiveRaffle] = useState<Raffle | null>(initialRaffle || null);
     const [filter, setFilter] = useState<'all' | 'pending' | 'paid'>('all');
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
     const [displayLimit, setDisplayLimit] = useState(50);
 
     // Modal state
@@ -27,12 +28,12 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
     const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
-        loadReservations();
+        loadData();
 
         // Subscribe to real-time updates
         const subscription = subscribeToReservations(raffleId, (payload) => {
             console.log('Real-time update:', payload);
-            loadReservations();
+            loadData();
         });
 
         return () => {
@@ -40,9 +41,13 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
         };
     }, [raffleId]);
 
-    const loadReservations = async () => {
-        const data = await getReservationsByRaffle(raffleId);
-        setReservations(data);
+    const loadData = async () => {
+        const [reservationsData, raffleData] = await Promise.all([
+            getReservationsByRaffle(raffleId),
+            initialRaffle ? Promise.resolve(initialRaffle) : getRaffleById(raffleId)
+        ]);
+        setReservations(reservationsData);
+        if (raffleData) setActiveRaffle(raffleData);
         setIsLoading(false);
     };
 
@@ -64,8 +69,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
         setPendingActionIds([]);
 
         if (allSuccess) {
-            await loadReservations();
-            setSelectedReservation(null);
+            await loadData();
             setSuccessMessage('Pagamento(s) confirmado(s) com sucesso! ✅');
             setShowSuccessModal(true);
             onDataChanged?.();
@@ -93,8 +97,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
         setPendingActionIds([]);
 
         if (allSuccess) {
-            await loadReservations();
-            setSelectedReservation(null);
+            await loadData();
             setSuccessMessage('Reserva(s) cancelada(s) com sucesso!');
             setShowSuccessModal(true);
             onDataChanged?.();
@@ -104,12 +107,19 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
         }
     };
 
-    // Lógica de agrupamento
+    // Preço unitário da cota da rifa
+    const pricePerNumber = activeRaffle?.raffle_type === 'brinde' ? 0 : (activeRaffle?.price_per_number || 0);
+
+    // Lógica de agrupamento e estatísticas
     const groupedReservations = React.useMemo(() => {
         const filtered = reservations.filter((r) => {
             if (filter === 'all') return r.status !== 'cancelled';
             return r.status === filter;
         });
+
+        // Totais gerais
+        let totalPaidRevenue = 0;
+        let totalPendingRevenue = 0;
 
         // Agrupar por nome + telefone + txid
         const groups: Record<string, {
@@ -129,7 +139,17 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
 
         filtered.forEach(res => {
             const key = `${res.buyer_name || 'Desconhecido'}-${res.buyer_phone || ''}-${res.efi_txid || 'manual'}`;
-            const amount = typeof res.payment_amount === 'number' && !isNaN(res.payment_amount) ? res.payment_amount : 0;
+            // Se payment_amount está registrado (>0), usa ele; senão usa o preço da cota
+            const amount = (typeof res.payment_amount === 'number' && res.payment_amount > 0)
+                ? res.payment_amount
+                : pricePerNumber;
+
+            if (res.status === 'paid') {
+                totalPaidRevenue += amount;
+            } else if (res.status === 'pending') {
+                totalPendingRevenue += amount;
+            }
+
             if (!groups[key]) {
                 groups[key] = {
                     id: res.id,
@@ -149,7 +169,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                 groups[key].ids.push(res.id);
                 groups[key].numbers.push(res.number);
                 groups[key].payment_amount += amount;
-                // Manter o status mais "recente" ou mais importante
+                // Se qualquer uma do grupo estiver paga, reflete status
                 if (res.status === 'paid') groups[key].status = 'paid';
             }
         });
@@ -163,9 +183,11 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
 
         return {
             allGroups: sorted,
-            visibleGroups: sorted.slice(0, displayLimit)
+            visibleGroups: sorted.slice(0, displayLimit),
+            totalPaidRevenue,
+            totalPendingRevenue
         };
-    }, [reservations, filter, displayLimit]);
+    }, [reservations, filter, displayLimit, pricePerNumber]);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -198,17 +220,55 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
                     <h2 className="text-2xl font-black text-slate-900">💳 Gerenciamento de Pagamentos</h2>
-                    <p className="text-slate-500 font-medium mt-1">{groupedReservations.allGroups.length} grupos de compras encontrados</p>
+                    <p className="text-slate-500 font-medium mt-1">
+                        {activeRaffle?.title ? `Sorteio: ${activeRaffle.title}` : 'Acompanhamento detalhado das transações'}
+                    </p>
                 </div>
                 <button
                     onClick={onBack}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition-colors"
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-bold transition-colors text-sm shadow-sm"
                 >
-                    ← Voltar
+                    ← Voltar ao Painel
                 </button>
+            </div>
+
+            {/* Quick Metrics Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl p-5 text-white shadow-lg">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-black uppercase tracking-wider text-emerald-100">Total Pago Confirmado</span>
+                        <span className="text-xl">💰</span>
+                    </div>
+                    <p className="text-2xl font-black">
+                        R$ {groupedReservations.totalPaidRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs text-emerald-100/80 mt-1 font-medium">Reservas 100% aprovadas</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-amber-500 to-yellow-600 rounded-2xl p-5 text-white shadow-lg">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-black uppercase tracking-wider text-amber-100">Total Pendente</span>
+                        <span className="text-xl">⏳</span>
+                    </div>
+                    <p className="text-2xl font-black">
+                        R$ {groupedReservations.totalPendingRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs text-amber-100/80 mt-1 font-medium">Aguardando confirmação PIX</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-black uppercase tracking-wider text-purple-100">Valor por Cota</span>
+                        <span className="text-xl">🎟️</span>
+                    </div>
+                    <p className="text-2xl font-black">
+                        {activeRaffle?.raffle_type === 'brinde' ? '100% Grátis' : `R$ ${(activeRaffle?.price_per_number || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    </p>
+                    <p className="text-xs text-purple-100/80 mt-1 font-medium">{groupedReservations.allGroups.length} participantes encontrados</p>
+                </div>
             </div>
 
             {/* Filters */}
@@ -220,7 +280,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                         : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-purple-300'
                         }`}
                 >
-                    📋 Todos
+                    📋 Todos ({groupedReservations.allGroups.length})
                 </button>
                 <button
                     onClick={() => setFilter('pending')}
@@ -245,7 +305,7 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
             {/* Reservations List */}
             <div className="space-y-4">
                 {groupedReservations.visibleGroups.length === 0 ? (
-                    <div className="bg-white rounded-2xl p-12 text-center border-2 border-slate-100">
+                    <div className="bg-white rounded-2xl p-12 text-center border-2 border-slate-100 shadow-sm">
                         <p className="text-4xl mb-4">📭</p>
                         <p className="text-lg font-bold text-slate-400">Nenhuma reserva encontrada</p>
                     </div>
@@ -253,13 +313,13 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                     groupedReservations.visibleGroups.map((group) => (
                         <div
                             key={group.id}
-                            className="bg-white rounded-2xl p-6 shadow-lg border-2 border-slate-100 hover:border-purple-200 transition-all"
+                            className="bg-white rounded-2xl p-6 shadow-md border-2 border-slate-100 hover:border-purple-200 transition-all"
                         >
                             <div className="flex items-start justify-between gap-4 flex-wrap sm:flex-nowrap">
                                 <div className="flex-1 min-w-[200px]">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <span className="text-lg">🎟️</span>
+                                        <div className="w-12 h-12 bg-purple-100 text-purple-700 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-xl">
+                                            🎟️
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-black text-slate-900">{group.buyer_name}</h3>
@@ -277,53 +337,82 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, onBack, onDat
                                         </div>
                                     </div>
 
+                                    {/* Destaque do Valor Pago / a Pagar */}
+                                    <div className="mb-4 bg-emerald-50 border-2 border-emerald-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
+                                        <div>
+                                            <span className="text-[11px] font-black text-emerald-800 uppercase tracking-widest block">
+                                                {group.status === 'paid' ? '✅ Valor Pago pelo Usuário:' : '⏳ Valor Total da Reserva:'}
+                                            </span>
+                                            <div className="flex items-baseline gap-2 mt-0.5">
+                                                {activeRaffle?.raffle_type === 'brinde' ? (
+                                                    <span className="text-xl font-black text-emerald-700">
+                                                        🎁 100% Grátis
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-2xl font-black text-emerald-700">
+                                                            R$ {(group.payment_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                        </span>
+                                                        {group.numbers.length > 1 && pricePerNumber > 0 && (
+                                                            <span className="text-xs font-bold text-emerald-600 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                                                                ({group.numbers.length} cotas x R$ {pricePerNumber.toFixed(2).replace('.', ',')})
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {getStatusBadge(group.status)}
+                                            {getPaymentMethodBadge(group.payment_method)}
+                                        </div>
+                                    </div>
+
                                     {/* Números Selecionados */}
                                     <div className="mb-4">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Números Escolhidos:</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                                            Números Escolhidos ({group.numbers.length} {group.numbers.length === 1 ? 'cota' : 'cotas'}):
+                                        </p>
                                         <div className="flex flex-wrap gap-1.5">
                                             {group.numbers.sort().map(num => (
-                                                <span key={num} className="bg-purple-50 text-purple-700 border border-purple-100 font-black px-2.5 py-1 rounded-lg text-sm">
+                                                <span key={num} className="bg-purple-50 text-purple-700 border border-purple-100 font-black px-3 py-1 rounded-xl text-sm shadow-sm">
                                                     {num}
                                                 </span>
                                             ))}
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                    {/* Contato WhatsApp */}
+                                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                                         {group.buyer_phone && (
                                             <a
                                                 href={`https://wa.me/55${group.buyer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${group.buyer_name}! Entrando em contato sobre a sua reserva no Top Sorte 027 🎉`)}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+                                                className="inline-flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
                                             >
                                                 <span>💬</span> WhatsApp: {group.buyer_phone}
                                             </a>
                                         )}
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-slate-400">💰</span>
-                                            <span className="text-sm font-bold text-green-600">
-                                                R$ {(group.payment_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        {group.buyer_email && (
+                                            <span className="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-xl">
+                                                ✉️ {group.buyer_email}
                                             </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        {getStatusBadge(group.status)}
-                                        {getPaymentMethodBadge(group.payment_method)}
+                                        )}
                                     </div>
 
                                     {/* Informações Efi */}
                                     {group.payment_method === 'efi' && group.efi_txid && (
-                                        <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                                            <p className="text-xs font-bold text-blue-700 mb-1">📝 Detalhes Efi:</p>
+                                        <div className="mt-4 p-3.5 bg-blue-50 rounded-xl border border-blue-200">
+                                            <p className="text-xs font-bold text-blue-700 mb-1">📝 Detalhes PIX Automático (EFI):</p>
                                             <div className="space-y-1">
                                                 <p className="text-xs text-blue-600 truncate">
                                                     <span className="font-bold">TXID:</span> {group.efi_txid}
                                                 </p>
                                                 {group.efi_status && (
                                                     <p className="text-xs text-blue-600">
-                                                        <span className="font-bold">Status Efi:</span> {group.efi_status}
+                                                        <span className="font-bold">Status PIX:</span> {group.efi_status}
                                                     </p>
                                                 )}
                                             </div>

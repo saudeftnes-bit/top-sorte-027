@@ -67,10 +67,15 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
             buyer.numbers.push(reservation.number);
             buyer.reservations.push(reservation);
 
+            const defaultPrice = (raffle?.raffle_type === 'brinde') ? 0 : (raffle?.price_per_number || 0);
+            const amount = (typeof reservation.payment_amount === 'number' && reservation.payment_amount > 0)
+                ? reservation.payment_amount
+                : defaultPrice;
+
             if (reservation.status === 'paid') {
-                buyer.totalPaid += (reservation.payment_amount || 0);
+                buyer.totalPaid += amount;
             } else if (reservation.status === 'pending') {
-                buyer.totalPending += (reservation.payment_amount || 0);
+                buyer.totalPending += amount;
             }
         });
 
@@ -334,7 +339,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                                                                 <div>
                                                                     <div className="flex items-center gap-2">
                                                                         <p className="text-sm font-black text-slate-800">
-                                                                            R$ {(res.payment_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                                            R$ {((res.payment_amount && res.payment_amount > 0) ? res.payment_amount : (activeRaffle?.raffle_type === 'brinde' ? 0 : (activeRaffle?.price_per_number || 0))).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                                         </p>
                                                                         {res.status === 'paid' ? (
                                                                             <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase">Pago</span>

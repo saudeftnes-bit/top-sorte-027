@@ -243,6 +243,7 @@ const AdminPanel: React.FC = () => {
                         {currentSection === 'payments' && activeRaffle && (
                             <PaymentManager
                                 raffleId={activeRaffle.id}
+                                raffle={activeRaffle}
                                 onBack={() => {
                                     setCurrentSection('dashboard');
                                     refreshData();
