@@ -186,12 +186,7 @@ const RaffleList: React.FC<RaffleListProps> = ({
                                                      raffle.status === 'scheduled' ? 'Agendada' :
                                                      raffle.status === 'paused' ? 'Pausada' : 'Finalizada'}
                                                 </span>
-                                                {/* Badge Rifa Fechada */}
-                                                {isClosed && (
-                                                    <span className="text-xs font-black px-2 py-1 rounded-md uppercase bg-red-600 text-white animate-pulse">
-                                                        🔴 RIFA FECHADA
-                                                    </span>
-                                                )}
+
                                             </div>
                                             <h3 className="text-lg font-black text-slate-900 group-hover:text-cyan-600 transition-colors">
                                                 {raffle.title}
