@@ -24,6 +24,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
     const [deletePhotoId, setDeletePhotoId] = useState<string | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [shouldRedirectAfterSuccess, setShouldRedirectAfterSuccess] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
@@ -203,6 +204,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
 
         if (success) {
             setSuccessMessage(raffleId ? 'Sorteio atualizado com sucesso! ✅' : 'Sorteio criado com sucesso! 🎉');
+            setShouldRedirectAfterSuccess(true);
             setShowSuccessModal(true);
             onDataChanged?.();
         } else {
@@ -229,6 +231,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
         if (uploadedUrl) {
             setMainImageUrl(uploadedUrl);
             setSuccessMessage('Imagem carregada com sucesso! 🎉');
+            setShouldRedirectAfterSuccess(false);
             setShowSuccessModal(true);
         } else {
             setErrorMessage('Erro ao fazer upload. Tente novamente.');
@@ -258,6 +261,7 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
             setNewWinnerPhotoUrl(uploadedUrl);
             setNewWinnerMediaType('photo');
             setSuccessMessage('Foto carregada com sucesso! 📸');
+            setShouldRedirectAfterSuccess(false);
             setShowSuccessModal(true);
         } else {
             setErrorMessage('Erro ao fazer upload. Tente novamente.');
@@ -720,8 +724,18 @@ const RaffleManager: React.FC<RaffleManagerProps> = ({ raffleId, onBack, onGoToD
                 confirmLabel="OK"
                 cancelLabel=""
                 variant="info"
-                onConfirm={() => setShowSuccessModal(false)}
-                onCancel={() => setShowSuccessModal(false)}
+                onConfirm={() => {
+                    setShowSuccessModal(false);
+                    if (shouldRedirectAfterSuccess && isCreating && onGoToList) {
+                        onGoToList();
+                    }
+                }}
+                onCancel={() => {
+                    setShowSuccessModal(false);
+                    if (shouldRedirectAfterSuccess && isCreating && onGoToList) {
+                        onGoToList();
+                    }
+                }}
             />
 
             <ConfirmModal

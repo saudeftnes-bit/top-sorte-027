@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getReservationsByRaffle, confirmManualPayment, reactivateReservation, deleteReservation, getRaffleById, createManualReservation } from '../../lib/supabase-admin';
+import { getReservationsByRaffle, confirmManualPayment, reactivateReservation, deleteReservation, deleteReservations, getRaffleById, createManualReservation } from '../../lib/supabase-admin';
 import type { Reservation, Raffle } from '../../types/database';
 import ConfirmModal from '../ConfirmModal';
 import ManualReservationModal from './ManualReservationModal';
@@ -7,6 +7,7 @@ import ManualReservationModal from './ManualReservationModal';
 interface UsersListProps {
     raffleId: string;
     onBack: () => void;
+    onDataChanged?: () => void;
 }
 
 interface BuyerData {
@@ -19,7 +20,7 @@ interface BuyerData {
     reservations: Reservation[];
 }
 
-const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
+const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack, onDataChanged }) => {
     const [buyers, setBuyers] = useState<BuyerData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +31,8 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
     // Modal states
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showBatchDeleteModal, setShowBatchDeleteModal] = useState(false);
+    const [pendingBatchDelete, setPendingBatchDelete] = useState<{ ids: string[]; buyerName: string; numbers: string[] } | null>(null);
     const [showManualReservationModal, setShowManualReservationModal] = useState(false);
     const [pendingAction, setPendingAction] = useState<{ id: string; type: 'confirm' | 'delete' | 'reactivate'; number: string } | null>(null);
 
@@ -100,10 +103,32 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
 
         if (success) {
             await loadBuyers();
+            onDataChanged?.();
         }
         setShowConfirmModal(false);
         setShowDeleteModal(false);
         setPendingAction(null);
+    };
+
+    const handleBatchDeleteBuyer = (buyer: BuyerData) => {
+        setPendingBatchDelete({
+            ids: buyer.reservations.map(r => r.id),
+            buyerName: buyer.name,
+            numbers: buyer.numbers
+        });
+        setShowBatchDeleteModal(true);
+    };
+
+    const confirmBatchDelete = async () => {
+        if (!pendingBatchDelete) return;
+
+        const success = await deleteReservations(pendingBatchDelete.ids);
+        if (success) {
+            await loadBuyers();
+            onDataChanged?.();
+        }
+        setShowBatchDeleteModal(false);
+        setPendingBatchDelete(null);
     };
 
     const handleManualReservation = async (data: {
@@ -128,6 +153,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
 
         if (result.success) {
             await loadBuyers();
+            onDataChanged?.();
             return true;
         } else {
             return false;
@@ -135,30 +161,40 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
     };
 
     const { allFilteredBuyers, visibleBuyers } = React.useMemo(() => {
-        const searchLower = searchTerm.toLowerCase().trim();
-
-        if (!searchLower) {
+        const cleanSearch = searchTerm.trim();
+        if (!cleanSearch) {
             return {
                 allFilteredBuyers: buyers,
                 visibleBuyers: buyers.slice(0, displayLimit)
             };
         }
 
+        const searchLower = cleanSearch.toLowerCase();
+        // Remove '#' se o usuário digitar ex: "#27"
+        const cleanNumber = cleanSearch.replace(/^#/, '').trim();
+        const isNumeric = /^\d+$/.test(cleanNumber);
+
         const filtered = buyers.filter((buyer) => {
-            // Check direct contact fields
-            const matchesContact =
-                buyer.name.toLowerCase().includes(searchLower) ||
-                buyer.phone?.includes(searchLower) ||
-                buyer.email?.toLowerCase().includes(searchLower);
+            if (isNumeric) {
+                const searchNum = parseInt(cleanNumber, 10);
+                // Busca EXATA pela cota da grade (ex: digitou 27, busca cota 27, 027)
+                const matchesExactNumber = buyer.numbers.some(num => {
+                    const parsedNum = parseInt(num, 10);
+                    return num === cleanNumber ||
+                        num === cleanNumber.padStart(2, '0') ||
+                        num === cleanNumber.padStart(3, '0') ||
+                        num === cleanNumber.padStart(4, '0') ||
+                        (!isNaN(parsedNum) && parsedNum === searchNum);
+                });
 
-            // Check specific numbers
-            // We only match if the number EXACTLY starts with or equals the search term 
-            // to avoid returning "10" for "1" if there are thousands of numbers.
-            const matchesNumbers = buyer.numbers.some(num =>
-                num === searchLower || num.startsWith(searchLower)
-            );
+                // Se o nome do comprador tiver esse número, também aceita
+                const matchesName = buyer.name.toLowerCase().includes(searchLower);
 
-            return matchesContact || matchesNumbers;
+                return matchesExactNumber || matchesName;
+            }
+
+            // Busca textual estritamente pelo nome do comprador
+            return buyer.name.toLowerCase().includes(searchLower);
         });
 
         return {
@@ -205,7 +241,7 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por nome, telefone, email ou número da cota..."
+                    placeholder="Buscar por número da cota (ex: 27) ou nome do comprador..."
                     className="w-full px-5 py-4 pl-12 rounded-2xl border-2 border-slate-300 focus:border-purple-600 focus:outline-none font-black text-slate-900 text-base placeholder:text-slate-600 placeholder:font-semibold bg-white shadow-sm"
                 />
                 <svg className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,12 +356,21 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                                         <div className="mt-4 border-t border-slate-100 pt-4">
                                             <div className="flex items-center justify-between mb-3">
                                                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Detalhamento por Número</h4>
-                                                <button
-                                                    onClick={() => setExpandedBuyer(expandedBuyer === key ? null : key)}
-                                                    className="text-xs font-bold text-purple-600 hover:text-purple-700 underline"
-                                                >
-                                                    {expandedBuyer === key ? 'Ocultar Detalhes' : 'Gerenciar Números'}
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleBatchDeleteBuyer(buyer)}
+                                                        className="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 transition-colors flex items-center gap-1 shadow-sm"
+                                                        title="Excluir todas as cotas deste comprador e liberá-las na grade"
+                                                    >
+                                                        🗑️ Liberar Todos os Números
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setExpandedBuyer(expandedBuyer === key ? null : key)}
+                                                        className="text-xs font-bold text-purple-600 hover:text-purple-700 underline"
+                                                    >
+                                                        {expandedBuyer === key ? 'Ocultar Detalhes' : 'Gerenciar Números'}
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {expandedBuyer === key && (
@@ -426,6 +471,17 @@ const UsersList: React.FC<UsersListProps> = ({ raffleId, onBack }) => {
                 variant="danger"
                 onConfirm={handleAction}
                 onCancel={() => { setShowDeleteModal(false); setPendingAction(null); }}
+            />
+
+            <ConfirmModal
+                isOpen={showBatchDeleteModal}
+                title="Excluir Todas as Reservas do Comprador"
+                message={`Tem certeza que deseja EXCLUIR todas as reservas de "${pendingBatchDelete?.buyerName}" e LIBERAR as cotas [ ${pendingBatchDelete?.numbers.join(', ')} ] na grade? Esta ação não pode ser desfeita.`}
+                confirmLabel="Sim, Excluir e Liberar Todas"
+                cancelLabel="Cancelar"
+                variant="danger"
+                onConfirm={confirmBatchDelete}
+                onCancel={() => { setShowBatchDeleteModal(false); setPendingBatchDelete(null); }}
             />
 
             <ManualReservationModal

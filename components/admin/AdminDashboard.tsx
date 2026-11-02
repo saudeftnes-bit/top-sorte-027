@@ -74,7 +74,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
         try {
             const { setMaintenanceMode } = await import('../../lib/supabase-admin');
             const newMode = !maintenanceMode;
-            const msgToSave = maintenanceMessage.trim() !== '' ? maintenanceMessage : 'Estamos passando por instabilidades. Voltaremos em instantes.';
+            const msgToSave = maintenanceMessage.trim() !== '' ? maintenanceMessage : 'Estamos realizando melhorias para você!\n\nNosso sistema está temporariamente em manutenção para aprimorar sua experiência e oferecer um serviço cada vez melhor.\nPedimos desculpas pelo inconveniente e agradecemos pela sua compreensão. Em breve, estaremos de volta com tudo funcionando normalmente.\n\nObrigado pela confiança e por fazer parte da nossa jornada!';
             const success = await setMaintenanceMode(newMode, msgToSave);
             if (success) {
                 setMaintenanceModeState(newMode);
@@ -177,14 +177,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ raffleId, raffle, onNav
                 </div>
 
                 {/* quick stats */}
-                <div className="relative z-10 grid grid-cols-3 gap-3">
+                <div className="relative z-10 grid grid-cols-3 gap-2">
                     {[
-                        { label: 'Arrecadado', value: `R$ ${analytics.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, color: 'text-green-300' },
+                        { label: 'Arrecadado', value: `R$\u00a0${analytics.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, color: 'text-green-300' },
                         { label: 'Vendidos', value: `${analytics.numbersSold}`, color: 'text-purple-300' },
                         { label: 'Progresso', value: `${progressPct}%`, color: 'text-amber-300' },
                     ].map(({ label, value, color }) => (
-                        <div key={label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10 text-center">
-                            <p className={`text-xl font-black ${color}`}>{value}</p>
+                        <div key={label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10 text-center overflow-hidden">
+                            <p className={`text-sm sm:text-xl font-black ${color} truncate`}>{value}</p>
                             <p className="text-white/50 text-xs mt-0.5">{label}</p>
                         </div>
                     ))}

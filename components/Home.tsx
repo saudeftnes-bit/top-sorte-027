@@ -138,28 +138,28 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
     <div className="flex flex-col gap-8 p-4 max-w-2xl mx-auto">
       {/* Featured Raffle Card or Maintenance State */}
       {maintenanceState?.isMaintenance ? (
-        <section className="bg-red-50 rounded-[2.5rem] shadow-xl border-2 border-red-200 mt-4 p-8 md:p-12 text-center animate-in fade-in duration-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-red-100 opacity-50 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-red-100 opacity-50 pointer-events-none"></div>
+        <section className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-[2.5rem] shadow-xl border-2 border-blue-200 mt-4 p-8 md:p-12 text-center animate-in fade-in duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-blue-100 opacity-50 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-indigo-100 opacity-50 pointer-events-none"></div>
 
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-red-200 z-10 relative">
-            <span className="text-4xl">⚠️</span>
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-200 z-10 relative">
+            <span className="text-4xl">🔧</span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-black text-red-700 mb-4 tracking-tight uppercase relative z-10">
-            Atenção: Sistema Instável
+          <h2 className="text-2xl md:text-3xl font-black text-blue-800 mb-4 tracking-tight relative z-10">
+            Estamos realizando melhorias para você!
           </h2>
-          <div className="bg-white/60 p-4 rounded-2xl mb-6 relative z-10 backdrop-blur-sm border border-red-100">
-            <p className="text-base text-red-900 font-bold max-w-lg mx-auto leading-relaxed whitespace-pre-line">
+          <div className="bg-white/70 p-4 rounded-2xl mb-6 relative z-10 backdrop-blur-sm border border-blue-100">
+            <p className="text-base text-blue-900 font-medium max-w-lg mx-auto leading-relaxed whitespace-pre-line">
               {maintenanceState.message}
             </p>
           </div>
-          <p className="text-sm text-red-600 font-medium mb-8 relative z-10">
-            Não se preocupe, seus dados e compras recentes estão seguros. Tente recarregar a tela em alguns instantes.
+          <p className="text-sm text-blue-600 font-medium mb-8 relative z-10">
+            Seus dados e compras recentes estão seguros. Em breve estaremos de volta! 💙
           </p>
           <div className="relative z-10">
             <button
               onClick={() => window.location.reload()}
-              className="bg-red-600 hover:bg-red-700 text-white font-black py-4 px-10 rounded-2xl shadow-lg shadow-red-600/20 transition-transform active:scale-95 text-lg w-full sm:w-auto flex items-center justify-center gap-2 mx-auto"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-10 rounded-2xl shadow-lg shadow-blue-600/20 transition-transform active:scale-95 text-lg w-full sm:w-auto flex items-center justify-center gap-2 mx-auto"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
               Atualizar Página
@@ -167,144 +167,86 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
           </div>
         </section>
       ) : featuredRaffle ? (
-        <section className="relative overflow-hidden bg-gradient-to-b from-[#004B8D] to-[#001D4A] rounded-[2rem] shadow-[0_15px_40px_-10px_rgba(0,75,141,0.6)] border border-[#00E676]/30 mt-4 flex flex-col">
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-4 right-10 w-20 h-20 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
-            <div className="absolute bottom-10 left-4 w-32 h-32 bg-[#00E676]/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '3s' }}></div>
-            <div className="absolute top-1/4 left-1/3 w-1 h-1 bg-white/40 rounded-full animate-pulse"></div>
-            <div className="absolute top-1/2 right-1/3 w-1.5 h-1.5 bg-white/30 rounded-full animate-pulse" style={{ animationDelay: '1.5s' }}></div>
-          </div>
-          {/* Status Badge Above Image */}
-          <div className={`w-full font-black px-4 py-3 text-center text-xs sm:text-sm relative overflow-hidden ${featuredRaffle.status === 'active' ? (isBicho ? 'bg-green-600 text-white' : 'bg-[#00E676] text-[#001D4A] border-b border-[#00E676]') :
-            featuredRaffle.status === 'scheduled' ? 'bg-yellow-500 text-slate-900' :
-              'bg-red-600 text-white'
-            }`}>
-            {featuredRaffle.status === 'finished' && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-gradient-text bg-[length:200%_auto]"></div>
-            )}
-            <span className="relative z-10 tracking-widest">
-              {featuredRaffle.status === 'active' ? '🟢 NOVA RIFA' : '🔴 RIFA FINALIZADA / PAUSADA'}
-            </span>
-          </div>
-
-          <div className="bg-[#001D4A] overflow-hidden w-full relative group">
-            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#001D4A] to-transparent z-10"></div>
+        <section className="relative overflow-hidden bg-black rounded-[2rem] shadow-[0_15px_40px_-10px_rgba(0,0,0,0.9)] border border-white/10 mt-4 flex flex-col">
+          {/* ── FOTO EM DESTAQUE (SEM OVERLAY ESCURO PARA TOTAL NITIDEZ E BRILHO) ── */}
+          <div className="relative w-full overflow-hidden group">
             <img
               src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
               alt="Prêmio do Sorteio"
-              className="w-full h-auto block transition-transform duration-500 ease-out group-hover:scale-110 relative z-0 cursor-pointer"
+              className="w-full h-auto max-h-[75vh] object-contain block transition-transform duration-700 ease-out group-hover:scale-105"
             />
-          </div>
 
-          <div className="p-6 relative z-20 mt-0">
-            {/* Sorteio Info Label */}
-            <div className={`mx-auto mb-6 w-fit py-2.5 px-8 rounded-full text-center font-black text-[12px] sm:text-sm uppercase tracking-[0.25em] shadow-lg ${isBicho ? 'bg-green-500 text-white' : 'bg-[#003B73] border border-[#00E676]/50 text-[#00E676]'}`}>
-              {raffleTypeLabel}
+            {/* Badge status — top-left sobreposto na foto */}
+            <div className={`absolute top-3 left-3 z-20 font-black text-[10px] px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg ${
+              featuredRaffle.status === 'active'
+                ? 'bg-[#00E676] text-[#001D4A]'
+                : featuredRaffle.status === 'scheduled'
+                ? 'bg-yellow-400 text-slate-900'
+                : 'bg-red-600 text-white'
+            }`}>
+              {featuredRaffle.status === 'active' ? '🟢 NOVA RIFA' : featuredRaffle.status === 'scheduled' ? '⏳ EM BREVE' : '🔴 FINALIZADA'}
             </div>
 
-            {featuredRaffle.status === 'finished' && (
-              <div className="mb-6 text-center">
-                <div className="inline-block relative">
-                  <h2 className="text-3xl md:text-5xl font-black tracking-tighter uppercase italic py-2 px-6 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-sm select-none">
-                    Rifa Finalizada
-                  </h2>
-                  <div className="absolute -inset-1 bg-red-500 opacity-20 blur-xl animate-pulse rounded-full -z-10"></div>
-                </div>
-              </div>
-            )}
-
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4 text-center uppercase tracking-tight drop-shadow-md px-2">
-              {featuredRaffle.title || 'MOTO 0KM OU R$ 15.000 NO PIX'}
-            </h2>
-
-            {featuredRaffle.description && (
-              <p className="text-white text-sm sm:text-base md:text-lg font-bold mb-8 text-center leading-relaxed max-w-sm mx-auto italic drop-shadow-md bg-black/10 p-4 rounded-2xl border border-white/5">
-                "{featuredRaffle.description}"
-              </p>
-            )}
-
+            {/* Badge edição — top-right sobreposto na foto */}
             {featuredRaffle.code && (
-              <div className="text-center mb-6">
-                <span className="bg-white/5 border border-white/10 text-white/50 text-[10px] font-black px-4 py-1.5 rounded-full tracking-widest">
-                  EDIÇÃO #{featuredRaffle.code}
-                </span>
+              <div className="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-md border border-white/20 text-white/90 font-black text-[10px] px-3 py-1.5 rounded-full tracking-widest">
+                EDIÇÃO #{featuredRaffle.code}
               </div>
             )}
+          </div>
 
+          {/* ── PAINEL INFERIOR PRETO (apenas valor + botão) ── */}
+          <div className="bg-black px-4 pt-3 pb-5 space-y-3">
+
+            {/* Card de Valor (sem informação de limite/máx de números) */}
             {featuredRaffle.raffle_type === 'brinde' ? (
-              <div className="w-full max-w-md mx-auto flex flex-wrap items-center justify-center gap-2 mb-6 text-white font-bold text-sm bg-emerald-950/70 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-emerald-400/40 shadow-inner text-center">
-                <span className="text-xl flex-shrink-0">🎁</span>
-                <span className="text-emerald-400 text-lg sm:text-xl font-black uppercase tracking-wide">100% Grátis</span>
-                <span className="text-xs text-emerald-100/90 font-bold px-2.5 py-0.5 rounded-full bg-emerald-900/70 border border-emerald-500/30">
-                  Máx. {featuredRaffle.max_numbers_per_participant || 2} { (featuredRaffle.max_numbers_per_participant || 2) === 1 ? 'número' : 'números' }
+              <div className="flex items-center justify-center gap-3 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl px-4 py-3 text-center">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                <span className="text-emerald-400 text-lg font-black uppercase tracking-wider">
+                  100% Grátis
                 </span>
               </div>
             ) : (
-              <div className="w-full max-w-md mx-auto flex flex-wrap items-center justify-center gap-2 mb-6 text-white/90 font-bold text-sm bg-black/40 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-white/10 shadow-inner text-center">
-                <span className="flex h-3 w-3 rounded-full bg-[#00E676] animate-pulse shadow-[0_0_10px_#00E676] flex-shrink-0"></span>
-                <span>Apenas <span className="text-[#00E676] text-xl font-black mx-1">R$ {featuredRaffle.price_per_number?.toFixed(2).replace('.', ',') || '13,00'}</span> / cota</span>
-                <span className="text-xs text-white/70 font-semibold px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
-                  Máx. {featuredRaffle.max_numbers_per_participant || 2} { (featuredRaffle.max_numbers_per_participant || 2) === 1 ? 'número' : 'números' }
+              <div className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-center">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#00E676] animate-pulse shadow-[0_0_8px_#00E676] flex-shrink-0" />
+                <span className="text-white/90 text-sm font-bold">
+                  Apenas{' '}
+                  <strong className="text-[#00E676] text-xl font-black">
+                    R$ {featuredRaffle.price_per_number?.toFixed(2).replace('.', ',') || '13,00'}
+                  </strong>{' '}
+                  / cota
                 </span>
               </div>
             )}
 
-            {/* Botão de CTA Ultra Moderno com Efeito Neon Ping */}
-            <div className="w-full relative mt-2">
+            {/* Botão CTA */}
+            <div className="relative">
               {featuredRaffle.status === 'active' && (
-                <div className="absolute inset-0 bg-[#00E676] rounded-[1.25rem] animate-ping opacity-30"></div>
+                <div className="absolute inset-0 bg-[#00E676] rounded-2xl animate-ping opacity-25" />
               )}
               <button
                 onClick={onStart}
-                className={`w-full relative ${featuredRaffle.status === 'active' ? 'bg-gradient-to-r from-[#00E676] to-[#00C853] text-[#001D4A] shadow-[0_0_20px_rgba(0,230,118,0.4)]' : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-600'
-                  } font-black py-5 px-4 rounded-2xl flex items-center justify-center transition-all active:scale-95 text-base sm:text-lg uppercase tracking-wider overflow-hidden group border-b-4 ${featuredRaffle.status === 'active' ? 'border-[#008c3a] hover:border-[#00E676] hover:translate-y-1' : 'border-slate-900'}`}
+                className={`w-full relative font-black py-5 rounded-2xl flex items-center justify-center gap-2 text-base uppercase tracking-wider transition-all active:scale-95 border-b-4 overflow-hidden group ${
+                  featuredRaffle.status === 'active'
+                    ? 'bg-gradient-to-r from-[#00E676] to-[#00C853] text-[#001D4A] border-[#008c3a] shadow-[0_6px_24px_rgba(0,230,118,0.35)] hover:translate-y-px'
+                    : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-900'
+                }`}
               >
-                {featuredRaffle.status === 'active' && (
-                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                )}
-                <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm w-full text-center">
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <span className="relative z-10 flex items-center gap-2">
                   {featuredRaffle.status === 'active' ? (
                     featuredRaffle.raffle_type === 'brinde' ? (
-                      <span className="flex items-center justify-center gap-2 text-center">
-                        <span className="text-xl sm:text-2xl leading-none">🎁</span>
-                        <span className="tracking-widest font-black leading-none">PARTICIPAR DO BRINDE GRÁTIS</span>
-                      </span>
+                      <><span>🎁</span><span>PARTICIPAR DO BRINDE GRÁTIS</span></>
                     ) : (
-                      <span className="flex items-center justify-center gap-2 text-center">
-                        <span className="text-xl sm:text-2xl leading-none">🎟️</span>
-                        <span className="tracking-widest font-black leading-none">GARANTIR NÚMEROS</span>
-                      </span>
+                      <><span>🚀</span><span>PARTICIPAR AGORA!</span></>
                     )
                   ) : (
-                      <div className="flex items-center gap-3">
-                         <style dangerouslySetInnerHTML={{ __html: `
-                          @keyframes real-blink {
-                            0%, 90%, 100% { transform: scaleY(1); }
-                            95% { transform: scaleY(0.1); }
-                          }
-                          .eye-blink {
-                            animation: real-blink 3.5s infinite;
-                            transform-origin: center;
-                          }
-                        `}} />
-                        <svg width="40" height="24" viewBox="0 0 40 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">
-                          {/* Olho Esquerdo */}
-                          <g className="eye-blink">
-                            <ellipse cx="12" cy="12" rx="8" ry="10" fill="white" />
-                            <circle cx="12" cy="12" r="4" fill="#001D4A" />
-                          </g>
-                          {/* Olho Direito */}
-                          <g className="eye-blink">
-                            <ellipse cx="28" cy="12" rx="8" ry="10" fill="white" />
-                            <circle cx="28" cy="12" r="4" fill="#001D4A" />
-                          </g>
-                        </svg>
-                        <span className="mt-1 tracking-[0.2em] text-[#00E676] font-black">VISUALIZAR RIFA</span>
-                      </div>
+                    <><span>👁️</span><span>VISUALIZAR RIFA</span></>
                   )}
                 </span>
               </button>
             </div>
+
           </div>
         </section>
       ) : (
@@ -596,7 +538,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <a 
-                href="https://wa.me/5527995827661?text=Olá!%20Tenho%20uma%20dúvida%20sobre%20o%20sorteio"
+                href="https://wa.me/5527992429263?text=Olá!%20Tenho%20uma%20dúvida%20sobre%20o%20sorteio"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-black py-4 px-10 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 text-lg uppercase tracking-wider"

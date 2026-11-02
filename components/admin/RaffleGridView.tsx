@@ -179,45 +179,42 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
         });
     };
 
-    // Geração do Print Profissional TopSorte_27 via Canvas 2D Ultra HD (DPR = 3)
+    // Geração do Print Profissional TopSorte_27 no formato exato de Tela de Celular / Stories (1080 x 1920 - 9:16)
     const downloadScreenshot = async () => {
         setIsCapturing(true);
         await new Promise(r => setTimeout(r, 100));
 
         try {
-            const DPR = 3;               // Resolução 3x Ultra HD
-            const W = 450;               // Largura lógica otimizada
-            const PAD = 36;              // Padding lateral
-            const CARD_W = W - PAD * 2;  // 378px
-            const CARD_H = 116;          // Altura do card de prêmio
-            const CARD_GAP = 18;         // Espaçamento entre cards
-            const HEADER_H = 340;        // Altura do cabeçalho com logo do app
-            const FOOTER_H = 140;        // Altura do rodapé profissional
-            const totalH = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + FOOTER_H;
+            // Proporção de tela de celular (9:16) para que o conteúdo caiba 100% na tela do celular sem rolar
+            const DPR = 2;               // 540 x 960 * 2 = 1080 x 1920 (Full HD Mobile / Stories)
+            const W = 540;               // Largura lógica
+            const H = 960;               // Altura lógica da tela de celular
+            const PAD = 28;              // Padding lateral
+            const CARD_W = W - PAD * 2;  // 484px
 
             const canvas = document.createElement('canvas');
             canvas.width = W * DPR;
-            canvas.height = totalH * DPR;
+            canvas.height = H * DPR;
             const ctx = canvas.getContext('2d')!;
             ctx.scale(DPR, DPR);
 
             // ── 1. Fundo com Gradiente Nobre TopSorte_27 ───────────────
-            const bgGrad = ctx.createLinearGradient(0, 0, 0, totalH);
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
             bgGrad.addColorStop(0, selectedBgColor);
             bgGrad.addColorStop(1, '#050B14');
             ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, W, totalH);
+            ctx.fillRect(0, 0, W, H);
 
             // Luz ambiente no topo (glow sutil)
-            const glow = ctx.createRadialGradient(W / 2, 80, 20, W / 2, 80, 260);
+            const glow = ctx.createRadialGradient(W / 2, 70, 20, W / 2, 70, 260);
             glow.addColorStop(0, 'rgba(0, 163, 255, 0.22)');
             glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
             ctx.fillStyle = glow;
-            ctx.fillRect(0, 0, W, 320);
+            ctx.fillRect(0, 0, W, 280);
 
             // ── 2. Logo Oficial do App TopSorte_27 ──────────────────
             const logoImg = await loadAppLogo();
-            const LOGO_SIZE = 100;
+            const LOGO_SIZE = 84;
             const logoX = (W - LOGO_SIZE) / 2;
             const logoY = 32;
 
@@ -225,18 +222,18 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 // Sombra do logo
                 ctx.save();
                 ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-                ctx.shadowBlur = 24;
-                ctx.shadowOffsetY = 8;
+                ctx.shadowBlur = 20;
+                ctx.shadowOffsetY = 6;
 
                 // Máscara com cantos arredondados para a foto do logo
-                roundRect(ctx, logoX, logoY, LOGO_SIZE, LOGO_SIZE, 26);
+                roundRect(ctx, logoX, logoY, LOGO_SIZE, LOGO_SIZE, 22);
                 ctx.fillStyle = '#012B5D';
                 ctx.fill();
                 ctx.restore();
 
                 // Desenha a imagem cortada com cantos arredondados
                 ctx.save();
-                roundRect(ctx, logoX, logoY, LOGO_SIZE, LOGO_SIZE, 26);
+                roundRect(ctx, logoX, logoY, LOGO_SIZE, LOGO_SIZE, 22);
                 ctx.clip();
                 ctx.drawImage(logoImg, logoX, logoY, LOGO_SIZE, LOGO_SIZE);
                 ctx.restore();
@@ -245,7 +242,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                 ctx.save();
                 ctx.strokeStyle = '#FFD700';
                 ctx.lineWidth = 3;
-                roundRect(ctx, logoX, logoY, LOGO_SIZE, LOGO_SIZE, 26);
+                roundRect(ctx, logoX, logoY, LOGO_SIZE, LOGO_SIZE, 22);
                 ctx.stroke();
                 ctx.restore();
             }
@@ -255,24 +252,24 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.fillStyle = '#FFFFFF';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('TopSorte_27', W / 2, 160);
+            ctx.fillText('TopSorte_27', W / 2, 146);
 
             // Slogan Oficial TopSorte_27
             ctx.font = '800 11px Montserrat, Arial';
-            ctx.fillStyle = '#00FF87'; // Verde neon do banner oficial
-            ctx.fillText('GANHE PRÊMIOS REAIS!', W / 2, 184);
+            ctx.fillStyle = '#00FF87';
+            ctx.fillText('GANHE PRÊMIOS REAIS!', W / 2, 168);
 
             // Pílula "Resultado Oficial"
-            const pillY = 212;
-            const pillH = 30;
+            const pillY = 190;
+            const pillH = 28;
             const pillW = 200;
             const pillX = (W - pillW) / 2;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            roundRect(ctx, pillX, pillY, pillW, pillH, 15);
+            roundRect(ctx, pillX, pillY, pillW, pillH, 14);
             ctx.fill();
             ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
             ctx.lineWidth = 1;
-            roundRect(ctx, pillX, pillY, pillW, pillH, 15);
+            roundRect(ctx, pillX, pillY, pillW, pillH, 14);
             ctx.stroke();
 
             ctx.font = '900 11px Montserrat, Arial';
@@ -280,102 +277,129 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.fillText('★ RESULTADO OFICIAL ★', W / 2, pillY + pillH / 2);
 
             // Título do Concurso
-            ctx.font = '900 34px Montserrat, Arial';
+            ctx.font = '900 22px Montserrat, Arial';
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillText('Vencedores do', W / 2, 272);
+            ctx.fillText('Vencedores do', W / 2, 240);
 
-            ctx.font = '900 34px Montserrat, Arial';
+            ctx.font = '900 26px Montserrat, Arial';
             ctx.fillStyle = '#FFD700';
-            ctx.fillText(`Concurso #${raffle.code || '000'}`, W / 2, 310);
+            ctx.fillText(`Concurso #${raffle.code || '000'}`, W / 2, 270);
 
-            // ── 4. Cards de Ganhadores com Acabamento Luxo ──────────
-            const BADGE_W = 104;
-            const BADGE_H = 92;
-            const BADGE_RADIUS = 20;
+            // ── 4. Cards de Ganhadores com Ajuste Dinâmico à Tela ──
+            const contentTopY = 300;
+            const footerTopY = 860;
+            const availableH = footerTopY - contentTopY;
+            const N = Math.max(1, sortedWinners.length);
+
+            // Altura e espaçamento dinâmicos para caber perfeitamente na tela
+            let cardH = 100;
+            let cardGap = 16;
+
+            if (N === 1) {
+                cardH = 124;
+                cardGap = 0;
+            } else if (N === 2) {
+                cardH = 110;
+                cardGap = 20;
+            } else if (N === 3) {
+                cardH = 98;
+                cardGap = 16;
+            } else if (N === 4) {
+                cardH = 86;
+                cardGap = 12;
+            } else {
+                cardGap = Math.max(6, Math.floor(36 / N));
+                cardH = Math.min(80, Math.floor((availableH - 20 - (N - 1) * cardGap) / N));
+            }
+
+            const listH = N * cardH + (N - 1) * cardGap;
+            const startY = contentTopY + Math.max(8, Math.floor((availableH - listH) / 2));
 
             sortedWinners.forEach((winner, i) => {
                 const pc = getPrintColors(winner.position);
                 const pi = getPrizeInfo(winner.position);
                 const displayName = winner.customName || reservations[winner.number]?.name || '---';
 
-                const cardY = HEADER_H + i * (CARD_H + CARD_GAP);
+                const cardY = startY + i * (cardH + cardGap);
                 const cardX = PAD;
 
-                // Fundo do card (Vidro fosco com degradê suave)
-                const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX + CARD_W, cardY + CARD_H);
+                // Fundo do card
+                const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX + CARD_W, cardY + cardH);
                 cardGrad.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
                 cardGrad.addColorStop(1, 'rgba(255, 255, 255, 0.04)');
                 ctx.fillStyle = cardGrad;
-                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 26);
+                roundRect(ctx, cardX, cardY, CARD_W, cardH, 20);
                 ctx.fill();
 
                 // Borda do card
                 ctx.strokeStyle = winner.position === 1 ? 'rgba(255, 215, 0, 0.6)' : 'rgba(255, 255, 255, 0.16)';
                 ctx.lineWidth = winner.position === 1 ? 2 : 1;
-                roundRect(ctx, cardX, cardY, CARD_W, CARD_H, 26);
+                roundRect(ctx, cardX, cardY, CARD_W, cardH, 20);
                 ctx.stroke();
 
-                // Badge do Número da Cota (HERO da composição: Lado esquerdo)
-                const badgeX = cardX + 14;
-                const badgeY = cardY + (CARD_H - BADGE_H) / 2;
+                // Badge do Número da Cota
+                const BADGE_H = Math.min(cardH - 16, 76);
+                const BADGE_W = Math.min(88, Math.floor(BADGE_H * 1.15));
+                const badgeRadius = Math.min(16, Math.floor(BADGE_H / 4));
+                const badgeX = cardX + 12;
+                const badgeY = cardY + (cardH - BADGE_H) / 2;
 
-                // Fundo do Badge do Número
                 ctx.fillStyle = pc.bg;
-                roundRect(ctx, badgeX, badgeY, BADGE_W, BADGE_H, BADGE_RADIUS);
+                roundRect(ctx, badgeX, badgeY, BADGE_W, BADGE_H, badgeRadius);
                 ctx.fill();
 
-                // Borda do Badge
                 ctx.strokeStyle = winner.position === 1 ? '#B45309' : 'rgba(0,0,0,0.2)';
                 ctx.lineWidth = 2;
-                roundRect(ctx, badgeX, badgeY, BADGE_W, BADGE_H, BADGE_RADIUS);
+                roundRect(ctx, badgeX, badgeY, BADGE_W, BADGE_H, badgeRadius);
                 ctx.stroke();
 
-                // Rótulo "COTA" no topo do badge
-                ctx.font = '900 10px Montserrat, Arial';
+                // Rótulo "COTA"
+                ctx.font = '900 9px Montserrat, Arial';
                 ctx.fillStyle = winner.position === 1 ? 'rgba(1, 43, 93, 0.7)' : 'rgba(0, 0, 0, 0.6)';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                ctx.fillText('COTA', badgeX + BADGE_W / 2, badgeY + 12);
+                ctx.fillText('COTA', badgeX + BADGE_W / 2, badgeY + 7);
 
-                // Número da Cota (GRANDE E IMPACTANTE: 44px)
-                ctx.font = '900 44px Montserrat, Arial';
+                // Número da Cota
+                const numFontSize = BADGE_H >= 68 ? 34 : (BADGE_H >= 52 ? 28 : 22);
+                ctx.font = `900 ${numFontSize}px Montserrat, Arial`;
                 ctx.fillStyle = pc.text;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(winner.number, badgeX + BADGE_W / 2, badgeY + 54);
+                ctx.fillText(winner.number, badgeX + BADGE_W / 2, badgeY + BADGE_H / 2 + 5);
 
-                // Lado direito: Informações do prêmio e do ganhador
-                const infoX = badgeX + BADGE_W + 16;
-                const infoY = cardY + 18;
+                // Lado direito: Informações
+                const infoX = badgeX + BADGE_W + 14;
+                const labelH = Math.min(24, Math.floor(cardH * 0.28));
+                const infoY = cardY + Math.max(8, Math.floor((cardH - (labelH + 34)) / 2));
 
                 // Pílula da Colocação
                 const labelText = `${pi.icon} ${pi.label.toUpperCase()}`;
-                ctx.font = '900 12px Montserrat, Arial';
-                const labelW = ctx.measureText(labelText).width + 24;
-                const labelH = 26;
+                ctx.font = '900 11px Montserrat, Arial';
+                const labelW = ctx.measureText(labelText).width + 20;
 
                 ctx.fillStyle = pc.labelBg;
                 roundRect(ctx, infoX, infoY, labelW, labelH, labelH / 2);
                 ctx.fill();
 
-                ctx.font = '900 11px Montserrat, Arial';
+                ctx.font = '900 10px Montserrat, Arial';
                 ctx.fillStyle = pc.labelText;
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(labelText, infoX + 12, infoY + labelH / 2);
+                ctx.fillText(labelText, infoX + 10, infoY + labelH / 2);
 
                 // Rótulo "GANHADOR(A):"
-                const labelGanhadorY = infoY + labelH + 11;
-                ctx.font = '800 10px Montserrat, Arial';
+                const labelGanhadorY = infoY + labelH + 6;
+                ctx.font = '800 9px Montserrat, Arial';
                 ctx.fillStyle = '#FFD700';
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'top';
                 ctx.fillText('GANHADOR(A):', infoX, labelGanhadorY);
 
-                // Nome do Ganhador (MENOR E PROPORCIONAL: 16px)
-                const nameY = labelGanhadorY + 14;
-                const maxNameW = CARD_W - BADGE_W - 44;
-                let fontSize = 16;
+                // Nome do Ganhador
+                const nameY = labelGanhadorY + 12;
+                const maxNameW = CARD_W - BADGE_W - 36;
+                let fontSize = 15;
                 ctx.font = `800 italic ${fontSize}px Montserrat, Arial`;
                 let nameDisplay = displayName.toUpperCase();
 
@@ -398,7 +422,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             });
 
             // ── 5. Rodapé Comemorativo Exclusivo TopSorte_27 ───────────
-            const footerY = HEADER_H + sortedWinners.length * (CARD_H + CARD_GAP) + 24;
+            const footerY = 870;
 
             // Linha divisória em degradê dourado
             const lineGrad = ctx.createLinearGradient((W - 140) / 2, 0, (W + 140) / 2, 0);
@@ -413,21 +437,21 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
             ctx.stroke();
 
             // Texto de Parabéns
-            ctx.font = '900 italic 21px Montserrat, Arial';
+            ctx.font = '900 italic 18px Montserrat, Arial';
             ctx.fillStyle = '#FFD700';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('PARABÉNS AOS GANHADORES!', W / 2, footerY + 36);
+            ctx.fillText('PARABÉNS AOS GANHADORES!', W / 2, footerY + 26);
 
             // Slogan TopSorte_27
-            ctx.font = '800 12px Montserrat, Arial';
+            ctx.font = '800 11px Montserrat, Arial';
             ctx.fillStyle = '#00FF87';
-            ctx.fillText('TopSorte_27 • GANHE PRÊMIOS REAIS!', W / 2, footerY + 66);
+            ctx.fillText('TopSorte_27 • GANHE PRÊMIOS REAIS!', W / 2, footerY + 48);
 
             // Link do App / Auditoria
-            ctx.font = '700 11px Montserrat, Arial';
+            ctx.font = '700 10px Montserrat, Arial';
             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.fillText('topsorte27.vercel.app', W / 2, footerY + 92);
+            ctx.fillText('topsorte27.vercel.app', W / 2, footerY + 68);
 
             // ── 6. Download Padronizado ─────────────────────────────
             const link = document.createElement('a');
@@ -752,58 +776,57 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                     </div>
 
                     {/* Contêiner da Prévia Formatada */}
-                    <div className="relative w-full overflow-hidden pb-4 flex justify-center">
-                        <div className="min-w-[440px] origin-top sm:transform-none transform scale-[0.80] sm:scale-100">
+                    <div className="relative w-full pb-4 flex justify-center">
+                        <div className="w-full max-w-[440px]">
                             <div
                                 id="print-area-capture"
                                 ref={printRef}
-                                className="mx-auto p-10 text-white shadow-2xl transition-colors duration-300 relative overflow-hidden"
+                                className="mx-auto p-4 sm:p-8 text-white shadow-2xl transition-colors duration-300 relative overflow-hidden"
                                 style={{
                                     backgroundColor: selectedBgColor,
                                     backgroundImage: `linear-gradient(180deg, ${selectedBgColor} 0%, #050B14 100%)`,
-                                    width: '440px',
-                                    minHeight: '820px',
-                                    border: '12px solid rgba(255, 255, 255, 0.06)',
-                                    borderRadius: '36px',
+                                    width: '100%',
+                                    border: '6px solid rgba(255, 255, 255, 0.08)',
+                                    borderRadius: '24px',
                                     display: 'block',
                                     boxSizing: 'border-box',
                                 }}
                             >
                                 {/* Efeito de luz de fundo (ambient glow) */}
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-sky-500/20 rounded-full blur-3xl pointer-events-none" />
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 sm:w-72 h-48 sm:h-72 bg-sky-500/20 rounded-full blur-3xl pointer-events-none" />
 
                                 {/* 1. Logo Oficial TopSorte_27 */}
-                                <div className="text-center relative z-10 mb-4">
+                                <div className="text-center relative z-10 mb-3 sm:mb-4">
                                     <div className="inline-block relative">
                                         <img
                                             src="/logo.png"
                                             alt="TopSorte_27 Logo"
-                                            className="w-24 h-24 rounded-3xl shadow-2xl border-2 border-yellow-400 object-cover mx-auto ring-4 ring-yellow-400/20"
+                                            className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl shadow-xl border-2 border-yellow-400 object-cover mx-auto ring-2 sm:ring-4 ring-yellow-400/20"
                                         />
                                     </div>
-                                    <h2 className="text-2xl font-black text-white tracking-wider mt-3">
+                                    <h2 className="text-lg sm:text-2xl font-black text-white tracking-wider mt-2 sm:mt-3">
                                         TopSorte_27
                                     </h2>
-                                    <p className="text-[11px] font-black text-[#00FF87] uppercase tracking-widest mt-0.5">
+                                    <p className="text-[9px] sm:text-[11px] font-black text-[#00FF87] uppercase tracking-widest mt-0.5">
                                         GANHE PRÊMIOS REAIS!
                                     </p>
                                 </div>
 
                                 {/* 2. Pílula do Resultado Oficial */}
-                                <div className="text-center mb-6 relative z-10">
-                                    <div className="inline-block bg-white/10 backdrop-blur-md border border-yellow-400/40 px-4 py-1.5 rounded-full shadow-lg">
-                                        <span className="text-xs font-black text-yellow-400 uppercase tracking-widest">
+                                <div className="text-center mb-3 sm:mb-5 relative z-10">
+                                    <div className="inline-block bg-white/10 backdrop-blur-md border border-yellow-400/40 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full shadow-lg">
+                                        <span className="text-[10px] sm:text-xs font-black text-yellow-400 uppercase tracking-widest">
                                             ★ RESULTADO OFICIAL ★
                                         </span>
                                     </div>
-                                    <h1 className="text-3xl font-black text-white uppercase italic tracking-tight mt-3">
+                                    <h1 className="text-lg sm:text-2xl font-black text-white uppercase italic tracking-tight mt-2 sm:mt-3 leading-tight">
                                         Vencedores do <br />
                                         <span className="text-yellow-400">Concurso #{raffle.code || '000'}</span>
                                     </h1>
                                 </div>
 
                                 {/* 3. Lista de Cartões de Prêmios */}
-                                <div className="w-full mb-8 relative z-10 space-y-3.5">
+                                <div className="w-full mb-4 sm:mb-6 relative z-10 space-y-2.5 sm:space-y-3.5">
                                     {sortedWinners.length > 0 ? (
                                         sortedWinners.map((winner) => {
                                             const printColors = getPrintColors(winner.position);
@@ -813,27 +836,27 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                             return (
                                                 <div
                                                     key={winner.id}
-                                                    className="rounded-3xl p-4 border transition-all"
+                                                    className="rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 border transition-all"
                                                     style={{
                                                         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.04) 100%)',
                                                         borderColor: winner.position === 1 ? 'rgba(255, 215, 0, 0.6)' : 'rgba(255, 255, 255, 0.16)',
                                                         boxShadow: winner.position === 1 ? '0 10px 25px -5px rgba(255, 215, 0, 0.2)' : 'none',
                                                     }}
                                                 >
-                                                    <div className="flex items-center gap-4">
+                                                    <div className="flex items-center gap-2.5 sm:gap-4">
                                                         {/* Badge do Número: O Grande Destaque */}
                                                         <div
-                                                            className="w-24 h-24 rounded-2xl flex flex-col items-center justify-center shadow-xl flex-shrink-0"
+                                                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-lg flex-shrink-0"
                                                             style={{
                                                                 backgroundColor: printColors.bg,
                                                                 color: printColors.text,
                                                                 border: winner.position === 1 ? '2px solid #B45309' : '2px solid rgba(0,0,0,0.15)',
                                                             }}
                                                         >
-                                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-70 leading-none mb-1">
+                                                            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest opacity-70 leading-none mb-0.5">
                                                                 COTA
                                                             </span>
-                                                            <span className="text-4xl font-black leading-none tracking-tight">
+                                                            <span className="text-2xl sm:text-3xl font-black leading-none tracking-tight">
                                                                 {winner.number}
                                                             </span>
                                                         </div>
@@ -841,7 +864,7 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                         {/* Lado Direito: Prêmio e Nome do Ganhador */}
                                                         <div className="flex-1 min-w-0 text-left">
                                                             <div
-                                                                className="inline-block font-black text-[11px] uppercase tracking-wider px-3 py-1 rounded-full mb-1 shadow"
+                                                                className="inline-block font-black text-[9px] sm:text-[11px] uppercase tracking-wider px-2 py-0.5 sm:px-3 sm:py-1 rounded-full mb-0.5 sm:mb-1 shadow"
                                                                 style={{
                                                                     backgroundColor: printColors.labelBg,
                                                                     color: printColors.labelText,
@@ -850,11 +873,11 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                                                 {prizeInfo.icon} {prizeInfo.label}
                                                             </div>
 
-                                                            <p className="text-[10px] font-extrabold text-yellow-400 uppercase tracking-widest mt-1 mb-0.5">
+                                                            <p className="text-[9px] sm:text-[10px] font-extrabold text-yellow-400 uppercase tracking-widest mt-0.5 mb-0.5">
                                                                 Ganhador(a)
                                                             </p>
 
-                                                            <div className="text-white font-extrabold text-base uppercase italic tracking-tight leading-snug break-words">
+                                                            <div className="text-white font-extrabold text-xs sm:text-base uppercase italic tracking-tight leading-snug break-words">
                                                                 {displayName}
                                                             </div>
                                                         </div>
@@ -863,8 +886,8 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                             );
                                         })
                                     ) : (
-                                        <div className="w-80 h-44 mx-auto border-2 border-dashed border-white/20 rounded-3xl flex items-center justify-center text-center p-6">
-                                            <p className="text-white/40 font-black uppercase italic text-xs leading-relaxed">
+                                        <div className="w-full max-w-[280px] h-32 sm:h-36 mx-auto border-2 border-dashed border-white/20 rounded-2xl flex items-center justify-center text-center p-4">
+                                            <p className="text-white/40 font-black uppercase italic text-[11px] leading-relaxed">
                                                 Selecione as cotas na grade <br /> para gerar o resultado oficial
                                             </p>
                                         </div>
@@ -872,14 +895,14 @@ const RaffleGridView: React.FC<RaffleGridViewProps> = ({ raffle, onBack }) => {
                                 </div>
 
                                 {/* 4. Rodapé Comemorativo TopSorte_27 */}
-                                <div className="text-center relative z-10 pt-4 border-t border-yellow-400/30">
-                                    <h3 className="text-yellow-400 font-black text-xl uppercase italic tracking-tight mb-1">
+                                <div className="text-center relative z-10 pt-3 sm:pt-4 border-t border-yellow-400/30">
+                                    <h3 className="text-yellow-400 font-black text-sm sm:text-lg uppercase italic tracking-tight mb-0.5">
                                         PARABÉNS AOS GANHADORES!
                                     </h3>
-                                    <p className="text-[#00FF87] font-extrabold text-[11px] uppercase tracking-wider mb-2">
+                                    <p className="text-[#00FF87] font-extrabold text-[9px] sm:text-[11px] uppercase tracking-wider mb-1">
                                         TopSorte_27 • GANHE PRÊMIOS REAIS!
                                     </p>
-                                    <p className="text-white/40 font-bold text-[10px] uppercase tracking-widest">
+                                    <p className="text-white/40 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest">
                                         topsorte27.vercel.app
                                     </p>
                                 </div>

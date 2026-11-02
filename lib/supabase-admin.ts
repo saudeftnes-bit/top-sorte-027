@@ -342,7 +342,8 @@ export async function updateReservationStatus(id: string, status: 'pending' | 'p
                 .eq('id', id)
                 .single();
 
-            if (resData && !(resData.payment_amount > 0)) {
+            // Se payment_amount não estiver definido ou for zero, busca o preço da rifa
+            if (resData && !(Number(resData.payment_amount) > 0)) {
                 // Busca o preço da rifa
                 const { data: raffleData } = await supabase
                     .from('raffles')
@@ -350,12 +351,13 @@ export async function updateReservationStatus(id: string, status: 'pending' | 'p
                     .eq('id', resData.raffle_id)
                     .single();
 
-                if (raffleData?.price_per_number > 0) {
-                    updates.payment_amount = raffleData.price_per_number;
+                if (raffleData && Number(raffleData.price_per_number) > 0) {
+                    updates.payment_amount = Number(raffleData.price_per_number);
                 }
             }
         } catch (e) {
-            // Silently ignore — não bloqueia a confirmação do pagamento
+            console.warn('[updateReservationStatus] Não foi possível buscar preço da rifa:', e);
+            // Não bloqueia a confirmação do pagamento
         }
     }
 
@@ -417,18 +419,44 @@ export async function reactivateReservation(id: string, timeoutMinutes: number =
 }
 
 export async function deleteReservation(id: string): Promise<boolean> {
-    console.log('🗑️ [Admin] Deletando reserva:', id);
-    const { error } = await supabase
-        .from('reservations')
-        .delete()
-        .eq('id', id);
+    return deleteReservations([id]);
+}
 
-    if (error) {
-        console.error('Error deleting reservation:', error);
+export async function deleteReservations(ids: string[]): Promise<boolean> {
+    if (!ids || ids.length === 0) return true;
+    console.log('🗑️ [Admin] Deletando reservas em lote:', ids);
+
+    try {
+        // Tentar primeiro via RPC com privilégios elevados (SECURITY DEFINER)
+        const { data, error: rpcError } = await supabase.rpc('admin_force_delete_reservations', {
+            p_ids: ids
+        });
+
+        if (!rpcError && data !== null) {
+            console.log(`✅ [Admin] ${data} reserva(s) deletada(s) via RPC`);
+            return true;
+        }
+
+        if (rpcError) {
+            console.warn('⚠️ [Admin] RPC admin_force_delete_reservations indisponível, tentando delete direto:', rpcError.message);
+        }
+
+        // Fallback: Delete direto pelo Supabase
+        const { error } = await supabase
+            .from('reservations')
+            .delete()
+            .in('id', ids);
+
+        if (error) {
+            console.error('Error deleting reservations directly:', error);
+            return false;
+        }
+
+        return true;
+    } catch (err) {
+        console.error('Exception deleting reservations:', err);
         return false;
     }
-
-    return true;
 }
 
 // ==================== WINNER PHOTOS OPERATIONS ====================

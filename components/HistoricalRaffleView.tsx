@@ -96,6 +96,7 @@ export const HistoricalRaffleView: React.FC<HistoricalRaffleViewProps> = ({ raff
                             selectionMode={raffle.selection_mode}
                             isReadOnly={true}
                             raffleCode={raffle.code}
+                            pricePerNumber={raffle.price_per_number}
                         // sessionId is not needed for history view
                         />
                     </div>

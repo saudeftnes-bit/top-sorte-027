@@ -7,11 +7,29 @@ import UsersList from './UsersList';
 import RaffleList from './RaffleList';
 import RaffleGridView from './RaffleGridView';
 import OfflineViewer from './OfflineViewer';
+import AdminSecurity from './AdminSecurity';
 import ConfirmModal from '../ConfirmModal';
 import { getActiveRaffle } from '../../lib/supabase-admin';
 import type { Raffle } from '../../types/database';
 
-type AdminSection = 'dashboard' | 'raffle' | 'payments' | 'users' | 'grid' | 'offlineViewer';
+type AdminSection = 'dashboard' | 'raffle' | 'payments' | 'users' | 'grid' | 'offlineViewer' | 'security';
+
+interface AdminSession {
+    token: string;
+    expires: number;
+}
+
+/** Returns true only if admin_session exists and has not expired */
+const isSessionValid = (): boolean => {
+    try {
+        const raw = localStorage.getItem('admin_session');
+        if (!raw) return false;
+        const session: AdminSession = JSON.parse(raw);
+        return !!session.token && session.expires > Date.now();
+    } catch {
+        return false;
+    }
+};
 
 const AdminPanel: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,13 +43,15 @@ const AdminPanel: React.FC = () => {
     const [showRaffleList, setShowRaffleList] = useState(true);
 
     useEffect(() => {
-        // Check if already authenticated
-        const isAuth = localStorage.getItem('admin_authenticated') === 'true';
-        setIsAuthenticated(isAuth);
+        // Check if already authenticated with a valid, non-expired session
+        const valid = isSessionValid();
+        setIsAuthenticated(valid);
 
-        if (isAuth) {
+        if (valid) {
             loadActiveRaffle();
         } else {
+            // Clear any stale session data
+            localStorage.removeItem('admin_session');
             setIsLoading(false);
         }
     }, []);
@@ -55,7 +75,6 @@ const AdminPanel: React.FC = () => {
 
     const refreshData = async () => {
         console.log('[AdminPanel] 🔄 Starting data refresh...');
-        setIsLoading(true);
         await loadActiveRaffle();
         setDashboardKey(prev => prev + 1);
 
@@ -79,7 +98,8 @@ const AdminPanel: React.FC = () => {
     };
 
     const confirmLogout = () => {
-        localStorage.removeItem('admin_authenticated');
+        // Remove the session object (replaces the old 'admin_authenticated' key)
+        localStorage.removeItem('admin_session');
         setIsAuthenticated(false);
         setCurrentSection('dashboard');
         setShowLogoutModal(false);
@@ -154,6 +174,13 @@ const AdminPanel: React.FC = () => {
                                 Rifas
                             </button>
                         )}
+                        {/* Security button */}
+                        <button
+                            onClick={() => { setShowRaffleList(false); setCurrentSection('security'); }}
+                            className={`px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 ${currentSection === 'security' && !showRaffleList ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                        >
+                            🔐 Segurança
+                        </button>
                         <button
                             onClick={handleLogout}
                             className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
@@ -210,6 +237,9 @@ const AdminPanel: React.FC = () => {
                 ) : (
                     <>
 
+                        {currentSection === 'security' && (
+                            <AdminSecurity />
+                        )}
 
                         {currentSection === 'dashboard' && activeRaffle && (
                             <AdminDashboard
@@ -259,6 +289,7 @@ const AdminPanel: React.FC = () => {
                                     setCurrentSection('dashboard');
                                     refreshData();
                                 }}
+                                onDataChanged={refreshData}
                             />
                         )}
 

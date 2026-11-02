@@ -55,7 +55,9 @@ const App: React.FC = () => {
   // FAQ Chatbot state
   const [isFAQOpen, setIsFAQOpen] = useState(false);
 
-  // Secret admin mode toggle (5 clicks on logo)
+  // Secret admin mode toggle (7 clicks on logo).
+  // adminMode in localStorage just reveals the button; actual access still requires
+  // a valid admin_session (token + expiry) stored by AdminAuth on successful login.
   const [clickCount, setClickCount] = useState(0);
   const [showAdminButton, setShowAdminButton] = useState(() => {
     return localStorage.getItem('adminMode') === 'true';
@@ -312,17 +314,34 @@ const App: React.FC = () => {
           const nowMs = Date.now();
           // Carregar estatísticas exclusivas da rifa principal (Home)
           const activeOneReservations = await getReservationsByRaffle(activeOne.id);
-          const paid = activeOneReservations.filter(r => r.status === 'paid').length;
+          const totalReq = activeOne.total_numbers || 100;
+          const padLength = totalReq > 1000 ? 4 : totalReq > 100 ? 3 : 2;
+
+          // Conjunto oficial e estrito de cotas que pertencem a esta grade (ex: 00 a 99)
+          const officialGridNumbers = new Set(
+            Array.from({ length: totalReq }, (_, i) => i.toString().padStart(padLength, '0'))
+          );
+
+          // Contar apenas cotas oficiais que estão efetivamente pagas (sem duplicidade ou números fora da grade)
+          const paidOfficialNumbers = new Set(
+            activeOneReservations
+              .filter(r => r.status === 'paid' && officialGridNumbers.has(r.number))
+              .map(r => r.number)
+          );
+
+          const paid = paidOfficialNumbers.size;
+
           const pending = activeOneReservations.filter(r => {
-            if (r.status !== 'pending') return false;
+            if (r.status !== 'pending' || !officialGridNumbers.has(r.number)) return false;
             const expMs = r.expires_at ? new Date(r.expires_at).getTime() : 0;
             return !r.expires_at || expMs > nowMs;
           }).length;
-          const totalReq = activeOne.total_numbers || 100;
 
-          // Se todos os números estiverem 100% pagos, mover automaticamente para finalizadas
-          if (paid >= totalReq) {
-            console.log(`🏆 [Auto-Finish] Todos os ${paid}/${totalReq} números pagos! Movendo "${activeOne.title}" para finalizadas...`);
+          // Se e SOMENTE SE todas as cotas oficiais da grade estiverem 100% pagas
+          const isTrulyFullyPaid = totalReq > 0 && paid >= totalReq && paidOfficialNumbers.size === officialGridNumbers.size;
+
+          if (isTrulyFullyPaid) {
+            console.log(`🏆 [Auto-Finish] Todas as ${paid}/${totalReq} cotas oficiais pagas! Movendo "${activeOne.title}" para finalizadas...`);
             await updateRaffle(activeOne.id, { status: 'finished' });
             const freshRaffles = await getPublicRaffles();
             setPublicRaffles(freshRaffles);
@@ -581,7 +600,7 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Secret admin mode toggle (5 clicks on logo)
+  // Secret admin mode toggle (7 clicks on logo)
   const handleLogoClick = () => {
     if (view !== 'home') {
       setView('home');
@@ -603,8 +622,8 @@ const App: React.FC = () => {
     }, 2000);
     setClickTimer(timer);
 
-    // Toggle admin mode on 5 clicks
-    if (newCount === 5) {
+    // Toggle admin mode on 7 clicks
+    if (newCount === 7) {
       const newAdminMode = !showAdminButton;
       setShowAdminButton(newAdminMode);
       localStorage.setItem('adminMode', newAdminMode.toString());
@@ -755,6 +774,11 @@ const App: React.FC = () => {
                 Object.values(visibleReservations).filter((r: any) => r.status === 'paid' || r.status === 'pending').length >= selectedRaffle.total_numbers)
             }
             raffleCode={selectedRaffle?.code}
+            pricePerNumber={PRICE_PER_NUMBER}
+            maxSelection={MAX_SELECTION}
+            selectionTimeRemaining={selectionTimeRemaining}
+            onProceedToCheckout={() => setIsCheckoutOpen(true)}
+            onClearAll={handleClearAll}
           />
         )}
         <footer className="py-8 px-4 text-center border-t border-slate-100 flex flex-col items-center gap-2">
@@ -767,53 +791,12 @@ const App: React.FC = () => {
         </footer>
       </main>
 
-      {
-        selectedNumbers.length > 0 && view === 'selecting' && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom-full">
-            {/* Feature 2: Limit toast notification */}
-            {showLimitToast && (
-              <div className="bg-orange-500 text-white text-center text-xs font-black py-2 px-4 animate-in slide-in-from-top-2">
-                🚫 Limite de {MAX_SELECTION} números por compra atingido!
-              </div>
-            )}
-            <div className="p-4">
-              <div className="max-w-md mx-auto flex items-center justify-between">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    {/* Feature 2: X/10 counter */}
-                    <span className={`text-xs font-black uppercase ${selectedNumbers.length >= MAX_SELECTION ? 'text-orange-600' : 'text-slate-500'}`}>
-                      {selectedNumbers.length}/{MAX_SELECTION} selecionados
-                    </span>
-                    {selectionTimeRemaining && (
-                      <span className={`text-xs font-bold ${selectionTimeRemaining < 60 ? 'text-red-600 animate-pulse' : 'text-orange-600'
-                        }`}>
-                        ⏱️ {Math.floor(selectionTimeRemaining / 60)}:{String(selectionTimeRemaining % 60).padStart(2, '0')}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xl font-black text-[#003B73]">
-                    Total: R$ {(selectedNumbers.length * PRICE_PER_NUMBER).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleClearAll}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-4 py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase"
-                  >
-                    Limpar
-                  </button>
-                  <button
-                    onClick={() => setIsCheckoutOpen(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl shadow-lg transition-transform active:scale-95 animate-button-pulse"
-                  >
-                    RESERVAR AGORA
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      }
+      {/* Feature 2: Limit toast notification (toast discreto no topo, sem barra fixa na base) */}
+      {showLimitToast && (
+        <div className="fixed top-20 left-4 right-4 z-50 max-w-md mx-auto bg-orange-500 text-white text-center text-xs font-black py-2.5 px-4 rounded-xl shadow-2xl animate-in slide-in-from-top-4">
+          🚫 Limite de {MAX_SELECTION} números por compra atingido!
+        </div>
+      )}
 
       {
         isCheckoutOpen && (

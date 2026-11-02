@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
 import { Raffle } from '../../types/database';
-import { getPublicRaffles, updateRaffle, deleteRaffle } from '../../lib/supabase-admin';
+import { getAllRaffles, updateRaffle, deleteRaffle } from '../../lib/supabase-admin';
 import { supabase } from '../../lib/supabase';
 
 interface RaffleListProps {
@@ -33,7 +33,7 @@ const RaffleList: React.FC<RaffleListProps> = ({
 
     const loadRaffles = async () => {
         setIsLoadingRaffles(true);
-        const data = await getPublicRaffles();
+        const data = await getAllRaffles();
         setRaffles(data || []);
 
         // Buscar contagem de reservas (paid + pending) para todas as rifas em uma query só

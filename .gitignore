@@ -31,3 +31,6 @@ dist-ssr
 senha*
 *.csv
 relatorio_compras.*
+
+.vercel
+.env*

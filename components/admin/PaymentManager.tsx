@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
-import { getReservationsByRaffle, updateReservationStatus, getRaffleById } from '../../lib/supabase-admin';
+import { getReservationsByRaffle, updateReservationStatus, getRaffleById, deleteReservations } from '../../lib/supabase-admin';
 import { subscribeToReservations } from '../../lib/supabase-admin';
 import type { Reservation, Raffle } from '../../types/database';
 
@@ -21,7 +21,10 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, raffle: initi
     // Modal state
     const [showConfirmPaymentModal, setShowConfirmPaymentModal] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [pendingActionIds, setPendingActionIds] = useState<string[]>([]);
+    const [pendingActionNumbers, setPendingActionNumbers] = useState<string[]>([]);
+    const [pendingActionBuyer, setPendingActionBuyer] = useState<string>('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showErrorModal, setShowErrorModal] = useState(false);
@@ -107,6 +110,35 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, raffle: initi
         }
     };
 
+    const handleDeleteReservation = (ids: string[], numbers: string[], buyerName: string) => {
+        setPendingActionIds(ids);
+        setPendingActionNumbers(numbers);
+        setPendingActionBuyer(buyerName);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDeleteReservation = async () => {
+        if (!pendingActionIds || pendingActionIds.length === 0) return;
+
+        const success = await deleteReservations(pendingActionIds);
+
+        setShowDeleteModal(false);
+        const freedCount = pendingActionNumbers.length;
+        setPendingActionIds([]);
+        setPendingActionNumbers([]);
+        setPendingActionBuyer('');
+
+        if (success) {
+            await loadData();
+            setSuccessMessage(`${freedCount} cota(s) excluída(s) e liberada(s) com sucesso na grade! 🟢`);
+            setShowSuccessModal(true);
+            onDataChanged?.();
+        } else {
+            setErrorMessage('Ocorreu um erro ao excluir as cotas do banco de dados.');
+            setShowErrorModal(true);
+        }
+    };
+
     // Preço unitário da cota da rifa
     const pricePerNumber = activeRaffle?.raffle_type === 'brinde' ? 0 : (activeRaffle?.price_per_number || 0);
 
@@ -140,8 +172,8 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, raffle: initi
         filtered.forEach(res => {
             const key = `${res.buyer_name || 'Desconhecido'}-${res.buyer_phone || ''}-${res.efi_txid || 'manual'}`;
             // Se payment_amount está registrado (>0), usa ele; senão usa o preço da cota
-            const amount = (typeof res.payment_amount === 'number' && res.payment_amount > 0)
-                ? res.payment_amount
+            const amount = (Number(res.payment_amount) > 0)
+                ? Number(res.payment_amount)
                 : pricePerNumber;
 
             if (res.status === 'paid') {
@@ -421,22 +453,23 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, raffle: initi
                                 </div>
 
                                 {/* Actions */}
-                                {group.status === 'pending' && (
-                                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                                <div className="flex flex-col gap-2 w-full sm:w-auto">
+                                    {group.status === 'pending' && (
                                         <button
                                             onClick={() => handleConfirmPayment(group.ids)}
-                                            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+                                            className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5"
                                         >
                                             ✅ Confirmar Tudo
                                         </button>
-                                        <button
-                                            onClick={() => handleCancelReservation(group.ids)}
-                                            className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
-                                        >
-                                            ❌ Cancelar Tudo
-                                        </button>
-                                    </div>
-                                )}
+                                    )}
+                                    <button
+                                        onClick={() => handleDeleteReservation(group.ids, group.numbers, group.buyer_name)}
+                                        className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-5 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-sm"
+                                        title="Excluir reserva permanentemente e liberar as cotas na grade"
+                                    >
+                                        🗑️ Excluir / Liberar Cotas
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))
@@ -484,6 +517,22 @@ const PaymentManager: React.FC<PaymentManagerProps> = ({ raffleId, raffle: initi
                 onCancel={() => {
                     setShowCancelModal(false);
                     setPendingActionIds([]);
+                }}
+            />
+
+            <ConfirmModal
+                isOpen={showDeleteModal}
+                title="Excluir Reserva e Liberar Cotas"
+                message={`Tem certeza que deseja EXCLUIR permanentemente a reserva de "${pendingActionBuyer}" e LIBERAR a(s) cota(s) [ ${pendingActionNumbers.join(', ')} ] na grade do sorteio?`}
+                confirmLabel="Sim, Excluir e Liberar"
+                cancelLabel="Voltar"
+                variant="danger"
+                onConfirm={confirmDeleteReservation}
+                onCancel={() => {
+                    setShowDeleteModal(false);
+                    setPendingActionIds([]);
+                    setPendingActionNumbers([]);
+                    setPendingActionBuyer('');
                 }}
             />
 
