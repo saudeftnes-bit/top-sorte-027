@@ -7,8 +7,6 @@ interface AdminAuthProps {
 // Rate limiting constants
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-// Session constants
-const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 interface LockData {
     attempts: number;
@@ -62,7 +60,7 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
         return () => clearInterval(interval);
     }, []);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Abort if still locked
@@ -74,41 +72,49 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
         setIsLoading(true);
         setError('');
 
-        // Use only the environment variable — no hardcoded fallback
-        const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+        try {
+            // Chamada à API segura do servidor - A senha NUNCA fica exposta no código frontend
+            const res = await fetch('/api/admin-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ password }),
+            });
 
-        if (!adminPassword) {
-            setError('Configuração de senha ausente. Contate o administrador do sistema.');
-            setIsLoading(false);
-            return;
-        }
+            const data = await res.json();
 
-        if (password === adminPassword) {
-            // Success: reset lock data and create session with expiry
-            saveLockData({ attempts: 0, lockedUntil: null });
+            if (res.ok && data.success) {
+                // Sucesso: resetar bloqueio e salvar sessão assinada pelo servidor
+                saveLockData({ attempts: 0, lockedUntil: null });
 
-            const token = btoa(password + Date.now());
-            const session = { token, expires: Date.now() + SESSION_DURATION_MS };
-            localStorage.setItem('admin_session', JSON.stringify(session));
+                const session = {
+                    token: data.token,
+                    expires: data.expiresAt || (Date.now() + 8 * 60 * 60 * 1000)
+                };
+                localStorage.setItem('admin_session', JSON.stringify(session));
 
-            onAuthenticated();
-        } else {
-            // Failed attempt
-            const currentAttempts = lockData.attempts + 1;
-
-            if (currentAttempts >= MAX_ATTEMPTS) {
-                // Lock account
-                const lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
-                saveLockData({ attempts: currentAttempts, lockedUntil });
-                setIsLocked(true);
-                setLockCountdown(Math.ceil(LOCKOUT_DURATION_MS / 1000));
-                setError('');
+                onAuthenticated();
             } else {
-                saveLockData({ attempts: currentAttempts, lockedUntil: null });
-                const remaining = MAX_ATTEMPTS - currentAttempts;
-                setError(`Senha incorreta. ${remaining} tentativa${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''} antes do bloqueio.`);
-            }
+                // Falha de autenticação
+                const currentAttempts = lockData.attempts + 1;
 
+                if (currentAttempts >= MAX_ATTEMPTS) {
+                    const lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
+                    saveLockData({ attempts: currentAttempts, lockedUntil });
+                    setIsLocked(true);
+                    setLockCountdown(Math.ceil(LOCKOUT_DURATION_MS / 1000));
+                    setError('');
+                } else {
+                    saveLockData({ attempts: currentAttempts, lockedUntil: null });
+                    const remaining = MAX_ATTEMPTS - currentAttempts;
+                    setError(data.message || `Senha incorreta. ${remaining} tentativa${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''}.`);
+                }
+            }
+        } catch (err: any) {
+            console.error('Erro na autenticação:', err);
+            setError('Não foi possível conectar ao servidor de autenticação. Tente novamente.');
+        } finally {
             setIsLoading(false);
         }
     };
@@ -137,7 +143,7 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
                     </div>
                     <h1 className="text-3xl font-black text-slate-900 mb-1">Painel Admin</h1>
                     <p className="text-purple-600 font-bold text-sm uppercase tracking-widest">Top Sorte 027</p>
-                    <p className="text-slate-400 text-xs mt-1">Área restrita — somente administradores</p>
+                    <p className="text-slate-400 text-xs mt-1">Área restrita — autenticação via servidor seguro</p>
                 </div>
 
                 {/* Lockout notice */}
@@ -212,7 +218,7 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                     </svg>
-                                    Verificando...
+                                    Verificando com o servidor...
                                 </>
                             ) : (
                                 <>
@@ -228,7 +234,7 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
 
                 <div className="mt-6 text-center">
                     <p className="text-xs text-slate-400">
-                        🔒 Acesso protegido • Top Sorte 027
+                        🔒 Servidor Seguro • Top Sorte 027
                     </p>
                 </div>
             </div>

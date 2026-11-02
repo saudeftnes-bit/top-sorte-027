@@ -44,26 +44,16 @@ const AdminSecurity: React.FC = () => {
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [error, setError] = useState('');
+    const [isChecking, setIsChecking] = useState(false);
     const [showInstructions, setShowInstructions] = useState(false);
     const [savedNewPassword, setSavedNewPassword] = useState('');
     const [copied, setCopied] = useState(false);
 
     const validation = validatePassword(newPassword);
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-
-        // Validate current password against env var
-        const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-        if (!adminPassword) {
-            setError('Configuração de senha ausente. Verifique o arquivo .env.local.');
-            return;
-        }
-        if (currentPassword !== adminPassword) {
-            setError('Senha atual incorreta.');
-            return;
-        }
 
         // Validate new password requirements
         if (!isPasswordValid(validation)) {
@@ -77,9 +67,32 @@ const AdminSecurity: React.FC = () => {
             return;
         }
 
-        // All good — show instructions
-        setSavedNewPassword(newPassword);
-        setShowInstructions(true);
+        setIsChecking(true);
+
+        try {
+            // Validar senha atual com o servidor seguro
+            const res = await fetch('/api/admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: currentPassword })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                setError(data.message || 'Senha atual incorreta.');
+                setIsChecking(false);
+                return;
+            }
+
+            // Sucesso — exibir instruções de aplicação
+            setSavedNewPassword(newPassword);
+            setShowInstructions(true);
+        } catch (err: any) {
+            setError('Erro ao validar senha com o servidor. Verifique a conexão.');
+        } finally {
+            setIsChecking(false);
+        }
     };
 
     const handleCopyPassword = () => {
@@ -147,21 +160,10 @@ const AdminSecurity: React.FC = () => {
                 {/* Success header */}
                 <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6 text-center">
                     <div className="text-4xl mb-2">✅</div>
-                    <h2 className="text-xl font-black text-green-800">Nova senha pronta!</h2>
+                    <h2 className="text-xl font-black text-green-800">Nova senha gerada!</h2>
                     <p className="text-green-700 text-sm mt-1">
-                        Agora siga os passos abaixo para aplicar a mudança.
+                        Sua senha agora fica 100% oculta no servidor (invisível no F12).
                     </p>
-                </div>
-
-                {/* Warning banner */}
-                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-5 flex gap-3">
-                    <span className="text-2xl flex-shrink-0">⚠️</span>
-                    <div>
-                        <p className="font-black text-yellow-800 text-sm">ATENÇÃO</p>
-                        <p className="text-yellow-700 text-sm mt-1">
-                            A senha <strong>ainda não foi trocada</strong>. O app não salva senhas diretamente — você precisa atualizar a variável de ambiente e fazer novo deploy.
-                        </p>
-                    </div>
                 </div>
 
                 {/* New password display */}
@@ -181,17 +183,22 @@ const AdminSecurity: React.FC = () => {
                 {/* Step-by-step instructions */}
                 <div className="bg-white border-2 border-slate-200 rounded-2xl overflow-hidden">
                     <div className="bg-slate-50 border-b border-slate-200 px-5 py-4">
-                        <h3 className="font-black text-slate-800 text-base">📋 Passo a passo para aplicar</h3>
+                        <h3 className="font-black text-slate-800 text-base">📋 Como aplicar no Vercel</h3>
                     </div>
                     <div className="divide-y divide-slate-100">
                         {/* Step 1 */}
                         <div className="p-5 flex gap-4">
                             <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0">1</div>
                             <div>
-                                <p className="font-bold text-slate-800 text-sm">Atualizar o arquivo <code className="bg-slate-100 px-1.5 py-0.5 rounded text-purple-700">.env.local</code></p>
-                                <p className="text-slate-500 text-sm mt-1">Abra o arquivo <code className="bg-slate-100 px-1 rounded">.env.local</code> na raiz do projeto e atualize a linha:</p>
-                                <div className="mt-2 bg-slate-900 rounded-lg p-3">
-                                    <code className="text-green-400 font-mono text-xs">VITE_ADMIN_PASSWORD=<span className="text-yellow-300">{savedNewPassword}</span></code>
+                                <p className="font-bold text-slate-800 text-sm">Atualizar no Vercel (Variável do Servidor)</p>
+                                <p className="text-slate-500 text-sm mt-1">
+                                    No painel do Vercel, em <strong>Settings → Environment Variables</strong>, adicione ou edite:
+                                </p>
+                                <div className="mt-2 bg-slate-900 rounded-lg p-3 space-y-1">
+                                    <p className="text-slate-400 text-xs">Nome da chave:</p>
+                                    <code className="text-yellow-400 font-mono text-xs block">ADMIN_PASSWORD</code>
+                                    <p className="text-slate-400 text-xs mt-2">Valor:</p>
+                                    <code className="text-green-400 font-mono text-xs block">{savedNewPassword}</code>
                                 </div>
                             </div>
                         </div>
@@ -199,40 +206,9 @@ const AdminSecurity: React.FC = () => {
                         <div className="p-5 flex gap-4">
                             <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0">2</div>
                             <div>
-                                <p className="font-bold text-slate-800 text-sm">Atualizar a variável de ambiente no Vercel</p>
+                                <p className="font-bold text-slate-800 text-sm">Fazer Redeploy no Vercel</p>
                                 <p className="text-slate-500 text-sm mt-1">
-                                    Acesse o painel do Vercel, vá em <strong>Settings → Environment Variables</strong>, encontre <code className="bg-slate-100 px-1 rounded">VITE_ADMIN_PASSWORD</code> e atualize o valor.
-                                </p>
-                                <a
-                                    href="https://vercel.com/dashboard"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 mt-3 bg-black hover:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors"
-                                >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 1L24 22H0L12 1z" />
-                                    </svg>
-                                    Abrir Vercel Dashboard
-                                </a>
-                            </div>
-                        </div>
-                        {/* Step 3 */}
-                        <div className="p-5 flex gap-4">
-                            <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0">3</div>
-                            <div>
-                                <p className="font-bold text-slate-800 text-sm">Fazer novo deploy</p>
-                                <p className="text-slate-500 text-sm mt-1">
-                                    Após atualizar a variável no Vercel, clique em <strong>Redeploy</strong> no último deployment para aplicar as mudanças. Ou faça um novo <code className="bg-slate-100 px-1 rounded">git push</code>.
-                                </p>
-                            </div>
-                        </div>
-                        {/* Step 4 */}
-                        <div className="p-5 flex gap-4">
-                            <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0">✓</div>
-                            <div>
-                                <p className="font-bold text-slate-800 text-sm">Após o deploy, teste o login</p>
-                                <p className="text-slate-500 text-sm mt-1">
-                                    Faça logout e entre novamente com a nova senha para confirmar que tudo está funcionando.
+                                    Após salvar no Vercel, vá em <strong>Deployments</strong>, clique nos três pontinhos <strong>...</strong> e selecione <strong>Redeploy</strong>.
                                 </p>
                             </div>
                         </div>
@@ -263,8 +239,8 @@ const AdminSecurity: React.FC = () => {
                 <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-xl">🔐</div>
                     <div>
-                        <h2 className="text-xl font-black text-slate-900">Segurança do Admin</h2>
-                        <p className="text-slate-400 text-sm">Alterar senha de acesso ao painel</p>
+                        <h2 className="text-xl font-black text-slate-900">Segurança do Servidor</h2>
+                        <p className="text-slate-400 text-sm">Alterar senha do painel (protegida contra F12)</p>
                     </div>
                 </div>
             </div>
@@ -334,20 +310,20 @@ const AdminSecurity: React.FC = () => {
 
                     <button
                         type="submit"
-                        disabled={!currentPassword || !newPassword || !confirmPassword}
-                        className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-black py-4 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isChecking || !currentPassword || !newPassword || !confirmPassword}
+                        className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-black py-4 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        🔐 Gerar Instruções de Troca
+                        {isChecking ? 'Verificando...' : '🔐 Gerar Instruções de Troca'}
                     </button>
                 </form>
             </div>
 
             {/* Info card */}
-            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-5 flex gap-3">
-                <span className="text-xl flex-shrink-0">ℹ️</span>
-                <div className="text-sm text-yellow-800 space-y-1">
-                    <p className="font-bold">Como funciona a troca de senha?</p>
-                    <p>A senha é armazenada como variável de ambiente (<code className="bg-yellow-100 px-1 rounded">VITE_ADMIN_PASSWORD</code>). Após gerar as instruções, você precisará atualizar o arquivo <code className="bg-yellow-100 px-1 rounded">.env.local</code> e a configuração no Vercel, depois fazer um novo deploy.</p>
+            <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-5 flex gap-3">
+                <span className="text-xl flex-shrink-0">🛡️</span>
+                <div className="text-sm text-green-900 space-y-1">
+                    <p className="font-bold">Segurança Blindada (Invisível no F12)</p>
+                    <p>A senha fica guardada apenas no servidor da Vercel (<code className="bg-green-100 px-1 rounded font-mono">ADMIN_PASSWORD</code>). Nem mesmo programadores ou usuários avançados conseguem ver a senha pelo código-fonte ou pelo Inspecionar Elemento (F12).</p>
                 </div>
             </div>
         </div>
