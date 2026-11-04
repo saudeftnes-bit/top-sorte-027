@@ -5,6 +5,12 @@
     "alias": [
         "topsorte-027.vercel.app"
     ],
+    "crons": [
+        {
+            "path": "/api/cron-cleanup",
+            "schedule": "* * * * *"
+        }
+    ],
     "headers": [
         {
             "source": "/(.*)",

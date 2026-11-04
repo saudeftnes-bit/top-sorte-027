@@ -204,7 +204,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             })
             .eq('raffle_id', raffleId)
             .in('number', numbers)
-            .eq('buyer_name', buyer.name)
             .eq('status', 'pending');
 
         if (updateErr) {
@@ -227,6 +226,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     } catch (error: any) {
         console.error('❌ [API Efi Charge] Erro:', error);
+
+        // ROLLBACK DE SEGURANÇA: Se o lock foi obtido mas a criação na EFI falhou,
+        // reverte os números imediatamente para não deixá-los bloqueados no banco
+        try {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabase = createClient(
+                process.env.VITE_SUPABASE_URL || '',
+                process.env.VITE_SUPABASE_ANON_KEY || ''
+            );
+            const { raffleId, numbers } = req.body || {};
+            if (raffleId && Array.isArray(numbers) && numbers.length > 0) {
+                console.log('🧹 [API Efi Charge] Revertendo reservas após falha na cobrança:', numbers);
+                await supabase
+                    .from('reservations')
+                    .delete()
+                    .eq('raffle_id', raffleId)
+                    .in('number', numbers)
+                    .eq('status', 'pending')
+                    .is('efi_txid', null);
+            }
+        } catch (rollbackErr) {
+            console.error('⚠️ [API Efi Charge] Falha no rollback de reservas:', rollbackErr);
+        }
+
         return res.status(500).json({
             error: error.message || 'Erro ao processar pagamento',
             details: error.response?.data || error.mensagem || null,

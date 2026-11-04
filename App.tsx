@@ -334,7 +334,7 @@ const App: React.FC = () => {
           const pending = activeOneReservations.filter(r => {
             if (r.status !== 'pending' || !officialGridNumbers.has(r.number)) return false;
             const expMs = r.expires_at ? new Date(r.expires_at).getTime() : 0;
-            return !r.expires_at || expMs > nowMs;
+            return Boolean(r.expires_at) && expMs > nowMs;
           }).length;
 
           // Se e SOMENTE SE todas as cotas oficiais da grade estiverem 100% pagas
@@ -421,8 +421,8 @@ const App: React.FC = () => {
           };
         } else if (res.status === 'pending') {
           const expiresAtMs = res.expires_at ? new Date(res.expires_at).getTime() : 0;
-          // Se o tempo de tolerância já expirou, NÃO bloqueia o número (fica verde/livre na hora!)
-          if (!res.expires_at || expiresAtMs > nowMs) {
+          // Só bloqueia como 'pending' se tiver expiração VÁLIDA e o tempo ainda for futuro
+          if (res.expires_at && expiresAtMs > nowMs) {
             reservationsMap[res.number] = {
               name: res.buyer_name,
               status: 'pending',
@@ -524,8 +524,8 @@ const App: React.FC = () => {
     // Se o número já estiver reservado/pago por alguém, não permite mexer
     if (reservation?.status === 'paid') return;
 
-    // Se o número estiver pendente por OUTRO usuário, não permite mexer
-    if (reservation?.status === 'pending' && reservation.name !== sessionId.current) return;
+    // Se não está selecionado por este usuário e está pendente por outro, não permite selecionar
+    if (!isSelected && reservation?.status === 'pending' && reservation.name !== sessionId.current) return;
 
     if (isSelected) {
       // Desselecionar: PRIMEIRO remover do banco, DEPOIS limpar estado local

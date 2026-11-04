@@ -279,7 +279,8 @@ export async function getReservationsByRaffle(raffleId: string): Promise<Reserva
         .from('reservations')
         .select('*')
         .eq('raffle_id', raffleId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10000);
 
     if (error) {
         console.error('Error fetching reservations:', error);

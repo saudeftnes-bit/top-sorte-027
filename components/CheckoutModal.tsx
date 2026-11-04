@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { WhatsAppIcon } from '../App';
 import { useReservationTimer } from '../hooks/useReservationTimer';
 import { useEfiPayment } from '../hooks/useEfiPayment';
-import { getOrCreateSessionId, cleanupSessionSelections } from '../lib/selection-manager';
+import { getOrCreateSessionId, cleanupSessionSelections, cancelReservationNumbers } from '../lib/selection-manager';
 import ConfirmModal from './ConfirmModal';
 import PaymentReceipt from './PaymentReceipt';
 
@@ -145,7 +145,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     if (timer.isExpired && step === 'payment') {
       const handleExpiration = async () => {
         if (raffleId) {
-          await cleanupSessionSelections(raffleId, sessionId.current);
+          await cancelReservationNumbers(raffleId, selectedNumbers, sessionId.current);
         }
         // Notificar App.tsx que o PIX expirou (reseta hasActivePix)
         onPixExpired?.();
@@ -166,6 +166,27 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
       handleExpiration();
     }
   }, [timer.isExpired, step, onClose, raffleId]);
+
+  
+  const handleCancelOrder = () => {
+    setModalConfig({
+      title: 'Cancelar Reserva?',
+      message: 'Deseja realmente cancelar este pedido? Seus números serão liberados imediatamente para que outros compradores possam escolher.',
+      variant: 'warning',
+      confirmLabel: 'Sim, Liberar Números',
+      cancelLabel: 'Continuar no Pagamento',
+      onConfirm: async () => {
+        setShowModal(false);
+        if (raffleId) {
+          await cancelReservationNumbers(raffleId, selectedNumbers, sessionId.current);
+        }
+        onPixExpired?.();
+        onClose();
+      },
+      onCancel: () => setShowModal(false),
+    });
+    setShowModal(true);
+  };
 
   const handleCopy = () => {
     if (pixCopiaCola) {
@@ -386,7 +407,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                 type="button"
                 onClick={async () => {
                   if (raffleId) {
-                    await cleanupSessionSelections(raffleId, sessionId.current);
+                    await cancelReservationNumbers(raffleId, selectedNumbers, sessionId.current);
                   }
                   onClose();
                 }}
