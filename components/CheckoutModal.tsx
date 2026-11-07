@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { WhatsAppIcon } from '../App';
 import { useReservationTimer } from '../hooks/useReservationTimer';
 import { useEfiPayment } from '../hooks/useEfiPayment';
-import { getOrCreateSessionId, cleanupSessionSelections, cancelReservationNumbers } from '../lib/selection-manager';
+import { getOrCreateSessionId, cleanupSessionSelections, cancelReservationNumbers, releaseReservationsImmediately } from '../lib/selection-manager';
 import ConfirmModal from './ConfirmModal';
 import PaymentReceipt from './PaymentReceipt';
 
@@ -70,6 +69,79 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
 
   const isPaid = isPaymentConfirmed || efiStatus?.isPaid;
 
+  // Refs para monitoramento sincronizado e saída de página
+  const isPaidRef = useRef(isPaid);
+  isPaidRef.current = isPaid;
+
+  const selectedNumbersRef = useRef(selectedNumbers);
+  selectedNumbersRef.current = selectedNumbers;
+
+  const raffleIdRef = useRef(raffleId);
+  raffleIdRef.current = raffleId;
+
+  const stepRef = useRef(step);
+  stepRef.current = step;
+
+  const hasReleasedRef = useRef(false);
+
+  // Session ID para identificar este usuário
+  const sessionId = useRef<string>(getOrCreateSessionId());
+
+  // Libera os números imediatamente caso o cliente não conclua o pagamento e saia da página
+  const releaseCurrentNumbers = () => {
+    if (isPaidRef.current) return;
+    if (hasReleasedRef.current) return;
+    hasReleasedRef.current = true;
+
+    if (raffleIdRef.current && selectedNumbersRef.current.length > 0) {
+      console.log('🚪 [Checkout] Liberando números imediatamente para novos clientes...');
+      releaseReservationsImmediately(
+        raffleIdRef.current,
+        selectedNumbersRef.current,
+        sessionId.current
+      );
+    }
+  };
+
+  // Monitora saída da página (fechar aba, fechar navegador, reload ou navegação voltar)
+  useEffect(() => {
+    const handlePageExit = () => {
+      if (!isPaidRef.current) {
+        releaseCurrentNumbers();
+      }
+    };
+
+    window.addEventListener('beforeunload', handlePageExit);
+    window.addEventListener('pagehide', handlePageExit);
+
+    // Capturar botão "Voltar" do celular / navegador
+    try {
+      window.history.pushState({ modal: 'checkout' }, '');
+    } catch (e) {}
+
+    const handlePopState = () => {
+      console.log('🔙 [Checkout] Botão Voltar detectado. Liberando números imediatamente...');
+      if (!isPaidRef.current) {
+        releaseCurrentNumbers();
+        onPixExpired?.();
+      }
+      onClose();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handlePageExit);
+      window.removeEventListener('pagehide', handlePageExit);
+      window.removeEventListener('popstate', handlePopState);
+
+      // Ao desmontar o modal, se não houver conclusão do pagamento, libera os números
+      if (!isPaidRef.current) {
+        releaseCurrentNumbers();
+      }
+    };
+  }, []);
+
   // Monitorar confirmação via banco de dados (Global State)
   useEffect(() => {
     if (step === 'payment' && reservations && selectedNumbers.length > 0) {
@@ -94,9 +166,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
     onCancel: undefined as (() => void) | undefined,
   });
 
-  // Session ID para identificar este usuário
-  const sessionId = useRef<string>(getOrCreateSessionId());
-
   // Função para formatar telefone: (XX) XXXXX-XXXX
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -115,6 +184,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   const handleSuccess = () => {
     if (successFired.current) return;
     successFired.current = true;
+    isPaidRef.current = true;
 
     stopPolling();
     setExpiresAt(null);
@@ -144,9 +214,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
   useEffect(() => {
     if (timer.isExpired && step === 'payment') {
       const handleExpiration = async () => {
-        if (raffleId) {
-          await cancelReservationNumbers(raffleId, selectedNumbers, sessionId.current);
-        }
+        releaseCurrentNumbers();
         // Notificar App.tsx que o PIX expirou (reseta hasActivePix)
         onPixExpired?.();
         setModalConfig({
@@ -177,9 +245,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
       cancelLabel: 'Continuar no Pagamento',
       onConfirm: async () => {
         setShowModal(false);
-        if (raffleId) {
-          await cancelReservationNumbers(raffleId, selectedNumbers, sessionId.current);
-        }
+        releaseCurrentNumbers();
         onPixExpired?.();
         onClose();
       },
@@ -326,12 +392,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
           <div className="w-10"></div>
           <h3 className="text-xl font-black uppercase tracking-tight">Reservar Meus Números</h3>
           <button onClick={async () => {
-            // Limpar seleções temporárias ao fechar sem confirmar
-            if (raffleId && step === 'info') {
+            // Se o pagamento não foi concluído, libera os números imediatamente
+            if (!isPaid) {
+              releaseCurrentNumbers();
+              onPixExpired?.();
+            } else if (raffleId && step === 'info') {
               await cleanupSessionSelections(raffleId, sessionId.current);
             }
             onClose();
-          }} className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors">
+          }} className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors" title="Fechar e liberar números">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -406,9 +475,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
               <button
                 type="button"
                 onClick={async () => {
-                  if (raffleId) {
-                    await cancelReservationNumbers(raffleId, selectedNumbers, sessionId.current);
-                  }
+                  releaseCurrentNumbers();
                   onClose();
                 }}
                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold py-3 rounded-xl transition-colors active:scale-95 text-xs uppercase text-center"
@@ -523,6 +590,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
                   O pagamento será confirmado automaticamente após o processamento PIX.
                 </p>
               </div>
+
+              {/* Botão de desistência rápida para liberar números imediatamente */}
+              {!isPaid && (
+                <button
+                  type="button"
+                  onClick={handleCancelOrder}
+                  className="w-full bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 font-bold py-3.5 rounded-2xl transition-colors active:scale-95 text-xs uppercase text-center flex items-center justify-center gap-2 border border-slate-200 hover:border-red-200"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span>Desistir e liberar números</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -539,7 +620,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
         onConfirm={modalConfig.onConfirm}
         onCancel={modalConfig.onCancel || (() => setShowModal(false))}
       />
-    </div >
+    </div>
   );
 };
 

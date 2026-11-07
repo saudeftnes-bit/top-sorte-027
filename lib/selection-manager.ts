@@ -170,6 +170,58 @@ export async function cancelReservationNumbers(
 }
 
 /**
+ * Libera números IMEDIATAMENTE e de forma garantida quando o usuário sai da página,
+ * fecha o navegador, fecha a aba ou recarrega.
+ * Utiliza navigator.sendBeacon e fetch com keepalive: true para que a requisição
+ * sobreviva ao descarregamento da página pelo navegador.
+ */
+export function releaseReservationsImmediately(
+    raffleId: string,
+    numbers: string[],
+    sessionId: string
+): void {
+    if (!raffleId || !numbers || numbers.length === 0) return;
+
+    console.log(`🚀 [Immediate Release] Disparando liberação imediata de ${numbers.length} número(s): ${numbers.join(', ')}`);
+
+    const payload = JSON.stringify({
+        raffleId,
+        numbers,
+        sessionId
+    });
+
+    // 1. Método garantido em unload: navigator.sendBeacon
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+        try {
+            const blob = new Blob([payload], { type: 'text/plain;charset=UTF-8' });
+            navigator.sendBeacon('/api/cancel-reservation', blob);
+            console.log('📡 [Immediate Release] Enviado via navigator.sendBeacon');
+        } catch (e) {
+            console.warn('⚠️ [Immediate Release] sendBeacon falhou:', e);
+        }
+    }
+
+    // 2. Método garantido da Web moderna: fetch com keepalive: true
+    if (typeof fetch === 'function') {
+        try {
+            fetch('/api/cancel-reservation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: payload,
+                keepalive: true
+            }).catch(err => {
+                console.warn('⚠️ [Immediate Release] Fetch keepalive falhou:', err);
+            });
+        } catch (e) {
+            console.warn('⚠️ [Immediate Release] Erro ao disparar keepalive:', e);
+        }
+    }
+
+    // 3. Tentar também a chamada direta de cancelamento se a thread ainda estiver ativa
+    cancelReservationNumbers(raffleId, numbers, sessionId).catch(() => {});
+}
+
+/**
  * Remove TODAS as seleções temporárias desta sessão (sem PIX gerado)
  * Usado ao sair da página ou trocar de sorteio
  */

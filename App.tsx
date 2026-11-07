@@ -8,7 +8,7 @@ import { HistoricalRaffleView } from './components/HistoricalRaffleView';
 import AdminPanel from './components/admin/AdminPanel';
 import InstagramVideos from './components/InstagramVideos';
 import { getActiveRaffle, getReservationsByRaffle, subscribeToReservations, getPublicRaffles, checkMaintenanceMode, updateRaffle } from './lib/supabase-admin';
-import { getOrCreateSessionId, cleanupSessionSelections, createTemporarySelection, removeTemporarySelection } from './lib/selection-manager';
+import { getOrCreateSessionId, cleanupSessionSelections, createTemporarySelection, removeTemporarySelection, releaseReservationsImmediately } from './lib/selection-manager';
 import { cleanupExpiredReservations } from './lib/cleanup';
 import { useDarkMode } from './contexts/DarkModeContext';
 import type { Raffle, Reservation } from './types/database';
@@ -269,7 +269,21 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [selectionStartTime, selectedRaffle, isCheckoutOpen, hasActivePix]);
 
-  // REMOVIDO: Limpeza agressiva em beforeunload/unmount.
+  // Liberação imediata ao fechar aba ou sair da página sem concluir a compra
+  useEffect(() => {
+    const handleGlobalExit = () => {
+      if (selectedRaffle && selectedNumbers.length > 0) {
+        console.log('🚪 [App] Saída da página detectada. Liberando números selecionados...');
+        releaseReservationsImmediately(selectedRaffle.id, selectedNumbers, sessionId.current);
+      }
+    };
+    window.addEventListener('beforeunload', handleGlobalExit);
+    window.addEventListener('pagehide', handleGlobalExit);
+    return () => {
+      window.removeEventListener('beforeunload', handleGlobalExit);
+      window.removeEventListener('pagehide', handleGlobalExit);
+    };
+  }, [selectedRaffle?.id, selectedNumbers]);
   // Em celulares (iPhone/Android), alternar entre o navegador e o app do banco
   // dispara o evento beforeunload, o que apagava a reserva do cliente enquanto ele pagava o PIX.
   // A expiração segura já é controlada exclusivamente pelo timer de expiração do banco de dados.
@@ -810,24 +824,20 @@ const App: React.FC = () => {
               // Se havia PIX ativo, as reservas ficam no banco com o nome real do comprador
               // (não pelo sessionId), então cleanupSessionSelections não as apaga.
               // O expires_at do PIX garantirá a limpeza automática quando vencer.
-              if (!hasActivePix && selectedNumbers.length > 0 && selectedRaffle) {
-                // Só limpa se NÃO houver PIX gerado (reservas ainda pelo sessionId)
+              if (selectedNumbers.length > 0 && selectedRaffle) {
+                releaseReservationsImmediately(selectedRaffle.id, selectedNumbers, sessionId.current);
                 await cleanupSessionSelections(selectedRaffle.id, sessionId.current);
                 await new Promise(resolve => setTimeout(resolve, 150));
                 setSelectedNumbers([]);
                 setReservations(prev => {
                   const updated = { ...prev };
                   Object.keys(updated).forEach(num => {
-                    if (updated[num]?.name === sessionId.current) {
+                    if (selectedNumbers.includes(num) || updated[num]?.name === sessionId.current) {
                       delete updated[num];
                     }
                   });
                   return updated;
                 });
-              } else if (hasActivePix) {
-                // PIX foi gerado: limpar a UI mas manter a reserva no banco
-                console.log('💳 [Checkout] Fechando com PIX ativo — reserva mantida no banco até o QR expirar.');
-                setSelectedNumbers([]);
               }
               setHasActivePix(false);
               setIsCheckoutOpen(false);

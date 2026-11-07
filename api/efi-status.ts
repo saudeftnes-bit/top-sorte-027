@@ -1,4 +1,6 @@
 import { getChargeStatus } from '../lib/efi-service';
+import { createClient } from '@supabase/supabase-js';
+import { confirmPaymentInDatabase } from '../lib/efi-payment-confirm';
 
 type VercelRequest = any;
 type VercelResponse = any;
@@ -43,26 +45,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // ════════════════════════════════════════════════════════════════════════
         if (status.status === 'CONCLUIDA') {
             try {
-                const { createClient } = await import('@supabase/supabase-js');
                 const supabase = createClient(
                     process.env.VITE_SUPABASE_URL || '',
                     process.env.VITE_SUPABASE_ANON_KEY || ''
                 );
 
-                const { data: confirmResult, error: confirmErr } = await supabase.rpc(
-                    'update_efi_transaction_status',
-                    {
-                        p_txid:    txid,
-                        p_status:  'CONCLUIDA',
-                        p_paid_at: status.paidAt || new Date().toISOString(),
-                        p_event:   { timestamp: new Date().toISOString(), source: 'polling' },
-                    }
+                const confirmResult = await confirmPaymentInDatabase(
+                    supabase,
+                    txid,
+                    'CONCLUIDA',
+                    status.paidAt || new Date().toISOString(),
+                    { source: 'polling' }
                 );
 
-                if (confirmErr) {
-                    console.error('⚠️ [API Efi Status] Erro ao confirmar via RPC:', confirmErr.message);
+                if (confirmResult.success) {
+                    console.log(`✅ [API Efi Status] Pagamento ${txid} confirmado e sincronizado via polling`);
                 } else {
-                    console.log(`✅ [API Efi Status] Pagamento ${txid} confirmado via polling:`, confirmResult);
+                    console.error('⚠️ [API Efi Status] Falha ao sincronizar via polling:', confirmResult.error);
                 }
             } catch (dbErr: any) {
                 console.error('⚠️ [API Efi Status] Erro ao sincronizar status no banco:', dbErr.message);
