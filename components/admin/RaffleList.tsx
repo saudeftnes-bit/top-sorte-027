@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 interface RaffleListProps {
     onSelectRaffle?: (raffle: Raffle) => void;
     onManageRaffle: (raffle: Raffle) => void;
+    onViewRaffle?: (raffle: Raffle) => void;
     onEditRaffle: (raffle: Raffle) => void;
     onCreateNew?: () => void;
     onCreateRaffle?: () => void;
@@ -17,6 +18,7 @@ interface RaffleListProps {
 
 const RaffleList: React.FC<RaffleListProps> = ({
     onManageRaffle,
+    onViewRaffle,
     onEditRaffle,
     onCreateNew,
     onCreateRaffle,
@@ -238,7 +240,17 @@ const RaffleList: React.FC<RaffleListProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onViewRaffle) onViewRaffle(raffle);
+                                                else onManageRaffle(raffle);
+                                            }}
+                                            className="flex-1 md:flex-none px-4 py-2 rounded-xl font-bold text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-all"
+                                        >
+                                            👁️ Visualizar
+                                        </button>
                                         <button
                                             onClick={(e) => toggleStatus(raffle, e)}
                                             disabled={isClosed}

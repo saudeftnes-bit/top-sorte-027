@@ -203,6 +203,11 @@ const AdminPanel: React.FC = () => {
                             setShowRaffleList(false);
                             setCurrentSection('dashboard');
                         }}
+                        onViewRaffle={(raffle) => {
+                            setActiveRaffle(raffle);
+                            setShowRaffleList(false);
+                            setCurrentSection('grid');
+                        }}
                         onCreateRaffle={() => {
                             setActiveRaffle({ id: '', title: '', description: '', price_per_number: 0, main_image_url: '', status: 'scheduled', created_at: '', updated_at: '' }); // Empty raffle for creation
                             setShowRaffleList(false);
