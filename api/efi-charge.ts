@@ -70,11 +70,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const { data: raffle, error: raffleErr } = await supabase
             .from('raffles')
-            .select('id, status, price_per_number, raffle_type, max_numbers_per_participant')
+            .select('*')
             .eq('id', raffleId)
             .single();
 
-        if (raffleErr || !raffle) {
+        if (raffleErr) {
+            console.error('❌ [API Efi Charge] Erro ao buscar rifa:', raffleErr);
+        }
+
+        if (!raffle) {
             return res.status(404).json({ error: 'Rifa não encontrada.' });
         }
 
