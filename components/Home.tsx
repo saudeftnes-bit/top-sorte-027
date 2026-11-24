@@ -120,17 +120,17 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
             className="relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-[#004B8D] via-[#1E1B4B] to-black shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-white/10 flex flex-col justify-between min-h-[80dvh] sm:min-h-[76dvh] cursor-pointer group"
           >
             {/* Imagem principal centralizada sem cortes */}
-            <div className="absolute inset-0 flex items-center justify-center p-2 pb-28 pt-14">
+            <div className="absolute inset-0 flex items-center justify-center p-2 pb-40 pt-14">
               <img
                 src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
-                alt="Prêmio do Sorteio"
+                alt={featuredRaffle.title || "Prêmio do Sorteio"}
                 className="w-full h-full object-contain block rounded-2xl transition-transform duration-700 ease-out group-hover:scale-[1.02]"
               />
             </div>
 
             {/* Degradês sutis no topo e na base para leitura perfeita */}
             <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/75 via-black/30 to-transparent pointer-events-none" />
-            <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-60 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
             {/* Topo Story: Avatar Top Sorte 027 + LIVE */}
             <div className="relative z-10 flex items-center justify-between p-4">
@@ -156,8 +156,23 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
               </div>
             </div>
 
-            {/* Rodapé Story: Pílula de preço + Botão Participar Agora */}
+            {/* Rodapé Story: Título, Descrição, Pílula de preço + Botão Participar Agora */}
             <div className="relative z-10 p-4 space-y-2.5">
+              {(featuredRaffle.title || featuredRaffle.description) && (
+                <div className="space-y-1">
+                  {featuredRaffle.title && (
+                    <h2 className="text-base sm:text-xl font-black text-white leading-tight drop-shadow-md">
+                      {featuredRaffle.title}
+                    </h2>
+                  )}
+                  {featuredRaffle.description && (
+                    <p className="text-xs sm:text-sm text-white/85 font-medium leading-snug whitespace-pre-line line-clamp-3 drop-shadow">
+                      {featuredRaffle.description}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {featuredRaffle.raffle_type === 'brinde' ? (
                 <div className="inline-flex items-center gap-2 bg-emerald-950/80 backdrop-blur-md border border-emerald-400/30 px-3.5 py-1.5 rounded-full text-xs text-emerald-300 font-black uppercase tracking-wider">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
