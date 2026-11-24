@@ -39,41 +39,45 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
     return num.toString().padStart(padLength, '0');
   });
 
+  // Verificar se TODOS os números estão pagos (para exibir a mensagem de grade completa)
+  const allNumbersPaid = numbers.every(num => reservations[num]?.status === 'paid');
+  const shouldShowReadOnlyBanner = isReadOnly && allNumbersPaid;
+
   const totalAmount = (selectedNumbers.length * pricePerNumber).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
   return (
-    <div className={`p-2 sm:p-4 max-w-2xl mx-auto w-full ${selectedNumbers.length > 0 ? 'pb-44' : 'pb-6'}`}>
+    <div className={`px-2 pt-2 sm:p-4 max-w-2xl mx-auto w-full ${selectedNumbers.length > 0 ? 'pb-44' : 'pb-4'}`}>
       {/* Contêiner Principal Imperial Esmeralda & Ouro (Sem caixas aninhadas brancas) */}
-      <div className="bg-gradient-to-b from-[#021811] via-[#032319] to-[#010D09] border border-emerald-500/30 rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-2xl text-white relative overflow-hidden">
+      <div className="bg-gradient-to-b from-[#021811] via-[#032319] to-[#010D09] border border-emerald-500/30 rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 shadow-2xl text-white relative overflow-hidden">
         
-        {/* Banner de Somente Leitura se aplicável */}
-        {isReadOnly && (
-          <div className="bg-amber-400 text-amber-950 text-center text-xs font-black py-2 rounded-xl uppercase tracking-wider mb-4 shadow-md animate-pulse">
+        {/* Banner de Somente Leitura — só quando TODOS os números estão pagos */}
+        {shouldShowReadOnlyBanner && (
+          <div className="bg-amber-400 text-amber-950 text-center text-[11px] font-black py-1.5 rounded-xl uppercase tracking-wider mb-2.5 shadow-md animate-pulse">
             Grade Completa - Apenas Visualização
           </div>
         )}
 
-        {/* ── 1. HEADER OFICIAL TOPSORTE_27 (LIMPO E SEM REDUNDÂNCIAS) ── */}
-        <div className="pb-4 border-b border-yellow-500/20 mb-4 px-1">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+        {/* ── 1. HEADER OFICIAL TOPSORTE_27 (LIMPO E COMPACTO) ── */}
+        <div className="pb-2.5 border-b border-yellow-500/20 mb-2.5 px-0.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
               <img
                 src="/logo.png"
                 alt="TopSorte_27 Logo"
-                className="w-12 h-12 rounded-xl object-cover border-2 border-yellow-400 shadow-md flex-shrink-0"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover border-2 border-yellow-400 shadow-md flex-shrink-0"
               />
-              <div>
-                <h2 className="text-lg sm:text-xl font-black text-white leading-tight tracking-tight">
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-black text-white leading-tight tracking-tight truncate">
                   TopSorte_27
                 </h2>
-                <p className="text-[11px] text-[#00FF87] font-extrabold uppercase tracking-wider leading-none mt-0.5">
+                <p className="text-[10px] text-[#00FF87] font-extrabold uppercase tracking-wider leading-none mt-0.5 truncate">
                   Ganhe Prêmios Reais!
                 </p>
               </div>
             </div>
 
-            <div className="text-right">
-              <span className="text-[10px] text-emerald-300/80 font-bold uppercase block leading-none">
+            <div className="text-right flex-shrink-0">
+              <span className="text-[9px] sm:text-[10px] text-emerald-300/80 font-bold uppercase block leading-none">
                 Valor da Cota
               </span>
               <span className="text-base sm:text-lg font-black text-yellow-400 font-mono-num leading-tight">
@@ -82,9 +86,9 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
             </div>
           </div>
 
-          {/* Pílula do Tipo de Sorteio */}
-          <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
-            <div className="bg-[#022A1E] border border-emerald-400/30 text-emerald-200 px-3 py-1 rounded-lg text-xs font-black flex items-center gap-1.5">
+          {/* Pílula do Tipo de Sorteio + Edição */}
+          <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
+            <div className="bg-[#022A1E] border border-emerald-400/30 text-emerald-200 px-2.5 py-0.5 rounded-lg text-[11px] font-black flex items-center gap-1.5">
               <span>{selectionMode === 'jogo_bicho' ? '🍀' : '🏛️'}</span>
               <span>{selectionMode === 'jogo_bicho' ? 'Sorteio pelo Jogo do Bicho' : 'Sorteio pela Loteria Federal'}</span>
             </div>
@@ -101,7 +105,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
         </div>
 
         {/* ── 2. LEGENDA OFICIAL EM LINHA ÚNICA ── */}
-        <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold px-3 py-2 rounded-xl bg-black/40 border border-emerald-500/20 mb-3 text-slate-300 flex-wrap gap-2">
+        <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold px-2.5 py-1.5 rounded-xl bg-black/40 border border-emerald-500/20 mb-2.5 text-slate-300 flex-wrap gap-2">
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded bg-[#0A4D39] border border-emerald-400/50"></span>
             Livre
@@ -121,7 +125,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
         </div>
 
         {/* ── 3. GRADE DE COTAS EM TELA TOTAL (5 COLUNAS) — scroll interno ── */}
-        <div className="overflow-y-auto max-h-[60vh] sm:max-h-[65vh] pr-1 scrollbar-thin scrollbar-thumb-emerald-700 scrollbar-track-transparent">
+        <div className="overflow-y-auto max-h-[58vh] sm:max-h-[62vh] pr-1 scrollbar-thin scrollbar-thumb-emerald-700 scrollbar-track-transparent">
           <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-5">
           {numbers.map((num) => {
             const reservation = reservations[num];

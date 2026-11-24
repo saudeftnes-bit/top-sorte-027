@@ -5,32 +5,6 @@ import { getYouTubeEmbedUrl } from '../lib/video-utils';
 import { supabase } from '../lib/supabase';
 import type { Raffle, WinnerPhoto } from '../types/database';
 
-
-const LoadingPhrases: React.FC = () => {
-  const phrases = [
-    { text: "Sincronizando prêmios...", style: "text-[#00E676] drop-shadow-[0_0_15px_rgba(0,230,118,0.8)]", anim: "animate-bounce" },
-    { text: "Prepara sua sorte!", style: "text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]", anim: "animate-pulse" },
-    { text: "O próximo ganhador é você?", style: "bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-black", anim: "animate-in slide-in-from-bottom duration-500" },
-    { text: "Carregando sonhos...", style: "text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]", anim: "animate-in zoom-in duration-300" },
-    { text: "Ajustando detalhes...", style: "text-cyan-400 italic", anim: "animate-pulse" },
-    { text: "PIX DA SORTE EM BREVE", style: "text-green-400 tracking-[0.2em] font-black", anim: "animate-in fade-in duration-700" }
-  ];
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => setIndex(i => (i + 1) % phrases.length), 2500);
-    return () => clearInterval(timer);
-  }, [phrases.length]);
-
-  const current = phrases[index];
-
-  return (
-    <p key={index} className={`text-2xl sm:text-3xl font-black uppercase tracking-tighter sm:tracking-normal ${current.style} ${current.anim}`}>
-      {current.text}
-    </p>
-  );
-};
-
 interface HomeProps {
   onStart: () => void;
   onSelectRaffle?: (raffle: Raffle) => void;
@@ -55,8 +29,8 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
   const [winnersPhotos, setWinnersPhotos] = useState<WinnerPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter other raffles (exclude current active one)
-  const otherRaffles = raffles.filter(r => r.id !== featuredRaffle?.id);
+  // Filter other raffles — apenas finalizadas (excluindo a rifa ativa principal)
+  const otherRaffles = raffles.filter(r => r.id !== featuredRaffle?.id && r.status === 'finished');
 
   // Carregar script do Instagram (apenas uma vez)
   useEffect(() => {
@@ -140,12 +114,60 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
       {/* BANNER FORA DO CONTAINER — só aparece quando rifa está ATIVA  */}
       {/* ============================================================ */}
       {featuredRaffle && featuredRaffle.status === 'active' && (
-        <div className="w-full max-w-2xl mx-auto px-2 sm:px-4 cursor-pointer" onClick={onStart}>
-          <img
-            src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
-            alt="Prêmio do Sorteio"
-            className="w-full h-auto block rounded-2xl"
-          />
+        <div className="w-full max-w-2xl mx-auto px-2 sm:px-4">
+          {/* Imagem do banner com badge LIVE */}
+          <div className="relative cursor-pointer" onClick={onStart}>
+            <img
+              src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+              alt="Prêmio do Sorteio"
+              className="w-full h-auto block rounded-2xl"
+            />
+            {/* Badge LIVE discreto no canto superior direito */}
+            <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-red-500/40">
+              <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.9)] animate-pulse" />
+              <span className="text-white text-[10px] font-black uppercase tracking-widest">LIVE</span>
+            </div>
+          </div>
+
+          {/* Card "Participar Agora" logo abaixo do banner */}
+          <div className="mt-3 bg-black rounded-2xl px-4 pt-3 pb-4 space-y-3 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+            {/* Valor da cota */}
+            {featuredRaffle.raffle_type === 'brinde' ? (
+              <div className="flex items-center justify-center gap-3 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl px-4 py-2.5 text-center">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                <span className="text-emerald-400 text-lg font-black uppercase tracking-wider">100% Grátis</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-center">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#00E676] animate-pulse shadow-[0_0_8px_#00E676] flex-shrink-0" />
+                <span className="text-white/90 text-sm font-bold">
+                  Apenas{' '}
+                  <strong className="text-[#00E676] text-xl font-black">
+                    R$ {featuredRaffle.price_per_number?.toFixed(2).replace('.', ',') || '13,00'}
+                  </strong>{' '}
+                  / cota
+                </span>
+              </div>
+            )}
+
+            {/* Botão CTA */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#00E676] rounded-2xl animate-ping opacity-25" />
+              <button
+                onClick={onStart}
+                className="w-full relative font-black py-5 rounded-2xl flex items-center justify-center gap-2 text-base uppercase tracking-wider transition-all active:scale-95 border-b-4 overflow-hidden group bg-gradient-to-r from-[#00E676] to-[#00C853] text-[#001D4A] border-[#008c3a] shadow-[0_6px_24px_rgba(0,230,118,0.35)] hover:translate-y-px"
+              >
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <span className="relative z-10 flex items-center gap-2">
+                  {featuredRaffle.raffle_type === 'brinde' ? (
+                    <><span>🎁</span><span>PARTICIPAR DO BRINDE GRÁTIS</span></>
+                  ) : (
+                    <><span>🚀</span><span>PARTICIPAR AGORA!</span></>
+                  )}
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -180,7 +202,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
             </button>
           </div>
         </section>
-      ) : featuredRaffle ? (
+      ) : featuredRaffle && featuredRaffle.status !== 'active' ? (
         <section className="relative overflow-hidden bg-black rounded-[2rem] shadow-[0_15px_40px_-10px_rgba(0,0,0,0.9)] border border-white/10 mt-4 flex flex-col">
           {/* ── FOTO EM DESTAQUE — oculta quando ativa (banner aparece acima) ── */}
           {featuredRaffle.status !== 'active' && (
@@ -265,60 +287,11 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
 
           </div>
         </section>
-      ) : (
-        <section className="relative overflow-hidden bg-gradient-to-b from-[#004B8D] to-[#010B1A] rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-white/5 mt-4 p-8 text-center min-h-[240px] flex flex-col items-center justify-center">
-          {/* LUZES DE FUNDO DINÂMICAS */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[#00E676]/5 blur-[80px] rounded-full animate-pulse"></div>
-          
-          <div className="relative z-10 w-full">
-            <h2 className="text-lg sm:text-2xl font-black mb-4 uppercase tracking-[0.2em] italic bg-gradient-to-r from-[#00E676] via-white to-[#00E676] bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-[0_0_15px_rgba(0,230,118,0.5)] whitespace-nowrap">
-              NOVIDADES CHEGANDO...
-            </h2>
+      ) : null}
 
-            {/* MOTOR DE FRASES COM EFEITOS VARIADOS */}
-            <div className="h-24 flex items-center justify-center overflow-hidden">
-            <div className="h-24 flex items-center justify-center overflow-hidden">
-               <LoadingPhrases />
-            </div>
-            </div>
-
-            {/* Barra de Progresso Estilizada */}
-            <div className="w-full max-w-xs mx-auto h-1.5 bg-black/40 rounded-full mt-6 overflow-hidden border border-white/5 shadow-inner">
-               <div className="h-full bg-gradient-to-r from-[#00E676] via-white to-[#00E676] w-full animate-shimmer" style={{ backgroundSize: '200% 100%' }}></div>
-            </div>
-            
-            <p className="text-[#00E676] font-black uppercase tracking-[0.2em] text-[11px] mt-6 animate-pulse">
-              Fique ligado! 🚀
-            </p>
-          </div>
-
-          <style dangerouslySetInnerHTML={{ __html: `
-            @keyframes shimmer {
-              0% { background-position: -200% 0; }
-              100% { background-position: 200% 0; }
-            }
-            .animate-shimmer {
-              animation: shimmer 2s infinite linear;
-            }
-          `}} />
-        </section>
-      )}
-
-      {/* Outros Sorteios Disponíveis - Shown only if there are other active raffles */}
+      {/* Rifas Finalizadas - aparece quando há rifas com status 'finished' */}
       {otherRaffles.length > 0 && (
-        <section className="mt-8">
-          <div className="flex flex-col items-center justify-center mb-6 px-2">
-            <div className="inline-block relative">
-              <h3 className="text-2xl font-black tracking-tighter uppercase italic py-2 px-6 bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 bg-[length:200%_auto] animate-gradient-text text-transparent bg-clip-text drop-shadow-sm select-none flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-[#22C55E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                RIFAS FINALIZADAS
-              </h3>
-              <div className="absolute -inset-1 bg-purple-500 opacity-10 blur-xl animate-pulse rounded-full -z-10"></div>
-            </div>
-          </div>
-
+        <section className="mt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {otherRaffles.map((otherRaffle) => (
               <div key={otherRaffle.id} className="bg-gradient-to-br from-[#002654] to-[#001536] rounded-[2rem] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.4)] border border-white/10 flex flex-col group hover:border-[#00E676]/30 transition-colors">
@@ -330,15 +303,28 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
                     alt={otherRaffle.title}
                     className="w-full h-auto block transition-transform duration-500 ease-out group-hover:scale-110 cursor-pointer"
                   />
-                  <div className={`absolute top-3 left-3 text-white font-bold px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest z-20 shadow-md ${otherRaffle.status === 'active' ? (otherRaffle.raffle_type === 'brinde' ? 'bg-emerald-500 text-white' : 'bg-[#00E676] text-[#001D4A]') :
-                    otherRaffle.status === 'scheduled' ? 'bg-yellow-500 text-slate-900' :
-                      otherRaffle.status === 'paused' ? 'bg-red-500' : 'bg-slate-500'
+                  <div className={`absolute top-3 left-3 font-black px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest z-20 flex items-center gap-1.5 ${
+                    otherRaffle.status === 'active'
+                      ? (otherRaffle.raffle_type === 'brinde' ? 'bg-emerald-500 text-white shadow-md' : 'bg-[#00E676] text-[#001D4A] shadow-md')
+                      : otherRaffle.status === 'scheduled'
+                      ? 'bg-yellow-500 text-slate-900 shadow-md'
+                      : otherRaffle.status === 'paused'
+                      ? 'bg-red-500 text-white shadow-md'
+                      : 'bg-gradient-to-r from-red-600 via-orange-500 to-red-600 bg-[length:200%_auto] animate-gradient-text text-white border border-white/30 shadow-[0_0_15px_rgba(239,68,68,0.65)]'
                     }`}>
-                    {otherRaffle.raffle_type === 'brinde' && otherRaffle.status === 'active' ? '🎁 BRINDE GRÁTIS' : (
-                      otherRaffle.status === 'active' ? 'ATIVO' :
-                        otherRaffle.status === 'scheduled' ? 'AGENDADO' :
-                          otherRaffle.status === 'paused' ? 'PAUSADO' : 'FINALIZADO'
+                    {otherRaffle.status === 'finished' && (
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-300"></span>
+                      </span>
                     )}
+                    <span>
+                      {otherRaffle.raffle_type === 'brinde' && otherRaffle.status === 'active' ? '🎁 BRINDE GRÁTIS' : (
+                        otherRaffle.status === 'active' ? 'ATIVO' :
+                          otherRaffle.status === 'scheduled' ? 'AGENDADO' :
+                            otherRaffle.status === 'paused' ? 'PAUSADO' : 'FINALIZADA'
+                      )}
+                    </span>
                   </div>
                   {otherRaffle.code && (
                     <div className={`absolute bottom-6 right-3 ${otherRaffle.selection_mode === 'jogo_bicho' ? 'bg-green-600' : 'bg-[#004B8D] border border-[#00E676]/30'} text-white font-black px-3 py-1 rounded-full text-[10px] tracking-widest z-20`}>
