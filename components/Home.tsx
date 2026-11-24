@@ -135,6 +135,20 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
   }, [winnersPhotos.length]);
 
   return (
+    <>
+      {/* ============================================================ */}
+      {/* BANNER FORA DO CONTAINER — só aparece quando rifa está ATIVA  */}
+      {/* ============================================================ */}
+      {featuredRaffle && featuredRaffle.status === 'active' && (
+        <div className="w-full overflow-hidden cursor-pointer" onClick={onStart}>
+          <img
+            src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+            alt="Prêmio do Sorteio"
+            className="w-full h-auto block"
+          />
+        </div>
+      )}
+
     <div className="flex flex-col gap-8 p-4 max-w-2xl mx-auto">
       {/* Featured Raffle Card or Maintenance State */}
       {maintenanceState?.isMaintenance ? (
@@ -168,7 +182,8 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
         </section>
       ) : featuredRaffle ? (
         <section className="relative overflow-hidden bg-black rounded-[2rem] shadow-[0_15px_40px_-10px_rgba(0,0,0,0.9)] border border-white/10 mt-4 flex flex-col">
-          {/* ── FOTO EM DESTAQUE (SEM OVERLAY ESCURO PARA TOTAL NITIDEZ E BRILHO) ── */}
+          {/* ── FOTO EM DESTAQUE — oculta quando ativa (banner aparece acima) ── */}
+          {featuredRaffle.status !== 'active' && (
           <div className="relative w-full overflow-hidden group">
             <img
               src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
@@ -194,6 +209,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
               </div>
             )}
           </div>
+          )}
 
           {/* ── PAINEL INFERIOR PRETO (apenas valor + botão) ── */}
           <div className="bg-black px-4 pt-3 pb-5 space-y-3">
@@ -570,6 +586,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
       </section>
 
     </div>
+    </>
   );
 };
 
