@@ -157,9 +157,9 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
             </div>
 
             {/* Rodapé Story: Título, Descrição, Pílula de preço + Botão Participar Agora */}
-            <div className="relative z-10 p-4 space-y-2.5">
+            <div className="relative z-10 p-4 space-y-3 text-center">
               {(featuredRaffle.title || featuredRaffle.description) && (
-                <div className="space-y-1">
+                <div className="space-y-1 text-center">
                   {featuredRaffle.title && (
                     <h2 className="text-base sm:text-xl font-black text-white leading-tight drop-shadow-md">
                       {featuredRaffle.title}
@@ -174,14 +174,14 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
               )}
 
               {featuredRaffle.raffle_type === 'brinde' ? (
-                <div className="inline-flex items-center gap-2 bg-emerald-950/80 backdrop-blur-md border border-emerald-400/30 px-3.5 py-1.5 rounded-full text-xs text-emerald-300 font-black uppercase tracking-wider">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="inline-flex items-center justify-center gap-2 bg-emerald-950/80 backdrop-blur-md border border-emerald-400/30 px-5 py-2 rounded-full text-sm sm:text-base text-emerald-300 font-black uppercase tracking-wider mx-auto">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>100% Grátis</span>
                 </div>
               ) : (
-                <div className="inline-flex items-center gap-2 bg-black/65 backdrop-blur-md border border-white/15 px-3.5 py-1.5 rounded-full text-xs text-white font-bold">
+                <div className="inline-flex items-center justify-center gap-2 bg-black/65 backdrop-blur-md border border-white/15 px-5 py-2 rounded-full text-sm sm:text-base text-white font-bold mx-auto">
                   <span>💸 Cota:</span>
-                  <strong className="text-[#00E676] text-sm font-black">
+                  <strong className="text-[#00E676] text-lg sm:text-xl font-black">
                     R$ {featuredRaffle.price_per_number?.toFixed(2).replace('.', ',') || '13,00'}
                   </strong>
                 </div>
