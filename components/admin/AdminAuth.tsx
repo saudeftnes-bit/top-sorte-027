@@ -74,15 +74,24 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
 
         try {
             // Chamada à API segura do servidor - A senha NUNCA fica exposta no código frontend
-            const res = await fetch('/api/admin-login', {
+            const apiUrl = `${window.location.origin}/api/admin-login`;
+            const res = await fetch(apiUrl, {
                 method: 'POST',
+                cache: 'no-store',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                 },
                 body: JSON.stringify({ password }),
             });
 
-            const data = await res.json();
+            const rawText = await res.text();
+            let data: any = null;
+            try {
+                data = rawText ? JSON.parse(rawText) : {};
+            } catch {
+                throw new Error(`Resposta inválida (HTTP ${res.status})`);
+            }
 
             if (res.ok && data.success) {
                 // Sucesso: resetar bloqueio e salvar sessão assinada pelo servidor
@@ -113,7 +122,8 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
             }
         } catch (err: any) {
             console.error('Erro na autenticação:', err);
-            setError('Não foi possível conectar ao servidor de autenticação. Tente novamente.');
+            const detail = err?.message ? ` (${err.message})` : '';
+            setError(`Não foi possível conectar ao servidor de autenticação${detail}. Tente novamente.`);
         } finally {
             setIsLoading(false);
         }
