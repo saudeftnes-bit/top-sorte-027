@@ -140,11 +140,11 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
       {/* BANNER FORA DO CONTAINER — só aparece quando rifa está ATIVA  */}
       {/* ============================================================ */}
       {featuredRaffle && featuredRaffle.status === 'active' && (
-        <div className="w-full overflow-hidden cursor-pointer" onClick={onStart}>
+        <div className="w-full max-w-2xl mx-auto px-2 sm:px-4 cursor-pointer" onClick={onStart}>
           <img
             src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
             alt="Prêmio do Sorteio"
-            className="w-full h-auto block"
+            className="w-full h-auto block rounded-2xl"
           />
         </div>
       )}

@@ -120,8 +120,9 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
           </span>
         </div>
 
-        {/* ── 3. GRADE DE COTAS EM TELA TOTAL (5 COLUNAS) ── */}
-        <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-5">
+        {/* ── 3. GRADE DE COTAS EM TELA TOTAL (5 COLUNAS) — scroll interno ── */}
+        <div className="overflow-y-auto max-h-[60vh] sm:max-h-[65vh] pr-1 scrollbar-thin scrollbar-thumb-emerald-700 scrollbar-track-transparent">
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-5">
           {numbers.map((num) => {
             const reservation = reservations[num];
             const isUserSelected = selectedNumbers.includes(num);
@@ -194,6 +195,7 @@ const RaffleSelection: React.FC<RaffleSelectionProps> = ({
               </button>
             );
           })}
+          </div>
         </div>
 
         {/* Mensagem quando nenhuma cota selecionada */}
