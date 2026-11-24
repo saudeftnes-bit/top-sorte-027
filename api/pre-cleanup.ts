@@ -1,6 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
 import EfiPay from 'sdk-node-apis-efi';
+import { getSupabaseServerClient } from '../lib/supabase-server';
+
+// Cooldown em memória por instância serverless (evita sobrecarga na EFI com muitos usuários simultâneos)
+let lastPreCleanupAt = 0;
+const PRE_CLEANUP_COOLDOWN_MS = 30_000; // 30 segundos
 
 /**
  * GET /api/pre-cleanup
@@ -14,10 +18,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const supabase = createClient(
-            process.env.VITE_SUPABASE_URL || '',
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
-        );
+        const now = Date.now();
+        if (now - lastPreCleanupAt < PRE_CLEANUP_COOLDOWN_MS) {
+            return res.status(200).json({ confirmed: 0, checked: 0, skipped: 'cooldown' });
+        }
+        lastPreCleanupAt = now;
+
+        const supabase = getSupabaseServerClient();
 
         // Buscar reservas pending com efi_txid que já expiraram ou expiram em 5 minutos
         const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000).toISOString();
@@ -64,31 +71,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (status === 'CONCLUIDA') {
                     console.log(`💰 [PreCleanup] txid ${txid} está PAGO! Confirmando antes do cleanup...`);
 
-                    // Atualizar reservas para paid
-                    const { data: updated } = await supabase
-                        .from('reservations')
-                        .update({
-                            status: 'paid',
-                            expires_at: null,
-                            updated_at: new Date().toISOString(),
-                        })
-                        .eq('efi_txid', txid)
-                        .eq('status', 'pending')
-                        .select();
+                    // Usar a mesma RPC atômica/idempotente do webhook
+                    const { data: rpcData, error: rpcErr } = await supabase.rpc('confirm_efi_payment', {
+                        p_txid: txid,
+                        p_paid_at: paidAt || new Date().toISOString(),
+                    });
 
-                    const count = updated?.length || 0;
+                    let count = 0;
+                    if (!rpcErr && rpcData) {
+                        count = typeof rpcData === 'number' ? rpcData : (rpcData.updated ?? 0);
+                    } else {
+                        // Fallback seguro caso RPC ainda não exista
+                        const { data: updated } = await supabase
+                            .from('reservations')
+                            .update({
+                                status: 'paid',
+                                expires_at: null,
+                                updated_at: new Date().toISOString(),
+                            })
+                            .eq('efi_txid', txid)
+                            .eq('status', 'pending')
+                            .select();
+
+                        count = updated?.length || 0;
+
+                        await supabase
+                            .from('efi_transactions')
+                            .update({
+                                status: 'CONCLUIDA',
+                                paid_at: paidAt || new Date().toISOString(),
+                                updated_at: new Date().toISOString(),
+                            })
+                            .eq('txid', txid);
+                    }
+
                     confirmedTotal += count;
-
-                    // Atualizar transação
-                    await supabase
-                        .from('efi_transactions')
-                        .update({
-                            status: 'CONCLUIDA',
-                            paid_at: paidAt || new Date().toISOString(),
-                            updated_at: new Date().toISOString(),
-                        })
-                        .eq('txid', txid);
-
                     console.log(`✅ [PreCleanup] ${count} reserva(s) salvas do cleanup para txid ${txid}`);
                 }
             } catch (efiError: any) {

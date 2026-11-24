@@ -20,6 +20,10 @@ async function runPreCleanup(): Promise<void> {
     }
 }
 
+// Throttle no cliente para evitar chamadas duplicadas em rajada (ex: load + visibility + interval)
+let lastCleanupRunAt = 0;
+const CLIENT_CLEANUP_COOLDOWN_MS = 25_000;
+
 /**
  * Deleta reservas expiradas do banco de dados.
  * ANTES de deletar, chama /api/pre-cleanup para confirmar pagamentos EFI.
@@ -28,6 +32,12 @@ async function runPreCleanup(): Promise<void> {
  */
 export async function cleanupExpiredReservations(): Promise<number> {
     try {
+        const now = Date.now();
+        if (now - lastCleanupRunAt < CLIENT_CLEANUP_COOLDOWN_MS) {
+            return 0;
+        }
+        lastCleanupRunAt = now;
+
         console.log('🧹 [Cleanup] Iniciando limpeza de reservas expiradas...');
 
         // ⚡ PROTEÇÃO: Verificar pagamentos EFI antes de deletar

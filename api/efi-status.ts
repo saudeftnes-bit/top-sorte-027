@@ -1,4 +1,5 @@
 import { getChargeStatus } from '../lib/efi-service';
+import { getSupabaseServerClient } from '../lib/supabase-server';
 
 type VercelRequest = any;
 type VercelResponse = any;
@@ -43,21 +44,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // ════════════════════════════════════════════════════════════════════════
         if (status.status === 'CONCLUIDA') {
             try {
-                const { createClient } = await import('@supabase/supabase-js');
-                const supabase = createClient(
-                    process.env.VITE_SUPABASE_URL || '',
-                    process.env.VITE_SUPABASE_ANON_KEY || ''
-                );
+                const supabase = getSupabaseServerClient();
+                const paidAt = status.paidAt || new Date().toISOString();
 
-                const { data: confirmResult, error: confirmErr } = await supabase.rpc(
-                    'update_efi_transaction_status',
+                // Usar a mesma RPC atômica e idempotente do webhook
+                let { data: confirmResult, error: confirmErr } = await supabase.rpc(
+                    'confirm_efi_payment',
                     {
-                        p_txid:    txid,
-                        p_status:  'CONCLUIDA',
-                        p_paid_at: status.paidAt || new Date().toISOString(),
-                        p_event:   { timestamp: new Date().toISOString(), source: 'polling' },
+                        p_txid: txid,
+                        p_paid_at: paidAt,
                     }
                 );
+
+                // Fallback para assinatura antiga caso o novo SQL ainda não tenha sido rodado
+                if (confirmErr) {
+                    const fallback = await supabase.rpc('update_efi_transaction_status', {
+                        p_txid: txid,
+                        p_status: 'CONCLUIDA',
+                        p_paid_at: paidAt,
+                        p_event: { timestamp: new Date().toISOString(), source: 'polling' },
+                    });
+                    confirmResult = fallback.data;
+                    confirmErr = fallback.error;
+                }
 
                 if (confirmErr) {
                     console.error('⚠️ [API Efi Status] Erro ao confirmar via RPC:', confirmErr.message);

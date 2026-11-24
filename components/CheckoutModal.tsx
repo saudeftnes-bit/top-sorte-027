@@ -72,15 +72,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
 
   // Monitorar confirmação via banco de dados (Global State)
   useEffect(() => {
-    if (step === 'payment' && reservations && selectedNumbers.length > 0) {
-      const allPaid = selectedNumbers.every(num => reservations[num]?.status === 'paid');
+    if (step === 'payment' && reservations && selectedNumbers.length > 0 && formData.name) {
+      const buyerNameNormalized = formData.name.trim().toLowerCase();
+      const allPaidForBuyer = selectedNumbers.every((num) => {
+        const res = reservations[num];
+        return (
+          res?.status === 'paid' &&
+          res?.name?.trim().toLowerCase() === buyerNameNormalized
+        );
+      });
 
-      if (allPaid) {
-        console.log('✅ [Checkout] Pagamento confirmado via Banco de Dados!');
+      if (allPaidForBuyer) {
+        console.log('✅ [Checkout] Pagamento confirmado via Banco de Dados para este comprador!');
         handleSuccess();
       }
     }
-  }, [reservations, selectedNumbers, step]);
+  }, [reservations, selectedNumbers, step, formData.name]);
 
   // States para modal personalizado
   const [showModal, setShowModal] = useState(false);

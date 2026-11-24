@@ -1,4 +1,5 @@
 import EfiPay from 'sdk-node-apis-efi';
+import { getSupabaseServerClient } from '../lib/supabase-server';
 
 type VercelRequest = any;
 type VercelResponse = any;
@@ -57,13 +58,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('💳 [API Efi Charge] Iniciando fluxo de cobrança PIX:', { raffleId, numbers, count: numbers.length, price, paymentTimeout, sessionId });
 
         // ════════════════════════════════════════════════════════════════════════
-        // PASSO 1: Inicializar Supabase
+        // PASSO 1: Inicializar Supabase e validar preço real da rifa no servidor
         // ════════════════════════════════════════════════════════════════════════
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(
-            process.env.VITE_SUPABASE_URL || '',
-            process.env.VITE_SUPABASE_ANON_KEY || ''
-        );
+        const supabase = getSupabaseServerClient();
+
+        const { data: raffle, error: raffleErr } = await supabase
+            .from('raffles')
+            .select('id, status, price_per_number, raffle_type, max_numbers_per_participant')
+            .eq('id', raffleId)
+            .single();
+
+        if (raffleErr || !raffle) {
+            return res.status(404).json({ error: 'Rifa não encontrada.' });
+        }
+
+        if (raffle.status !== 'active') {
+            return res.status(400).json({ error: 'Esta rifa não está ativa para compras no momento.' });
+        }
+
+        if (raffle.raffle_type === 'brinde') {
+            return res.status(400).json({ error: 'Rifas do tipo brinde não aceitam cobrança PIX.' });
+        }
+
+        const expectedTotal = Number((Number(raffle.price_per_number) * numbers.length).toFixed(2));
+        if (isNaN(expectedTotal) || expectedTotal <= 0 || Math.abs(price - expectedTotal) > 0.01) {
+            console.error('🚨 [API Efi Charge] Valor divergente detectado:', {
+                sentPrice: price,
+                expectedTotal,
+                numbersCount: numbers.length,
+                unitPrice: raffle.price_per_number
+            });
+            return res.status(400).json({
+                error: 'O valor da cobrança não confere com o preço oficial das cotas.'
+            });
+        }
 
         const expirationSeconds = (paymentTimeout || 15) * 60;
 
@@ -120,7 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 expiracao: expirationSeconds,
             },
             valor: {
-                original: totalPrice.toFixed(2),
+                original: expectedTotal.toFixed(2),
             },
             chave: process.env.EFI_PIX_KEY,
             solicitacaoPagador: 'Pagamento Top Sorte - Rifas',
@@ -167,35 +195,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('✅ [API Efi Charge] Cobrança EFI criada:', pixCharge.txid);
 
         // ════════════════════════════════════════════════════════════════════════
-        // PASSO 4: Salvar transação EFI (log de auditoria + dados para recovery)
+        // PASSO 4: Salvar transação EFI (obrigatório para auditoria + recovery)
         // ════════════════════════════════════════════════════════════════════════
         const numbersJsonStr = JSON.stringify(numbers);
-        const { error: txError } = await supabase
-            .from('efi_transactions')
-            .insert({
-                txid: pixCharge.txid,
-                raffle_id: raffleId,
-                amount: totalPrice,
-                status: pixCharge.status,
-                pix_copia_cola: pixCharge.pixCopiaCola,
-                qr_code_url: pixCharge.qrCodeImage,
-                buyer_name: buyer.name,
-                buyer_email: buyer.email || '',
-                buyer_phone: buyer.phone || '',
-                numbers_json: numbersJsonStr,
-            });
+        const txPayload = {
+            txid: pixCharge.txid,
+            raffle_id: raffleId,
+            amount: expectedTotal,
+            status: pixCharge.status,
+            pix_copia_cola: pixCharge.pixCopiaCola,
+            qr_code_url: pixCharge.qrCodeImage,
+            buyer_name: buyer.name,
+            buyer_email: buyer.email || '',
+            buyer_phone: buyer.phone || '',
+            numbers_json: numbersJsonStr,
+        };
+
+        let { error: txError } = await supabase.from('efi_transactions').insert(txPayload);
+        if (txError) {
+            console.warn('⚠️ [API Efi Charge] Tentando novamente salvar efi_transactions:', txError.message);
+            const retryTx = await supabase.from('efi_transactions').insert(txPayload);
+            txError = retryTx.error;
+        }
 
         if (txError) {
-            console.warn('⚠️ [API Efi Charge] Erro ao salvar log de transação:', txError.message);
-            // Não é fatal — as reservas já foram travadas pelo lock
+            console.error('❌ [API Efi Charge] Falha crítica ao registrar efi_transactions:', txError.message);
+            // Liberar reservas pending sem txid para não prender números de forma inconsistente
+            await supabase
+                .from('reservations')
+                .delete()
+                .eq('raffle_id', raffleId)
+                .in('number', numbers)
+                .eq('buyer_name', buyer.name)
+                .eq('status', 'pending')
+                .is('efi_txid', null);
+
+            return res.status(500).json({
+                error: 'Erro ao registrar transação de pagamento. Tente novamente.'
+            });
         }
 
         // ════════════════════════════════════════════════════════════════════════
         // PASSO 5: Vincular o txid às reservas já criadas pelo lock
-        // O lock já criou as reservas com buyer_name correto.
-        // Agora apenas atualizamos o efi_txid e expires_at para refletir o PIX real.
         // ════════════════════════════════════════════════════════════════════════
-        const { error: updateErr } = await supabase
+        let { error: updateErr } = await supabase
             .from('reservations')
             .update({
                 efi_txid:   pixCharge.txid,
@@ -208,8 +251,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .eq('status', 'pending');
 
         if (updateErr) {
+            console.warn('⚠️ [API Efi Charge] Retry ao vincular txid às reservas:', updateErr.message);
+            const retryUpd = await supabase
+                .from('reservations')
+                .update({
+                    efi_txid:   pixCharge.txid,
+                    expires_at: pixCharge.expiresAt,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('raffle_id', raffleId)
+                .in('number', numbers)
+                .eq('buyer_name', buyer.name)
+                .eq('status', 'pending');
+            updateErr = retryUpd.error;
+        }
+
+        if (updateErr) {
             console.error('❌ [API Efi Charge] Erro ao vincular txid às reservas:', updateErr);
-            // Não é fatal — o confirm_payment_by_txid consegue recuperar via efi_transactions
         } else {
             console.log(`✅ [API Efi Charge] txid ${pixCharge.txid} vinculado às reservas de ${numbers.join(', ')}`);
         }
