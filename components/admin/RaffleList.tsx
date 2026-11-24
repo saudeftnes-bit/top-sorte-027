@@ -73,15 +73,15 @@ const RaffleList: React.FC<RaffleListProps> = ({
     const handleConfirmDelete = async () => {
         if (!deleteId) return;
         setIsDeleting(true);
-        const res = await deleteRaffle(deleteId);
+        const ok = await deleteRaffle(deleteId);
         setIsDeleting(false);
         setShowDeleteModal(false);
         setDeleteId(null);
-        if (res.success) {
+        if (ok) {
             loadRaffles();
             onRefresh?.();
         } else {
-            alert('Erro ao excluir rifa: ' + res.error);
+            alert('Erro ao excluir rifa. Verifique se existem registros vinculados ou tente novamente.');
         }
     };
 

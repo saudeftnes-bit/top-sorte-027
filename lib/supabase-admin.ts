@@ -126,10 +126,23 @@ export async function updateRaffle(id: string, updates: Partial<Raffle>): Promis
 
 export async function deleteRaffle(id: string): Promise<boolean> {
     console.log('🗑️ [Admin] Deletando sorteio:', id);
-    const { error } = await supabase
+    let { error } = await supabase
         .from('raffles')
         .delete()
         .eq('id', id);
+
+    // Se falhar por chave estrangeira (23503), limpar dependências da rifa e tentar novamente
+    if (error && (error.code === '23503' || error.message?.includes('foreign key'))) {
+        console.warn('⚠️ [Admin] FK impediu exclusão direta, removendo dependências da rifa:', id);
+        await supabase.from('efi_transactions').delete().eq('raffle_id', id);
+        await supabase.from('reservations').delete().eq('raffle_id', id);
+
+        const retry = await supabase
+            .from('raffles')
+            .delete()
+            .eq('id', id);
+        error = retry.error;
+    }
 
     if (error) {
         console.error('❌ [Admin] Erro ao deletar sorteio:', error);
