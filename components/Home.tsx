@@ -111,61 +111,86 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
   return (
     <>
       {/* ============================================================ */}
-      {/* BANNER FORA DO CONTAINER — só aparece quando rifa está ATIVA  */}
+      {/* BANNER MESCLADO #10 (Story / Reels Integrado) — Rifa ATIVA   */}
       {/* ============================================================ */}
       {featuredRaffle && featuredRaffle.status === 'active' && (
-        <div className="w-full max-w-2xl mx-auto px-2 sm:px-4">
-          {/* Imagem do banner com badge LIVE */}
-          <div className="relative cursor-pointer" onClick={onStart}>
-            <img
-              src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
-              alt="Prêmio do Sorteio"
-              className="w-full h-auto block rounded-2xl"
-            />
-            {/* Badge LIVE discreto no canto superior direito */}
-            <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-red-500/40">
-              <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.9)] animate-pulse" />
-              <span className="text-white text-[10px] font-black uppercase tracking-widest">LIVE</span>
+        <div className="w-full max-w-2xl mx-auto px-2 sm:px-4 min-h-[calc(100dvh-3.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-center py-2">
+          <div
+            onClick={onStart}
+            className="relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-[#004B8D] via-[#1E1B4B] to-black shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-white/10 flex flex-col justify-between min-h-[80dvh] sm:min-h-[76dvh] cursor-pointer group"
+          >
+            {/* Imagem principal centralizada sem cortes */}
+            <div className="absolute inset-0 flex items-center justify-center p-2 pb-28 pt-14">
+              <img
+                src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+                alt="Prêmio do Sorteio"
+                className="w-full h-full object-contain block rounded-2xl transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+              />
             </div>
-          </div>
 
-          {/* Card "Participar Agora" logo abaixo do banner */}
-          <div className="mt-3 bg-black rounded-2xl px-4 pt-3 pb-4 space-y-3 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
-            {/* Valor da cota */}
-            {featuredRaffle.raffle_type === 'brinde' ? (
-              <div className="flex items-center justify-center gap-3 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl px-4 py-2.5 text-center">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                <span className="text-emerald-400 text-lg font-black uppercase tracking-wider">100% Grátis</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-center">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#00E676] animate-pulse shadow-[0_0_8px_#00E676] flex-shrink-0" />
-                <span className="text-white/90 text-sm font-bold">
-                  Apenas{' '}
-                  <strong className="text-[#00E676] text-xl font-black">
-                    R$ {featuredRaffle.price_per_number?.toFixed(2).replace('.', ',') || '13,00'}
-                  </strong>{' '}
-                  / cota
-                </span>
-              </div>
-            )}
+            {/* Degradês sutis no topo e na base para leitura perfeita */}
+            <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/75 via-black/30 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none" />
 
-            {/* Botão CTA */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-[#00E676] rounded-2xl animate-ping opacity-25" />
-              <button
-                onClick={onStart}
-                className="w-full relative font-black py-5 rounded-2xl flex items-center justify-center gap-2 text-base uppercase tracking-wider transition-all active:scale-95 border-b-4 overflow-hidden group bg-gradient-to-r from-[#00E676] to-[#00C853] text-[#001D4A] border-[#008c3a] shadow-[0_6px_24px_rgba(0,230,118,0.35)] hover:translate-y-px"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                <span className="relative z-10 flex items-center gap-2">
-                  {featuredRaffle.raffle_type === 'brinde' ? (
-                    <><span>🎁</span><span>PARTICIPAR DO BRINDE GRÁTIS</span></>
-                  ) : (
-                    <><span>🚀</span><span>PARTICIPAR AGORA!</span></>
+            {/* Topo Story: Avatar Top Sorte 027 + LIVE */}
+            <div className="relative z-10 flex items-center justify-between p-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full p-0.5 bg-gradient-to-tr from-[#00E676] to-pink-500 shadow-md flex-shrink-0">
+                  <img
+                    src="/logo.png"
+                    alt="Top Sorte 027"
+                    className="w-full h-full rounded-full object-cover bg-slate-950"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-white text-xs font-black leading-tight drop-shadow">Top Sorte 027</span>
+                  {featuredRaffle.code && (
+                    <span className="text-[10px] text-white/75 font-bold leading-tight">Edição #{featuredRaffle.code}</span>
                   )}
-                </span>
-              </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-red-500/40 shadow">
+                <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.9)] animate-pulse" />
+                <span className="text-white text-[10px] font-black uppercase tracking-widest">LIVE</span>
+              </div>
+            </div>
+
+            {/* Rodapé Story: Pílula de preço + Botão Participar Agora */}
+            <div className="relative z-10 p-4 space-y-2.5">
+              {featuredRaffle.raffle_type === 'brinde' ? (
+                <div className="inline-flex items-center gap-2 bg-emerald-950/80 backdrop-blur-md border border-emerald-400/30 px-3.5 py-1.5 rounded-full text-xs text-emerald-300 font-black uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>100% Grátis</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 bg-black/65 backdrop-blur-md border border-white/15 px-3.5 py-1.5 rounded-full text-xs text-white font-bold">
+                  <span>💸 Cota:</span>
+                  <strong className="text-[#00E676] text-sm font-black">
+                    R$ {featuredRaffle.price_per_number?.toFixed(2).replace('.', ',') || '13,00'}
+                  </strong>
+                </div>
+              )}
+
+              <div className="relative">
+                <div className="absolute inset-0 bg-[#00E676] rounded-2xl animate-ping opacity-20" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStart();
+                  }}
+                  className="w-full relative font-black py-4 sm:py-5 rounded-2xl flex items-center justify-center gap-2 text-base uppercase tracking-wider transition-all active:scale-95 border-b-4 overflow-hidden bg-gradient-to-r from-[#00E676] via-emerald-400 to-[#00C853] text-[#001D4A] border-[#008c3a] shadow-[0_8px_25px_rgba(0,230,118,0.4)] hover:translate-y-px"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    {featuredRaffle.raffle_type === 'brinde' ? (
+                      <><span>🎁</span><span>PARTICIPAR DO BRINDE GRÁTIS</span></>
+                    ) : (
+                      <><span>🚀</span><span>PARTICIPAR AGORA!</span></>
+                    )}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
