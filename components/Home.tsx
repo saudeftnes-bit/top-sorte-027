@@ -157,12 +157,26 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
   }, [winnersPhotos.length]);
 
   return (
+    <>
+      {/* ============================================================ */}
+      {/* BANNER FORA DO CONTAINER — só aparece quando rifa está ATIVA  */}
+      {/* ============================================================ */}
+      {featuredRaffle && featuredRaffle.status === 'active' && (
+        <div className="w-full overflow-hidden cursor-pointer" onClick={onStart}>
+          <img
+            src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+            alt="Prêmio do Sorteio"
+            className="w-full h-auto block"
+          />
+        </div>
+      )}
+
     <div className="flex flex-col gap-8 p-4 max-w-2xl mx-auto">
       {/* Featured Raffle Card */}
       {/* Featured Raffle Card or Empty State */}
       {featuredRaffle ? (
         <section className="relative overflow-hidden bg-white rounded-[2.5rem] shadow-xl border border-slate-100 mt-4 flex flex-col">
-          {/* Status Badge Above Image */}
+          {/* Status Badge */}
           <div className={`w-full text-white font-black px-4 py-3 text-center text-xs sm:text-sm relative overflow-hidden ${featuredRaffle.status === 'active' ? (isBicho ? 'bg-green-600' : 'bg-[#003B73]') :
             featuredRaffle.status === 'scheduled' ? 'bg-yellow-500' :
               'bg-red-600'
@@ -171,17 +185,20 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-gradient-text bg-[length:200%_auto]"></div>
             )}
             <span className="relative z-10">
-              {featuredRaffle.status === 'active' ? '🟢 SORTEIO ATIVO' : '🔴 RIFA FINALIZADA / PAUSADA (VISUALIZAÇÃO)'}
+              {featuredRaffle.status === 'active' ? '🟢 SORTEIO ATIVO' : featuredRaffle.status === 'scheduled' ? '🟡 EM BREVE' : '🔴 RIFA FINALIZADA / PAUSADA (VISUALIZAÇÃO)'}
             </span>
           </div>
 
-          <div className="bg-slate-50 overflow-hidden w-full">
-            <img
-              src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
-              alt="Prêmio do Sorteio"
-              className="w-full h-auto block transition-transform duration-700 hover:scale-105"
-            />
-          </div>
+          {/* Imagem dentro do card só aparece quando NÃO está ativa (banner já aparece em cima) */}
+          {featuredRaffle.status !== 'active' && (
+            <div className="bg-slate-50 overflow-hidden w-full">
+              <img
+                src={featuredRaffle.main_image_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?q=80&w=2070&auto=format&fit=crop"}
+                alt="Prêmio do Sorteio"
+                className="w-full h-auto block transition-transform duration-700 hover:scale-105"
+              />
+            </div>
+          )}
 
           {/* Sorteio Info Label */}
           <div className={`mt-4 mx-4 py-3 px-4 rounded-2xl text-center font-black text-sm uppercase tracking-widest border-2 shadow-sm ${isBicho ? 'border-green-400 bg-green-600 text-white' : 'border-blue-400 bg-[#003B73] text-white'}`}>
@@ -215,7 +232,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
               <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
               Apenas R$ {featuredRaffle.price_per_number?.toFixed(2).replace('.', ',') || '13,00'} por número
             </div>
-            {/* Botão de CTA ou aviso de grade preenchida */}
+            {/* Botão de CTA */}
             <button
               onClick={onStart}
               className={`w-full ${featuredRaffle.status === 'active' ? `${themeAccentColor} ${themeHoverAccentColor} animate-pulse` : 'bg-slate-600 hover:bg-slate-700'
@@ -457,6 +474,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSelectRaffle, featuredRaffle, ra
       </section>
 
     </div>
+    </>
   );
 };
 

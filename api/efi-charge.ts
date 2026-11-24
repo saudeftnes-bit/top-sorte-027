@@ -121,9 +121,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         let reservationIds: string[] = [];
 
-        // 3. Tentar salvar transação EFI (não bloqueia se falhar)
+        // 3. Salvar transação EFI com numbers_json (crítico para fallback de recuperação)
         try {
-            await supabase
+            const { error: insertTxError } = await supabase
                 .from('efi_transactions')
                 .insert({
                     txid: pixCharge.txid,
@@ -135,28 +135,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     buyer_name: buyer.name,
                     buyer_email: buyer.email || '',
                     buyer_phone: buyer.phone || '',
+                    numbers_json: JSON.stringify(numbers), // 🔑 ESSENCIAL para recuperação pós-cleanup
                 });
+            if (insertTxError) {
+                console.error('⚠️ [API Efi Charge] Erro ao salvar transação (não crítico):', insertTxError);
+            } else {
+                console.log('✅ [API Efi Charge] Transação EFI salva com numbers_json:', numbers);
+            }
         } catch (e: any) {
-            console.error('⚠️ [API Efi Charge] Erro ao salvar transação (não crítico):', e);
-        }
-
-        // 3. Tentar salvar transação EFI
-        try {
-            await supabase
-                .from('efi_transactions')
-                .insert({
-                    txid: pixCharge.txid,
-                    raffle_id: raffleId,
-                    amount: totalPrice,
-                    status: pixCharge.status,
-                    pix_copia_cola: pixCharge.pixCopiaCola,
-                    qr_code_url: pixCharge.qrCodeImage,
-                    buyer_name: buyer.name,
-                    buyer_email: buyer.email || '',
-                    buyer_phone: buyer.phone || '',
-                });
-        } catch (e: any) {
-            console.error('⚠️ [API Efi Charge] Erro ao salvar transação (não crítico):', e);
+            console.error('⚠️ [API Efi Charge] Exceção ao salvar transação (não crítico):', e);
             // We continue because even if transaction log fails, the reservation is more important
         }
 
