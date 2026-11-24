@@ -1,11 +1,15 @@
+import { createClient } from '@supabase/supabase-js';
 import EfiPay from 'sdk-node-apis-efi';
-import { getSupabaseServerClient } from '../lib/supabase-server';
 
 type VercelRequest = any;
 type VercelResponse = any;
 
 // Supabase client para serverless
-const getSupabase = () => getSupabaseServerClient();
+const getSupabase = () => {
+    const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+    return createClient(url, key);
+};
 
 // EFI client
 const getEfiClient = () => {

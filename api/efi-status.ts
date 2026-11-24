@@ -1,5 +1,11 @@
+import { createClient } from '@supabase/supabase-js';
 import { getChargeStatus } from '../lib/efi-service';
-import { getSupabaseServerClient } from '../lib/supabase-server';
+
+const getSupabaseServerClient = () => {
+    const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+    return createClient(url, key);
+};
 
 type VercelRequest = any;
 type VercelResponse = any;
