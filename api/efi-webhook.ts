@@ -238,10 +238,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Processar cada txid com idempotência
         for (const txid of txids) {
             try {
-                // Idempotência rápida: se já está CONCLUIDA e já há reservas pagas, ignora reenvio
+                // Idempotência rápida: se já está CONCLUIDA, verificar se números já foram gravados
+                // IMPORTANTE: buscar a transação completa (números + comprador) para poder recriar se necessário
                 const { data: existingTx } = await supabase
                     .from('efi_transactions')
-                    .select('status')
+                    .select('status, numbers_json, raffle_id, buyer_name, buyer_phone, buyer_email, amount')
                     .eq('txid', txid)
                     .maybeSingle();
 
@@ -254,6 +255,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                     if ((paidCount || 0) > 0) {
                         console.log(`⏭️ [Webhook Efi] txid ${txid} já confirmado (${paidCount} reservas pagas). Ignorando notificação repetida.`);
+                        continue;
+                    }
+
+                    // CONCLUIDA mas sem reservas pagas — pagamento perdido! Recriar agora.
+                    console.warn(`⚠️ [Webhook Efi] txid ${txid} está CONCLUIDA mas sem reservas pagas. Recriando reservas a partir de efi_transactions...`);
+                    if (existingTx.numbers_json && existingTx.raffle_id) {
+                        const confirmed = await confirmEfiPayment(supabase, txid, new Date().toISOString());
+                        console.log(`🔧 [Webhook Efi] Reservas recriadas para txid ${txid}: ${confirmed}`);
                         continue;
                     }
                 }

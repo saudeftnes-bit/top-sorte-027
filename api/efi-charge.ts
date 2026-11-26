@@ -103,7 +103,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
         }
 
-        const expirationSeconds = (paymentTimeout || 15) * 60;
+        // Expiração mínima de 20 minutos para dar margem ao webhook chegar
+        // mesmo em casos de lentidão de rede ou atraso na confirmação bancária
+        const expirationSeconds = Math.max((paymentTimeout || 15) * 60, 20 * 60);
 
         // ════════════════════════════════════════════════════════════════════════
         // PASSO 2: BLOQUEIO ATÔMICO via RPC lock_numbers_for_pix()
