@@ -45,8 +45,25 @@ async function confirmEfiPayment(
             console.error(`🚨 [Webhook Efi] CONFLITO detectado para ${txid} nos números: ${rpcData.conflicts.join(', ')}. Dono original preservado.`);
         }
         const confirmed = typeof rpcData === 'number' ? rpcData : (rpcData.updated ?? 0);
+        const alreadyPaid = typeof rpcData === 'object' ? (rpcData.alreadyPaid ?? 0) : 0;
         console.log(`✅ [Webhook Efi] RPC confirm_efi_payment para ${txid}:`, rpcData);
-        return confirmed;
+
+        if (confirmed > 0 || alreadyPaid > 0) {
+            return confirmed;
+        }
+
+        // Se a RPC retornou updated: 0 e alreadyPaid: 0, verificar se há reservas pagas no banco
+        const { count: paidCheck } = await supabase
+            .from('reservations')
+            .select('id', { count: 'exact', head: true })
+            .eq('efi_txid', txid)
+            .eq('status', 'paid');
+
+        if ((paidCheck || 0) > 0) {
+            return paidCheck || 0;
+        }
+
+        console.warn(`⚠️ [Webhook Efi] RPC retornou 0 atualizações e nenhuma reserva paga encontrada para ${txid}. Executando recovery JS...`);
     }
 
     if (rpcError) {

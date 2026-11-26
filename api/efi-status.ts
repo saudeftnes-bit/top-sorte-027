@@ -1,11 +1,35 @@
 import { createClient } from '@supabase/supabase-js';
-import { getChargeStatus } from '../lib/efi-service';
+import EfiPay from 'sdk-node-apis-efi';
 
 const getSupabaseServerClient = () => {
     const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
     return createClient(url, key);
 };
+
+const getEfiClient = () => {
+    return new EfiPay({
+        sandbox: process.env.EFI_SANDBOX === 'true',
+        client_id: process.env.EFI_CLIENT_ID || '',
+        client_secret: process.env.EFI_CLIENT_SECRET || '',
+        certificate: (process.env.EFI_CERTIFICATE_BASE64 || '').trim(),
+        cert_base64: true,
+        validateMtls: false,
+    });
+};
+
+async function getChargeStatus(txid: string) {
+    const efipay = getEfiClient();
+    const response = await efipay.pixDetailCharge({ txid });
+    return {
+        txid: response.txid,
+        status: response.status,
+        value: parseFloat(response.valor?.original || '0'),
+        paidValue: response.pix ? parseFloat(response.pix[0]?.valor || '0') : 0,
+        paidAt: response.pix?.[0]?.horario || null,
+        customer: response.devedor,
+    };
+}
 
 /**
  * Recria reservas pagas a partir de efi_transactions quando a reservation expirou

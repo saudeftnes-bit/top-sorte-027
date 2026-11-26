@@ -184,6 +184,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ selectedNumbers, totalPri
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCreatingCharge) return;
 
     // Valida nome completo (nome + sobrenome obrigatório)
     const nameValidation = validateFullName(formData.name);

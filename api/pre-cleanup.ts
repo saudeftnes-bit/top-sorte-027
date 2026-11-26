@@ -86,8 +86,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     let count = 0;
                     if (!rpcErr && rpcData) {
                         count = typeof rpcData === 'number' ? rpcData : (rpcData.updated ?? 0);
-                    } else {
-                        // Fallback seguro caso RPC ainda não exista
+                    }
+                    if (count === 0) {
+                        // Fallback seguro caso RPC ainda não exista ou não tenha atualizado por txid
                         const { data: updated } = await supabase
                             .from('reservations')
                             .update({
